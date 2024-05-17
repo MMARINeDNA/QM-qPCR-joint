@@ -49,7 +49,6 @@ data {
 
   // Priors
   real alpha_prior[2]; // Parameters of normal distribution for prior on alphas
-  real beta_prior[2]; // Parameters of normal distribution for prior on betas
   real tau_prior[2]; // Parameters of gamma distribution for prior on tau (observation precision)
   
   // END DATA FOR METABARCODING
@@ -82,7 +81,8 @@ parameters {
   vector<upper=0>[Nplates] beta_std_curve_1; // slope of standard curve
   real<upper=0> gamma_0; //intercept to scale variance of standard curves w the mean
   vector<upper=0>[Nplates]  gamma_1; //slopes to scale variance of standards curves w the mean
-  real phi_1;
+  real phi_0;
+  real<lower=0> phi_1;
   vector[NSamples_qpcr-NstdSamples] envir_concentration; // DNA concentration in unknown samples
 }
 
@@ -118,7 +118,7 @@ transformed parameters {
 
     sigma[plateSample_idx[i]] = exp(gamma_0 + gamma_1[plate_idx[i]]*Concentration[plateSample_idx[i]]);
                                   
-    theta[plateSample_idx[i]] = inv_logit(phi_1*Concentration[plateSample_idx[i]]);
+    theta[plateSample_idx[i]] = inv_logit(phi_0 + phi_1*Concentration[plateSample_idx[i]]);
                                   
   }
   // QM MODEL PIECES
@@ -141,7 +141,7 @@ transformed parameters {
 
 // from qPCR estimates, alphas, and etas we can calculate sample-specific mu
   for (n in 1:N_species) {
-    logit_val_samp[,n] = model_matrix_samp * append_row(log_B[,n] - envir_concentration,alpha[n])+ 
+    logit_val_samp[,n] = model_matrix_samp * append_row((log_B[,n] - log_B[,N_species]),alpha[n])+ 
                             eta_samp[n];
     logit_val_mock[,n] = alr_mock_true_prop[,n] + 
                               model_vector_a_mock * alpha[n] + 
@@ -195,6 +195,7 @@ model {
   
   envir_concentration ~ normal(0, 2); //log10 scale
 
+  phi_0 ~ std_normal(); //need to fix this
   phi_1 ~ normal(5, 2);
   
   // QM part

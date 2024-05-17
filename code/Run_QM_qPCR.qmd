@@ -1,0 +1,33 @@
+ ---
+title: "Joint QM-qPCR Model of Hake Survey Samples"
+format: 
+  html: 
+    self-contained: true
+    toc: true
+  pdf: 
+    toc: true
+    include-in-header:
+      - text: |
+          \usepackage{subfig}
+          \usepackage{pdflscape}
+          \newcommand{\blandscape}{\begin{landscape}}
+          \newcommand{\elandscape}{\end{landscape}}
+editor: visual
+---
+
+```{r setup}
+library(tidyverse)
+library(rstan)
+library(here)
+```
+
+
+## Introduction
+
+We implement and fit a Stan model that jointly models qPCR and metabarcoding data for hake survey samples. The goal is to make quantitative estimates of real eDNA concentration for species for which we have MiFish metabarcoding data, but DO NOT have qPCR data. We use qPCR data from one, common reference species (Pacific hake) to expand metabarcoding read counts into quantitative eDNA concentration estimates.
+
+## Stan model
+```{r}
+m <- stan_model(here('code','qm_qpcr_joint.stan'))
+
+```
