@@ -22,12 +22,65 @@ library(here)
 ```
 
 
-## Introduction
+# Introduction
 
 We implement and fit a Stan model that jointly models qPCR and metabarcoding data for hake survey samples. The goal is to make quantitative estimates of real eDNA concentration for species for which we have MiFish metabarcoding data, but DO NOT have qPCR data. We use qPCR data from one, common reference species (Pacific hake) to expand metabarcoding read counts into quantitative eDNA concentration estimates.
 
-## Stan model
-```{r}
-m <- stan_model(here('code','qm_qpcr_joint.stan'))
+# Import Data
 
+The first script loads the metabarcoding, qPCR, and mock community data. The second script loads functions that are useful for working with the data and setting up the Stan model.
+
+```{r}
+source(here('code','1_load_data.R'))
+
+source(here("code/qm_data_prep_functions.R"))
 ```
+
+## Format for Stan
+
+We can prepare the data we just loaded to be input into our Stan model, using some of the functions in the previous script.
+
+```{r}
+# metabarcoding
+stan_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
+                                                     Level_1_treatment_envir <- "Sample",
+                                                     Level_2_treatment_envir <- "tech",
+                                                     Level_3_treatment_envir <- NA,
+                                                     Level_1_treatment_mock <- "Sample",
+                                                     Level_2_treatment_mock <- "Rep",
+                                                     Level_3_treatment_mock <- NA) %>% 
+  makeDesign(N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
+
+#qPCR
+stan_qPCR_data <- format_qPCR_data(qPCR_unk,qPCR_std) %>% 
+  prepare_stan_data_qPCR()
+
+# join the two lists
+stan_data_joint <- c(stan_qPCR_data,stan_metabarcoding_data)
+```
+
+Now the data should be ready for Stan. We compile the Stan model itself:
+
+## Load Stan model
+
+```{r}
+m <- here('code','qm_qpcr_joint.stan')
+```
+
+# Run
+
+Run Stan
+
+```{r}
+QM_qPCR_joint_out <- QM_bayes(m,
+                         stan_data_joint,
+                         WARMUP = 500,
+                         ITER = 2000)
+# saveRDS(QM_bayes_out, file = here("model_output/QM_bayes_MFU.RDS"))
+#QM_bayes_out <- readRDS(here("model_output/QM_bayes_MFU.RDS"))
+#QM_bayes_out$Bayes_estimates
+# QM_bayes_out$Bayes_alpha_est
+#summary(QM_bayes_out$Bayes_modelfit)$summary[,"Rhat"] %>% sort() %>% tail()
+# rstan::traceplot(QM_bayes_out$Bayes_modelfit, par = "alpha")
+```
+
