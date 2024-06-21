@@ -102,7 +102,8 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     filter(!is.na(qPCR)) %>%
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
-    mutate(Ct=as.numeric(Ct) %>% round(2))
+    mutate(Ct=as.numeric(Ct) %>% round(2)) %>% 
+    filter(task=="UNKNOWN",type=="unknowns")
   
   #standards
   qPCR_2 <- qPCR_standards %>% 
@@ -110,7 +111,10 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     select(qPCR, well,sample,type,task=hake_task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
-    mutate(Ct=as.numeric(Ct) %>% round(2))
+    mutate(Ct=as.numeric(Ct) %>% round(2))%>% 
+    filter(task=="STANDARD") %>% 
+  # HAD AN ISSUE WITH NON-UNIQUE SAMPLE NAMES BETWEEN STDS AND UNKS BECAUSE OF '5' BEING USED AS SAMPLE ID FOR STANDARDS WITH CONC. OF 5 COPIES
+    mutate(sample=ifelse(sample=="5","5C",sample))
   
   # bind standards and unknowns
   qPCRdata <- qPCR_1 %>% 
@@ -122,9 +126,9 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     group_by(plateSample) %>% 
     add_tally(Ct==99) %>% 
     filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these. 
-    dplyr::select(-n) %>% 
-    mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>%  #reindex
-    ungroup()
+    dplyr::select(-n) %>%
+    ungroup() %>% 
+    mutate(plateSample_idx = match(plateSample, unique(plateSample)))
   
   #QC filter (old?)
   # qPCRdata <- qPCRdata %>%
@@ -141,20 +145,20 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
 
 prepare_stan_data_qPCR <- function(qPCRdata){
   
-  type <- qPCRdata %>% dplyr::select(plateSample, task) %>% distinct() %>% pull(task)
+  type <- qPCRdata %>% distinct(plateSample, task) %>% pull(task)
   
   stan_qPCR_data <- list(
     Nplates = length(unique(qPCRdata$qPCR)),
     Nobs_qpcr = nrow(qPCRdata),
     NSamples_qpcr = length(unique(qPCRdata$plateSample)),
-    NstdSamples = qPCRdata %>% filter(task == "STANDARD") %>% dplyr::select(plateSample) %>% distinct() %>% nrow(),
+    NstdSamples = qPCRdata %>% filter(task == "STANDARD") %>% distinct(plateSample) %>% nrow(),
     plate_idx = qPCRdata$plate_idx, 
     std_idx =  which(type=="STANDARD"),
-    unkn_idx = which(type != "STANDARD"),
+    unkn_idx = which(type == "UNKNOWN"),
     plateSample_idx = qPCRdata$plateSample_idx, 
     y = qPCRdata$Ct,
     z = qPCRdata$z,
-    known_concentration = qPCRdata %>% filter(task == "STANDARD") %>% dplyr::select(plateSample_idx, copies_ul) %>% distinct() %>% pull(copies_ul),
+    known_concentration = qPCRdata %>% filter(task == "STANDARD") %>% distinct(plateSample,.keep_all=T) %>% pull(copies_ul),
     stdCurvePrior_intercept = c(39, 3), #normal distr, mean and sd ; hyperpriors
     stdCurvePrior_slope = c(-3, 1) #normal distr, mean and sd ; hyperpriors
   )
