@@ -28,11 +28,34 @@ select <- dplyr::select
 ####Data
       
 #hake sample metadata
-meta <- read_csv(here("data/metadata/Hake_2019_metadata.csv"))
+meta <- read_csv(here("data","metadata","Hake_2019_metadata.csv")) %>% 
+  distinct(station, Niskin, depth, drop.sample, field.negative.type, volume,.keep_all = T)
+
+qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-12-15 sample details.csv'))
+# dat.station.id <- read_csv(here('Data','CTD_hake_data_10-2019.csv'))
+
+#### SAMPLE IDs ####
+qPCR.sample.id <- qPCR.sample.id %>% 
+  distinct() %>% 
+  dplyr::select(tubeID=`Tube #`,
+                station=`CTD cast`,
+                Niskin,
+                depth,
+                drop.sample,
+                field.negative.type,
+                volume = water.filtered.L) %>% 
+  mutate(depth=as.numeric(depth)) %>% 
+  # empty stations or extraneous rows
+  filter(!(station=="N/A"|station=="-")) %>%
+  left_join(meta,by = join_by(station, Niskin, depth, drop.sample, field.negative.type, volume)) %>% 
+  # dplyr::select(-Zymo) %>% 
+  distinct()
 
 #### QPCR DATA ####
 qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-01-04 results.csv'),
                      col_types = 'ccccccdccdcccccclll') %>% 
+  rename(tubeID=sample) %>% 
+  left_join(qPCR.sample.id,by=join_by(tubeID,Zymo)) %>% 
   # fix some columns from chr to numeric
   mutate(IPC_Ct=str_replace_all(IPC_Ct,"Undetermined","") %>% as.numeric) %>% 
   mutate(hake_copies_ul=str_replace_all(hake_copies_ul,",",""),
@@ -40,7 +63,8 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
          lamprey_copies_ul=str_replace_all(lamprey_copies_ul,",","")) %>% 
   mutate(across(contains("copies_ul"),~as.numeric(.)))
 
-qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv'))
+qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv')) %>% 
+  rename(tubeID=sample)
 
 #### METABARCODING DATA ####
 

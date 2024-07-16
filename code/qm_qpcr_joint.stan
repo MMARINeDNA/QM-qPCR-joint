@@ -95,7 +95,7 @@ transformed parameters {
   
   // for QM part
   vector[N_species] alpha; // vector of coefficients (log-efficiencies relative to reference taxon)
-  vector[N_obs_mb_samp] eta_samp[N_species]; // overdispersion coefficients
+  //vector[N_obs_mb_samp] eta_samp[N_species]; // overdispersion coefficients
   vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
   matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
   matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
@@ -109,7 +109,10 @@ transformed parameters {
   
   // qPCR standard curves
   //slot knowns and unknowns into a common vector, where unknowns are treated as params and knowns are treated as data 
-  Concentration[std_idx] = known_conc; //log10 scale
+  
+  // concentration_stds
+  /// concentration_unks
+  Concentration[std_idx] = known_conc; //log scale
   Concentration[unkn_idx] = envir_concentration;
   
   for(i in 1:Nobs_qpcr){
@@ -118,7 +121,7 @@ transformed parameters {
 
     sigma[plateSample_idx[i]] = exp(gamma_0 + gamma_1[plate_idx[i]]*Concentration[plateSample_idx[i]]);
                                   
-    theta[plateSample_idx[i]] = inv_logit(phi_0 + phi_1*Concentration[plateSample_idx[i]]);
+    theta[plateSample_idx[i]] = inv_logit(phi_0 + phi_1*exp(Concentration[plateSample_idx[i]]));
                                   
   }
   // QM MODEL PIECES
@@ -130,19 +133,20 @@ transformed parameters {
 
   //tau = rep_vector(tau_base,N_species-1);
   eta_mock[N_species] = rep_vector(0.0,N_obs_mock); // final species is zero (reference species)
-  eta_samp[N_species] = rep_vector(0.0,N_obs_mb_samp); // final species is zero (reference species)
+  //eta_samp[N_species] = rep_vector(0.0,N_obs_mb_samp); // final species is zero (reference species)
   // random effects vector of vectors
   for (l in 1:(N_species-1)) {
     eta_mock[l] = eta_mock_raw[l] * tau[l] ; // non-centered param eta_mock ~ normal(0,tau)
-    eta_samp[l] = eta_samp_raw[l] * tau[l] ; // non-centered param eta_samp ~ normal(0,tau)
+    //eta_samp[l] = eta_samp_raw[l] * tau[l] ; // non-centered param eta_samp ~ normal(0,tau)
   }
   
-  log_B[,N_species] = envir_concentration;
-
+  for(n in 1:Nobs_qpcr) {
+    log_B[n,N_species] = envir_concentration; // this should be only samples shared between qPCR and qMB
+  }
 // from qPCR estimates, alphas, and etas we can calculate sample-specific mu
   for (n in 1:N_species) {
-    logit_val_samp[,n] = model_matrix_samp * append_row((log_B[,n] - log_B[,N_species]),alpha[n])+ 
-                            eta_samp[n];
+    logit_val_samp[,n] = model_matrix_samp * append_row((log_B[,n] - log_B[,N_species]),alpha[n]); 
+                            //+eta_samp[n];
     logit_val_mock[,n] = alr_mock_true_prop[,n] + 
                               model_vector_a_mock * alpha[n] + 
                               eta_mock[n];
@@ -189,9 +193,9 @@ model {
   gamma_1 ~ normal(0,5);
   gamma_0 ~ normal(-2,1);
   
-  for(i in 1:(N_species-1)){
-    log_B[,i] ~ normal(0,2); //log10 scale
-  }
+  //for(i in 1:(N_species-1)){
+  //  log_B[,i] ~ normal(0,2); //log10 scale
+  //}
   
   envir_concentration ~ normal(0, 2); //log10 scale
 

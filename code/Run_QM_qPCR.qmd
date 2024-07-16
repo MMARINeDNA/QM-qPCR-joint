@@ -42,13 +42,14 @@ We can prepare the data we just loaded to be input into our Stan model, using so
 
 ```{r}
 # metabarcoding
-stan_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
+formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_1_treatment_envir <- "Sample",
                                                      Level_2_treatment_envir <- "tech",
                                                      Level_3_treatment_envir <- NA,
                                                      Level_1_treatment_mock <- "Sample",
                                                      Level_2_treatment_mock <- "Rep",
-                                                     Level_3_treatment_mock <- NA) %>% 
+                                                     Level_3_treatment_mock <- NA) 
+stan_metabarcoding_data <- formatted_metabarcoding_data%>% 
   makeDesign(N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
 
 #qPCR
@@ -74,6 +75,7 @@ Run Stan
 ```{r}
 QM_qPCR_joint_out <- QM_bayes(m,
                          stan_data_joint,
+                         NCHAINS=1,
                          WARMUP = 500,
                          ITER = 2000)
 # saveRDS(QM_bayes_out, file = here("model_output/QM_bayes_MFU.RDS"))

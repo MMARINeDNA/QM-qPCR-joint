@@ -91,13 +91,14 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
   ))
 }
 
+# prep qPCR data
 # function takes two dataframe inputs, for qPCR unknown samples, and the qPCR standards
 format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
   
   #unknowns
   qPCR_1<- qPCR_unknowns %>% 
     # pick columns we care about and rename
-    select(qPCR, well,sample,type,task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    select(qPCR, well,type,task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     # remove completely empty rows
     filter(!is.na(qPCR)) %>%
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
@@ -108,24 +109,24 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
   #standards
   qPCR_2 <- qPCR_standards %>% 
     # pick columns we care about and rename
-    select(qPCR, well,sample,type,task=hake_task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    select(qPCR, well,tubeID,type,task=hake_task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
     mutate(Ct=as.numeric(Ct) %>% round(2))%>% 
     filter(task=="STANDARD") %>% 
   # HAD AN ISSUE WITH NON-UNIQUE SAMPLE NAMES BETWEEN STDS AND UNKS BECAUSE OF '5' BEING USED AS SAMPLE ID FOR STANDARDS WITH CONC. OF 5 COPIES
-    mutate(sample=ifelse(sample=="5","5C",sample))
+    mutate(tubeID=ifelse(tubeID=="5","5C",tubeID))
   
   # bind standards and unknowns
   qPCRdata <- qPCR_1 %>% 
     bind_rows(qPCR_2) %>% 
     mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
     mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
-    unite(c(qPCR,sample), col = "plateSample", remove = F) %>% 
+    unite(c(qPCR,tubeID), col = "plateSample", remove = F) %>% 
     mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>% 
     group_by(plateSample) %>% 
     add_tally(Ct==99) %>% 
-    filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these. 
+    # filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these.
     dplyr::select(-n) %>%
     ungroup() %>% 
     mutate(plateSample_idx = match(plateSample, unique(plateSample)))
@@ -143,6 +144,7 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
   
 }
 
+# make stan data for qPCR part
 prepare_stan_data_qPCR <- function(qPCRdata){
   
   type <- qPCRdata %>% distinct(plateSample, task) %>% pull(task)
@@ -167,6 +169,16 @@ prepare_stan_data_qPCR <- function(qPCRdata){
   
 }
 
+# a last piece is we need a sample identifier across MB and qPCR data
+prepare_qPCR_mb_join <- function(input_metabarcoding_data,qPCR_unknowns){
+  
+  mb_samps<-unique(input_metabarcoding_data$Sample)
+  qPCR_samps <- unique(qPCR_unknowns$tubeID)
+  inner <- intersect(mb_samps,qPCR_samps)
+  
+  qPCR_mb_link <- which(qPCR_unknowns$tubeID%in%mb_samps)
+    
+}
 ### END qPCR part ###
 
   # additive log-ratio transform of a matrix; defined here, used in makeDesign()
