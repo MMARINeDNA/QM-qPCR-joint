@@ -56,8 +56,11 @@ stan_metabarcoding_data <- formatted_metabarcoding_data%>%
 stan_qPCR_data <- format_qPCR_data(qPCR_unk,qPCR_std) %>% 
   prepare_stan_data_qPCR()
 
-# join the two lists
-stan_data_joint <- c(stan_qPCR_data,stan_metabarcoding_data)
+# linking data
+qPCR_mb_link <- prepare_stan_qPCR_mb_join(mfu,qPCR_unk,qPCR_std,link_species = "Merluccius productus")
+
+# join the three lists
+stan_data_joint <- c(stan_qPCR_data,stan_metabarcoding_data,qPCR_mb_link)
 ```
 
 Now the data should be ready for Stan. We compile the Stan model itself:
@@ -66,6 +69,9 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 
 ```{r}
 m <- here('code','qm_qpcr_joint.stan')
+
+#IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
+# mc <- cat(stan_model(m)@model_code)
 ```
 
 # Run
@@ -73,12 +79,38 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-QM_qPCR_joint_out <- QM_bayes(m,
-                         stan_data_joint,
-                         NCHAINS=1,
-                         WARMUP = 500,
-                         ITER = 2000)
-# saveRDS(QM_bayes_out, file = here("model_output/QM_bayes_MFU.RDS"))
+jointMod = stan(file = m ,
+                data = stan_data_joint,
+                verbose = FALSE,
+                chains = 3,
+                thin = 1,
+                warmup = 100,
+                iter = 400,
+                control = list(adapt_init_buffer = 175,
+                                  max_treedepth=12,
+                                  stepsize=0.01,
+                                  adapt_delta=0.7,
+                                  metric="diag_e"),
+                   # pars = stan_pars,
+                refresh = 10,
+                boost_lib = NULL
+                )
+```
+
+```{r}
+ests <- summary(jointMod,par="log_B")$summary
+ests2 <- summary(jointMod,par="log_B_raw")$summary
+
+```
+
+
+```{r}
+# QM_qPCR_joint_out <- QM_qPCR_bayes(m,
+#                          stan_data_joint,
+#                          NCHAINS=3,
+#                          WARMUP = 100,
+#                          ITER = 300)
+# write_rds(QM_qPCR_joint_out, file = here("model_output/QM_qPCR_MiFish.rds"))
 #QM_bayes_out <- readRDS(here("model_output/QM_bayes_MFU.RDS"))
 #QM_bayes_out$Bayes_estimates
 # QM_bayes_out$Bayes_alpha_est

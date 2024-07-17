@@ -12,11 +12,6 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
                                       Level_3_treatment_mock  #nested within level2 units, e.g., technical replicates of biological replicates (NA if absent)
                                       ){
   require(tidyverse)
-  #require(rlang)
-
-  # level1 <- rlang::enquo(Level_1_treatment) #e.g., unique sampling site
-  # level2 <- rlang::enquo(Level_2_treatment) #nested within level1 units, e.g., unique biological samples
-  # level3 <- rlang::enquo(Level_3_treatment) #nested within level2 units, e.g., technical replicates of biological samples
   
   Observation <- input_metabarcoding_data
     
@@ -98,7 +93,7 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
   #unknowns
   qPCR_1<- qPCR_unknowns %>% 
     # pick columns we care about and rename
-    select(qPCR, well,type,task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    select(qPCR, well,tubeID,type,task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     # remove completely empty rows
     filter(!is.na(qPCR)) %>%
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
@@ -131,17 +126,36 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     ungroup() %>% 
     mutate(plateSample_idx = match(plateSample, unique(plateSample)))
   
-  #QC filter (old?)
-  # qPCRdata <- qPCRdata %>%
-  #   group_by(Plate, plateSample) %>% 
-  #   mutate(sdCt = sd(Ct)) %>% 
-  #   filter(sdCt < 1.5 | sdCt > 20) %>% #really bad triplicates; don't throw out instances where 1 or 2 out of 3 was a detection (which, because Ct = 99 for nondetect, inflates the sd)
-  #   ungroup() %>% 
-  #   mutate(plateSample_idx = match(plateSample, unique(plateSample))) #reindex
-  
-  
   return(qPCRdata)
   
+}
+
+# a last piece is we need a sample identifier across QM and qPCR data
+# We need to link unique qPCR biological samples to unique QM samples
+prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,qPCR_unknowns, qPCR_standards,link_species="Merluccius productus"){
+
+  qpcr_formatted <- format_qPCR_data(qPCR_unknowns,qPCR_standards)
+  
+  mb_link_1 <- input_metabarcoding_data %>% 
+    mutate(mb_link=match(Sample,unique(Sample))) %>% 
+    distinct(Sample,.keep_all = T)
+  
+  mb_link_2 <- qpcr_formatted %>% 
+    distinct(plateSample,plateSample_idx,.keep_all = T) %>% 
+    left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
+    dplyr::select(plateSample_idx,mb_link) %>% 
+    arrange(plateSample_idx) %>% 
+    filter(!is.na(mb_link))
+  
+  # get the index of the right species
+  qpcr_mb_link_sp_idx <- match(link_species,sort(unique(input_metabarcoding_data$species)))
+  
+  # return just the link vector
+  return(list(
+    # datout = mb_link_2,
+    N_mb_link = nrow(mb_link_2), # length of the linking vector
+    mb_link_sp_idx= qpcr_mb_link_sp_idx,
+    mb_link_idx=mb_link_2$mb_link))
 }
 
 # make stan data for qPCR part
@@ -157,7 +171,7 @@ prepare_stan_data_qPCR <- function(qPCRdata){
     plate_idx = qPCRdata$plate_idx, 
     std_idx =  which(type=="STANDARD"),
     unkn_idx = which(type == "UNKNOWN"),
-    plateSample_idx = qPCRdata$plateSample_idx, 
+    plateSample_idx = qPCRdata$plateSample_idx,
     y = qPCRdata$Ct,
     z = qPCRdata$z,
     known_concentration = qPCRdata %>% filter(task == "STANDARD") %>% distinct(plateSample,.keep_all=T) %>% pull(copies_ul),
@@ -169,16 +183,6 @@ prepare_stan_data_qPCR <- function(qPCRdata){
   
 }
 
-# a last piece is we need a sample identifier across MB and qPCR data
-prepare_qPCR_mb_join <- function(input_metabarcoding_data,qPCR_unknowns){
-  
-  mb_samps<-unique(input_metabarcoding_data$Sample)
-  qPCR_samps <- unique(qPCR_unknowns$tubeID)
-  inner <- intersect(mb_samps,qPCR_samps)
-  
-  qPCR_mb_link <- which(qPCR_unknowns$tubeID%in%mb_samps)
-    
-}
 ### END qPCR part ###
 
   # additive log-ratio transform of a matrix; defined here, used in makeDesign()
@@ -355,59 +359,15 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
   
 ###########################################
 ###########################################
-QM_likelihood <- function(stanmodelname, stan_metabarcoding_data){
-    M <- stan_model(stanmodelname)
-    
-    stanOpt <- optimizing(M, data=stan_metabarcoding_data, iter=30000,draws=0,
-                          verbose=T,  
-                          tol_param=1e-40,
-                          algorithm="LBFGS",
-                          hessian = TRUE)
-    
-    MLest <- stanOpt$par[grep("int_samp_small", names(stanOpt$par))] %>%
-      matrix(ncol = stan_metabarcoding_data$N_species) %>% 
-      as.data.frame()
-      names(MLest) <- stan_metabarcoding_data$sp_list$species
-      rownames(MLest) <- unique(stan_metabarcoding_data$sample_vector) %>% sort()
-    ML_a <- stanOpt$par[grep("alpha\\[", names(stanOpt$par))]  
-    ML_a <- data.frame("alpha_est" = ML_a, 
-               "species" = stan_metabarcoding_data$sp_list$species)
-    
-    
-    return(list(
-      ML_modelfit = stanOpt,
-      ML_estimates = MLest,
-      ML_alpha_est = ML_a
-    ))
-    
-  }
   
-  #example; note this can fail stochastically; run it several times if need be
-  # ML_out <- QM_likelihood(here("quant_metabar_rosetta_noSampleEta.stan"), stan_metabarcoding_data)
-###########################################
-###########################################
-  
-###########################################
-###########################################
-  
-QM_bayes <- function(stanmodelname, stan_metabarcoding_data, NCHAINS = 3, WARMUP = 500, ITER = 1500){
+QM_qPCR_bayes <- function(stanmodelname, stan_joint_data, NCHAINS = 3, WARMUP = 500, ITER = 1500){
   require(tidyverse)
   require(rstan)
   rstan_options(auto_write = TRUE)
   options(mc.cores = parallel::detectCores())
+
   
-  
-  # stan_pars <- c( 
-  #   "alpha",
-  #   "beta",
-  #   "eta_mock",
-  #   "tau",
-  #   "mu_samp",
-  #   "mu_mock",
-  #   "int_samp_small"
-  # )
-  
-    stanMod = stan(file = stanmodelname ,data = stan_metabarcoding_data,
+    stanMod = stan(file = stanmodelname ,data = stan_joint_data,
                    verbose = FALSE, chains = NCHAINS, thin = 1,
                    warmup = WARMUP, iter = ITER,
                    control = list(adapt_init_buffer = 175,
@@ -521,41 +481,4 @@ QM_bayes <- function(stanmodelname, stan_metabarcoding_data, NCHAINS = 3, WARMUP
     
     return(fit_out)
   }
-  
-  ## ML example
-  # library(here)
-  # ML_out <- run_QM_model(input_metabarcoding_RDS = here("../example_data/padden_sample.rds"),
-  #                        input_mock_comm_RDS = here("/Volumes/GoogleDrive/My Drive/RPKDesktop/github_repos/quantitative_salmon_culverts/Input/mockcommunity/MiFishmockdata_noZ.RDS"),
-  #                        stanmodel = here("quant_metabar_rosetta_noSampleEta.stan"),
-  #                        method = "ML"
-  #                )
-  # # ML_out$ML_out$ML_estimates %>% 
-  #   rownames_to_column("sample") %>% 
-  #   pivot_longer(-sample, names_to = "species") %>% 
-  #   separate(col = sample, into = c("time", "creek", "station", "biol"), remove = FALSE) %>% 
-  #   filter(value > 0.001) %>% 
-  #   ggplot(aes(x = sample, fill = species, y = value)) +
-  #     geom_col() +
-  #     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-      
-  ##bayesian example
-  # library(here)
-  # Bayes_out <- run_QM_model(input_metabarcoding_RDS = here("../example_data/padden_sample.rds"),
-  #                           input_mock_comm_RDS = here("/Volumes/GoogleDrive/My Drive/RPKDesktop/github_repos/quantitative_salmon_culverts/Input/mockcommunity/MiFishmockdata_noZ.RDS"),
-  #                           stanmodel = here("quant_metabar_rosetta_noSampleEta.stan"),
-  #                           method = "Bayes"
-  # )
-  # Bayes_out$QM_bayes_out$Bayes_estimates %>%
-  #   rownames_to_column("sample") %>%
-  #   pivot_longer(-sample, names_to = "species") %>%
-  #   separate(col = sample, into = c("time", "creek", "station", "biol"), remove = FALSE) %>%
-  #   filter(value > 0.001) %>%
-  #   ggplot(aes(x = sample, fill = species, y = value)) +
-  #   geom_col() +
-  #   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-  # saveRDS(Bayes_out, "mod_fit_aug21.rds")
-  # 
-  # 
-  # 
-  # 
-  # 
+

@@ -9,8 +9,7 @@ data {
   int std_idx[NstdSamples]; //index relative to NSamples; which ones are the standards?
   int unkn_idx[NSamples_qpcr-NstdSamples]; //index relative to total samples; which ones are the unknown/field samples?
   int plateSample_idx[Nobs_qpcr]; //index of unique combinations of plate and biological sample
-  
-  
+ 
   vector[Nobs_qpcr] y; //Ct observations
   int z[Nobs_qpcr]; //indicator; z = 1 if a Ct was observed, z = 0 otherwise
   vector[NstdSamples] known_concentration; //known concentration (copies/vol) in standards
@@ -24,7 +23,7 @@ data {
   
   // DATA FOR METABARCODING PART OF THE MODEL
   int N_species; // Number of species in data
-  int N_obs_mb_samp;  // Number of observed samples 
+  int N_obs_mb_samp;  // Number of observed samples, also the number of groups for qPCR samps to link to MB samps
   int N_obs_mb_samp_small;  // Number of observed samples for individual sites.
   int N_obs_mock; // Number of observed mock samples
 
@@ -52,6 +51,11 @@ data {
   real tau_prior[2]; // Parameters of gamma distribution for prior on tau (observation precision)
   
   // END DATA FOR METABARCODING
+  
+  // DATA FOR LINKING QM AND QPCR
+  int N_mb_link; //How many qpCR samples have a match in a MB sample
+  int mb_link_idx[N_mb_link]; // index linking qpcr samples to mb samples
+  int mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
 
 }
 
@@ -61,7 +65,7 @@ transformed data {
   vector[NstdSamples] known_conc; // log known concentration of qPCR standards
   matrix[N_obs_mb_samp,N_b_samp_col+1] model_matrix_samp; // QM design matrix (samples by species), where the last column denotes Npcr cycles
   
-  known_conc = log10(known_concentration);
+  known_conc = log(known_concentration);
     
   model_matrix_samp = append_col(model_matrix_b_samp, model_vector_a_samp); //extend design matrix to include Npcr cycles as the last column
   
@@ -84,6 +88,10 @@ parameters {
   real phi_0;
   real<lower=0> phi_1;
   vector[NSamples_qpcr-NstdSamples] envir_concentration; // DNA concentration in unknown samples
+  
+  //for linking 
+  matrix[N_obs_mb_samp,N_species] log_B_raw; // estimated true copy numbers by sample, where the last column is the reference species
+
 }
 
 transformed parameters {
@@ -99,6 +107,8 @@ transformed parameters {
   vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
   matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
   matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
+  
+  // for linking
   matrix[N_obs_mb_samp,N_species] log_B; // estimated true copy numbers by sample, where the last column is the reference species
   
  // local variables declaration
@@ -124,6 +134,13 @@ transformed parameters {
     theta[plateSample_idx[i]] = inv_logit(phi_0 + phi_1*exp(Concentration[plateSample_idx[i]]));
                                   
   }
+  
+  // Link to QM
+  for(i in 1:N_obs_mb_samp){
+    log_B[i,!] = log_B_raw;
+    log_B[i,mb_link_sp_idx] = Concentration[plateSample_idx[mb_link_idx[i]]];
+  };
+  
   // QM MODEL PIECES
   
   // Fixed effects components
@@ -139,10 +156,7 @@ transformed parameters {
     eta_mock[l] = eta_mock_raw[l] * tau[l] ; // non-centered param eta_mock ~ normal(0,tau)
     //eta_samp[l] = eta_samp_raw[l] * tau[l] ; // non-centered param eta_samp ~ normal(0,tau)
   }
-  
-  for(n in 1:Nobs_qpcr) {
-    log_B[n,N_species] = envir_concentration; // this should be only samples shared between qPCR and qMB
-  }
+
 // from qPCR estimates, alphas, and etas we can calculate sample-specific mu
   for (n in 1:N_species) {
     logit_val_samp[,n] = model_matrix_samp * append_row((log_B[,n] - log_B[,N_species]),alpha[n]); 
@@ -193,9 +207,9 @@ model {
   gamma_1 ~ normal(0,5);
   gamma_0 ~ normal(-2,1);
   
-  //for(i in 1:(N_species-1)){
-  //  log_B[,i] ~ normal(0,2); //log10 scale
-  //}
+  for(i in 1:N_species){
+   log_B_raw[,i] ~ normal(0,2);
+  }
   
   envir_concentration ~ normal(0, 2); //log10 scale
 
