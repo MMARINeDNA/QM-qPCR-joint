@@ -90,7 +90,7 @@ parameters {
   vector[NSamples_qpcr-NstdSamples] envir_concentration; // DNA concentration in unknown samples
   
   //for linking 
-  matrix[N_obs_mb_samp,N_species] log_B_raw; // estimated true copy numbers by sample, where the last column is the reference species
+  matrix[N_obs_mb_samp,N_species-1] log_B_raw; // estimated true copy numbers by sample, minus the qPCR link species (hake)
 
 }
 
@@ -109,7 +109,7 @@ transformed parameters {
   matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
   
   // for linking
-  matrix[N_obs_mb_samp,N_species] log_B; // estimated true copy numbers by sample, where the last column is the reference species
+  matrix[N_obs_mb_samp,N_species] log_B; // estimated true copy numbers by sample, including the link species
   
  // local variables declaration
   matrix[N_obs_mb_samp,N_species] logit_val_samp;
@@ -121,7 +121,7 @@ transformed parameters {
   //slot knowns and unknowns into a common vector, where unknowns are treated as params and knowns are treated as data 
   
   // concentration_stds
-  /// concentration_unks
+  // concentration_unks
   Concentration[std_idx] = known_conc; //log scale
   Concentration[unkn_idx] = envir_concentration;
   
@@ -136,9 +136,16 @@ transformed parameters {
   }
   
   // Link to QM
-  for(i in 1:N_obs_mb_samp){
-    log_B[i,!] = log_B_raw;
-    log_B[i,mb_link_sp_idx] = Concentration[plateSample_idx[mb_link_idx[i]]];
+  for(i in 1:N_species){
+    for(j in 1:N_obs_mb_samp){
+      if(i==mb_link_sp_idx){ // if index is equal to link species, fill in qpcr estimate
+        log_B[j,i] = log(Concentration[plateSample_idx[mb_link_idx[j]]]); 
+      }else if(i < mb_link_sp_idx){ //if index is less than link sp. index, fill from log_B_raw
+        log_B[j,i] = log_B_raw[j,i];
+      }else{ //finally, if index is greater than link sp. index, fill from log_B_raw but shifted by one because of missing column for link species
+        log_B[j,i] = log_B_raw[j,i-1];
+      }
+    }
   };
   
   // QM MODEL PIECES
@@ -207,7 +214,7 @@ model {
   gamma_1 ~ normal(0,5);
   gamma_0 ~ normal(-2,1);
   
-  for(i in 1:N_species){
+  for(i in 1:(N_species-1)){
    log_B_raw[,i] ~ normal(0,2);
   }
   
@@ -218,10 +225,10 @@ model {
   
   // QM part
   for(i in 1:N_obs_mb_samp){ 
-    sample_data[i,] ~  multinomial(transpose(mu_samp[i,])); // Multinomial sampling of mu's (proportions in field samples)
+    sample_data[i,] ~  multinomial(transpose(mu_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
   }
   for(i in 1:N_obs_mock){
-    mock_data[i,]   ~  multinomial(transpose(mu_mock[i,])); // Multinomical sampling of mu's (proportions in mocks)
+    mock_data[i,]   ~  multinomial(transpose(mu_mock[i,])); // Multinomial sampling of mu (proportions in mocks)
   }
   // Priors
   for(i in 1:(N_species-1)){
