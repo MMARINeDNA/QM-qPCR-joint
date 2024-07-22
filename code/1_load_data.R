@@ -191,6 +191,7 @@ mfu <- mfu %>%
   ungroup() %>% 
   filter(!grepl("positive",Project)) %>%
   filter(!grepl("NTC",Project)) %>%
+  filter(Project == "52193") %>%  #just keep hake-cruise samples
   mutate(sample = as.numeric(sample)) %>% 
   # separate(Sample_name, into = c("Primer", "Project", "sample", "Dilution", "Rep", "Well"), sep = c("-|_")) %>% 
   left_join(meta %>% select(sample, station, depth, lat, lon))
@@ -199,10 +200,14 @@ mfu <- mfu %>%
 
 keep <- intersect(unique(mfu$BestTaxon), template_props$Species) %>% intersect(fish)
 keep <- c(keep, "Zz_Engraulis mordax")
+keep <- keep[-which(keep == "Oncorhynchus tshawytscha")] #remove for the moment, pending better tissue sample
 mfu$BestTaxon[mfu$BestTaxon == "Engraulis mordax"] <- "Zz_Engraulis mordax"
 mfu$BestTaxon[mfu$BestTaxon == "Merluccius"] <- "Merluccius productus"
+mfu$BestTaxon[mfu$BestTaxon == "Sardinops"] <- "Sardinops sagax"
+mfu$BestTaxon[mfu$BestTaxon == "Clupea"] <- "Clupea pallasii"
+mfu$BestTaxon[mfu$BestTaxon == "Clupeidae"] <- "Clupea pallasii"
+mfu$BestTaxon[mfu$BestTaxon == "Trachurus"] <- "Trachurus symmetricus"
 
-###NOTE, if calibrating, change BestTaxon to Species, and:
 mfu <- mfu %>%
   rename(Species = BestTaxon) %>% 
   filter(Species %in% keep) #just take fish species in mock
@@ -239,6 +244,9 @@ mock <- mock %>%
          species = Species) %>% 
   arrange(species)
 
+#samples w no hake MB reads  
+no_hake_MB <- colnames(mfu)[2:ncol(mfu)][which(mfu[which(mfu$Species == "Merluccius productus"), 2:ncol(mfu)] == 0)] %>% as.numeric()
+
 mfu <- mfu %>% 
   pivot_longer(cols = -Species, names_to = "Sample", values_to = "Nreads") %>% 
   group_by(Sample) %>%
@@ -246,6 +254,7 @@ mfu <- mfu %>%
   filter(totalReads > 1000) %>% #impose total read-depth min
   ungroup() %>% 
   select(-totalReads) %>% 
+  filter(!Sample %in% no_hake_MB) %>%  #filter out samples w no hake MB reads
   mutate(biol = 1, tech = 1) %>% 
   rename(species = Species) %>% 
   mutate(station = match(Sample, unique(Sample))) #let station = unique sampling location, treating different depths in the same x-y plane as independent
