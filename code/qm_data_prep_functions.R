@@ -1,5 +1,5 @@
 # Metabarcoding calibration model function
-# RPK Aug 2022; Revised March 2023
+# RPK Aug 2022; Revised ORL July 2024
 
 ################DEFINE SUB-FUNCTIONS
 
@@ -285,7 +285,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     if(N_S == 1){
       formula_b <- eval(NOM) ~ 1  
     } else {
-      formula_b <- eval(NOM) ~ S
+      formula_b <- eval(NOM) ~ 0+S
     }
     
     model_frame <- model.frame(formula_b, p_samp_all)
@@ -358,127 +358,17 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
   
   
 ###########################################
-###########################################
-  
-QM_qPCR_bayes <- function(stanmodelname, stan_joint_data, NCHAINS = 3, WARMUP = 500, ITER = 1500){
-  require(tidyverse)
-  require(rstan)
-  rstan_options(auto_write = TRUE)
-  options(mc.cores = parallel::detectCores())
+### Setting Initial Values
+stan_init_f1 <- function(n.chain,N_obs_mb,N_species){
+  set.seed(78345)
+  A <- list()
+  for(i in 1:n.chain){
+    A[[i]] <- list(
+      log_B_raw=matrix(data=rnorm(N_obs_mb*N_species,mean=5,sd=2),nrow = N_obs_mb,ncol=N_species),
+      alpha_raw=jitter(rep(0,N_species-1),factor=0.5)
+    )
+  }  
+  return(A)
+}
 
-  
-    stanMod = stan(file = stanmodelname ,data = stan_joint_data,
-                   verbose = FALSE, chains = NCHAINS, thin = 1,
-                   warmup = WARMUP, iter = ITER,
-                   control = list(adapt_init_buffer = 175,
-                                  max_treedepth=12,
-                                  stepsize=0.01,
-                                  adapt_delta=0.7,
-                                  metric="diag_e"),
-                   # pars = stan_pars,
-                   refresh = 10,
-                   boost_lib = NULL 
-    )  
-    
-    
-    mean_est <- summary(stanMod, par = "int_samp_small")$summary[,1] %>%
-      matrix(ncol = stan_metabarcoding_data$N_species, byrow = TRUE) %>% 
-      as.data.frame()
-      names(mean_est) <- stan_metabarcoding_data$sp_list$species
-      rownames(mean_est) <- unique(stan_metabarcoding_data$sample_vector) %>% sort()
-    ci25_est <- summary(stanMod, par = "int_samp_small")$summary[,5] %>%
-      matrix(ncol = stan_metabarcoding_data$N_species, byrow = TRUE) %>% 
-      as.data.frame()
-      names(ci25_est) <- stan_metabarcoding_data$sp_list$species
-      rownames(ci25_est) <- unique(stan_metabarcoding_data$sample_vector) %>% sort()
-    
-    ci75_est <- summary(stanMod, par = "int_samp_small")$summary[,7] %>%
-      matrix(ncol = stan_metabarcoding_data$N_species, byrow = TRUE) %>% 
-      as.data.frame()
-      names(ci75_est) <- stan_metabarcoding_data$sp_list$species
-      rownames(ci75_est) <- unique(stan_metabarcoding_data$sample_vector) %>% sort()
-    
-    mean_a_est <- summary(stanMod, par = "alpha")$summary[,1]
-    mean_a_est <- data.frame("alpha_est" = mean_a_est, 
-                       "species" = stan_metabarcoding_data$sp_list$species)
-    
-    #unique(meta.samples$sample)
-    
-    return(list(
-      Bayes_modelfit = stanMod,
-      Bayes_estimates = mean_est,
-      Bayes_25ci = ci25_est,
-      Bayes_75ci = ci75_est,
-      Bayes_alpha_est = mean_a_est
-    ))
-    
-  }
-  
-##example
-  #QM_bayes_out <- QM_bayes(here("quant_metabar_rosetta_noSampleEta.stan"), stan_metabarcoding_data)
-  #QM_bayes_out$Bayes_estimates
-  ###########################################
-  ###########################################
-  
-  
-  
-  ########################      
-  
-  #all-in-one function that calls those above:
-  #inputs == input_csv, stanmodelname
-  #output == fitted stan model object
-  
-  run_QM_model <- function(input_metabarcoding_RDS, 
-                                      input_mock_comm_RDS, 
-                                      N_pcr_cycles = 43,
-                                      stanmodel, 
-                                      method = "ML"  # "ML" or "Bayes"
-                                      ){
-    require(dplyr)
-    require(here)
-    
-    
-    metabarcoding_data <- format_metabarcoding_data(input_metabarcoding_RDS,
-                                                    input_mock_comm_RDS)
-    
-    stan_metabarcoding_data <- makeDesign(metabarcoding_data, N_pcr_cycles = N_pcr_cycles) 
-    
-    if (method == "ML"){
-      ML_out <- QM_likelihood(stanmodel, stan_metabarcoding_data)
-    } 
-    
-    if (method == "Bayes"){
-      QM_bayes_out <- QM_bayes(stanmodel, stan_metabarcoding_data)
-    } 
-    
-    if (!method %in% c("ML", "Bayes")) {
-      print("Pick a valid method: `ML' or `Bayes'")
-    }
-    
-    
-    if (method == "ML"){
-      ML_out <- QM_likelihood(stanmodel, stan_metabarcoding_data)
-    } 
-    
-    if (method == "Bayes"){
-      QM_bayes_out <- QM_bayes(stanmodel, stan_metabarcoding_data)
-    } 
-    
-    if (!method %in% c("ML", "Bayes")) {
-      print("Pick a valid method: `ML' or `Bayes'")
-    }
-    
-    
-    if (method == "ML"){
-      fit_out <- list(metabarcoding_data = metabarcoding_data,
-                      ML_out = ML_out)
-    } 
-    
-    if (method == "Bayes"){
-      fit_out <- list(metabarcoding_data = metabarcoding_data,
-                      QM_bayes_out = QM_bayes_out)
-    }
-    
-    return(fit_out)
-  }
 

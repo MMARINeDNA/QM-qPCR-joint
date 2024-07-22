@@ -77,7 +77,7 @@ parameters {
   //real<lower=0> tau_base; // single overdispersion sd for multinomial.
   vector<lower=0>[N_species-1] tau; // single overdispersion sd for multinomial.
   vector[N_species-1] alpha_raw;
-  vector[N_obs_mb_samp] eta_samp_raw[N_species-1]; //overdispersion
+  //vector[N_obs_mb_samp] eta_samp_raw[N_species-1]; //overdispersion
   vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion
   
   // for qPCR part
@@ -90,7 +90,7 @@ parameters {
   vector[NSamples_qpcr-NstdSamples] envir_concentration; // DNA concentration in unknown samples
   
   //for linking 
-  matrix[N_obs_mb_samp,N_species-1] log_B_raw; // estimated true copy numbers by sample, minus the qPCR link species (hake)
+  matrix[N_obs_mb_samp,N_species] log_B_raw; // estimated true copy numbers by sample, minus the qPCR link species (hake)
 
 }
 
@@ -139,14 +139,14 @@ transformed parameters {
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
       if(i==mb_link_sp_idx){ // if index is equal to link species, fill in qpcr estimate
-        log_B[j,i] = log(Concentration[plateSample_idx[mb_link_idx[j]]]); 
-      }else if(i < mb_link_sp_idx){ //if index is less than link sp. index, fill from log_B_raw
+        log_B[j,i] = Concentration[plateSample_idx[mb_link_idx[j]]]; 
+      }else{ //finally, if index is greater than link sp. index
         log_B[j,i] = log_B_raw[j,i];
-      }else{ //finally, if index is greater than link sp. index, fill from log_B_raw but shifted by one because of missing column for link species
-        log_B[j,i] = log_B_raw[j,i-1];
       }
     }
   };
+//  print("rows",log_B[7,]);
+//  print("columns",log_B[,2]);
   
   // QM MODEL PIECES
   
@@ -215,7 +215,7 @@ model {
   gamma_0 ~ normal(-2,1);
   
   for(i in 1:(N_species-1)){
-   log_B_raw[,i] ~ normal(0,2);
+   log_B_raw[,i] ~ normal(0,10);
   }
   
   envir_concentration ~ normal(0, 2); //log10 scale
@@ -232,7 +232,7 @@ model {
   }
   // Priors
   for(i in 1:(N_species-1)){
-    eta_samp_raw[i] ~ std_normal(); // N(0,tau)
+    // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
     eta_mock_raw[i] ~ std_normal(); // N(0,tau)
   }
   alpha_raw ~ std_normal(); // prior of normal(alpha_prior[1],alpha_prior[2]);

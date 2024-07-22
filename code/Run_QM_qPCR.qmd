@@ -79,23 +79,52 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
+n.chains <- 1
+n.warm <- 300
+n.samps <- 300
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
-                chains = 3,
+                chains = n.chains,
                 thin = 1,
-                warmup = 100,
-                iter = 400,
+                warmup = n.warm,
+                iter = n.warm+n.samps,
                 control = list(adapt_init_buffer = 175,
                                   max_treedepth=12,
                                   stepsize=0.01,
                                   adapt_delta=0.7,
                                   metric="diag_e"),
-                   # pars = stan_pars,
+                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species),
                 refresh = 10,
-                boost_lib = NULL
+                boost_lib = NULL,
+                sample_file="stan_samples.csv"
                 )
 ```
+
+```{r}
+stansamps <- read_csv(here('code','stan_samples.csv'),
+                      skip=25,
+                      col_select=contains("mu_samp"))
+```
+
+```{r}
+# try to compare a sample of mu to observed
+mu_samp_est <- stansamps %>% slice(nrow(stansamps)-5) %>% unlist()
+mu_samp_obs <- as.matrix(stan_data_joint$sample_data/rowSums(stan_data_joint$sample_data)) %>% c()
+mu_samp_check <- tibble(est=mu_samp_est,ob=c(mu_samp_obs))
+mu_samp_check %>% 
+  ggplot(aes(est,ob))+
+  geom_point()+
+  geom_abline(slope=1,intercept=0,linetype=2)+
+  labs(x="Estimated",y="Observed")
+# obviously something's not wokring
+```
+
+
+```{r}
+shinystan::launch_shinystan(jointMod)
+```
+
 
 ```{r}
 ests <- summary(jointMod,par="log_B")$summary
