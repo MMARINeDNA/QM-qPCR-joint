@@ -3,10 +3,10 @@ data {
   
   int Nplates; // number of PCR plates
   int Nobs_qpcr; // number of field observations for qPCR
-  int NSamples_qpcr; //number of unique biol samples, overall
-  int NstdSamples; //number of unique biol samples with known concentrations (standards)
+  int NSamples_qpcr; //number of unique biological samples, overall
+  int NstdSamples; //number of unique biological samples with known concentrations (standards)
   int plate_idx[Nobs_qpcr]; //index denoting which PCR plate each sample is on
-  int std_idx[NstdSamples]; //index relative to NSamples; which ones are the standards?
+  int std_idx[NstdSamples]; //index relative to total samples; which ones are the standards?
   int unkn_idx[NSamples_qpcr-NstdSamples]; //index relative to total samples; which ones are the unknown/field samples?
   int plateSample_idx[Nobs_qpcr]; //index of unique combinations of plate and biological sample
  
@@ -54,7 +54,7 @@ data {
   
   // DATA FOR LINKING QM AND QPCR
   int N_mb_link; //How many qpCR samples have a match in a MB sample
-  int mb_link_idx[N_mb_link]; // index linking qpcr samples to mb samples
+  int mb_link_idx[N_mb_link]; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
   int mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
 
 }
@@ -90,7 +90,7 @@ parameters {
   vector[NSamples_qpcr-NstdSamples] envir_concentration; // DNA concentration in unknown samples
   
   //for linking 
-  matrix[N_obs_mb_samp,N_species] log_B_raw; // estimated true copy numbers by sample, minus the qPCR link species (hake)
+  matrix[N_obs_mb_samp,N_species] log_D_raw; // estimated true copy numbers by sample
 
 }
 
@@ -109,7 +109,7 @@ transformed parameters {
   matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
   
   // for linking
-  matrix[N_obs_mb_samp,N_species] log_B; // estimated true copy numbers by sample, including the link species
+  matrix[N_obs_mb_samp,N_species] log_D; // estimated true copy numbers by sample, including the link species
   
  // local variables declaration
   matrix[N_obs_mb_samp,N_species] logit_val_samp;
@@ -139,14 +139,14 @@ transformed parameters {
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
       if(i==mb_link_sp_idx){ // if index is equal to link species, fill in qpcr estimate
-        log_B[j,i] = Concentration[plateSample_idx[mb_link_idx[j]]]; 
-      }else{ //finally, if index is greater than link sp. index
-        log_B[j,i] = log_B_raw[j,i];
+        log_D[j,i] = Concentration[plateSample_idx[mb_link_idx[j]]]; 
+      }else{ // otherwise, fill from log_D_raw
+        log_D[j,i] = log_D_raw[j,i];
       }
     }
   };
-//  print("rows",log_B[7,]);
-//  print("columns",log_B[,2]);
+//  print("rows",log_D[7,]);
+//  print("columns",log_D[,2]);
   
   // QM MODEL PIECES
   
@@ -166,7 +166,7 @@ transformed parameters {
 
 // from qPCR estimates, alphas, and etas we can calculate sample-specific mu
   for (n in 1:N_species) {
-    logit_val_samp[,n] = model_matrix_samp * append_row((log_B[,n] - log_B[,N_species]),alpha[n]); 
+    logit_val_samp[,n] = model_matrix_samp * append_row((log_D[,n] - log_D[,N_species]),alpha[n]); 
                             //+eta_samp[n];
     logit_val_mock[,n] = alr_mock_true_prop[,n] + 
                               model_vector_a_mock * alpha[n] + 
@@ -214,13 +214,18 @@ model {
   gamma_1 ~ normal(0,5);
   gamma_0 ~ normal(-2,1);
   
-  for(i in 1:(N_species-1)){
-   log_B_raw[,i] ~ normal(0,10);
+  envir_concentration ~ normal(0,10); //log scale
+  
+  for(i in 1:(N_species)){
+    // ONLY set a prior for the species that ARE NOT the qPCR link species (hake)
+    // The values for the link species will come from the qPCR part of the joint model
+    // (which will use prior information from envir_concentration, above)
+    if(i!=mb_link_sp_idx){
+      log_D_raw[,i] ~ normal(0,10); 
+    }
   }
   
-  envir_concentration ~ normal(0, 2); //log10 scale
-
-  phi_0 ~ std_normal(); //need to fix this
+  phi_0 ~ normal(0.58,0.2); //assuming Poisson from bottles to replicates (pipetting)
   phi_1 ~ normal(5, 2);
   
   // QM part
