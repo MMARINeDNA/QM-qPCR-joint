@@ -43,7 +43,8 @@ qPCR.sample.id <- qPCR.sample.id %>%
                 depth,
                 drop.sample,
                 field.negative.type,
-                volume = water.filtered.L) %>% 
+                volume = water.filtered.L) %>%
+  # mutate(ifelse(depth=="sfc","0",depth)) %>% 
   mutate(depth=as.numeric(depth)) %>% 
   # empty stations or extraneous rows
   filter(!(station=="N/A"|station=="-")) %>%
@@ -72,9 +73,11 @@ qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-0
 sp <- read.table(here("data/mocks/species_list.txt"), sep = "\t") %>% 
   rename("Species" = "V1")
 q <- read.csv(here("data/mocks/mock_paper_ASV_assignments.csv"), row.names = 1) %>% 
+  # filter to species we know we want
   filter(Species %in% sp$Species) %>% 
   filter(!is.na(Species)) %>% 
   select(Sample, Reads, Marker, Species) %>% 
+  # separate into mock community types
   mutate(BSA = ifelse(str_detect(Sample, "BSA"), 1, 0),
          TD = ifelse(str_detect(Sample, "TD"), 1, 0),
          SKEW = ifelse(str_detect(Sample, "SKEW"), 1, 0)) %>% 
@@ -82,19 +85,23 @@ q <- read.csv(here("data/mocks/mock_paper_ASV_assignments.csv"), row.names = 1) 
          Sample = str_replace_all(Sample, "TD\\.", ""),
          Sample = str_replace_all(Sample, "SKEW\\.", "")) %>% 
   separate(Sample, into = c("Marker", "Taq", "rep")) %>% 
+  # now regroup and sum total reads by taxa
   group_by(Marker, Taq, rep, Species, BSA, TD, SKEW) %>% 
   summarise(Reads = sum(Reads)) %>%  #collapse ASVs into taxa
   ungroup()
+
+# rename Engraulis (anchovy) to be at the "end" of an alphabetical list; this will be our metabarcoding reference species
 q$Species[which(q$Species == "Engraulis mordax")] <- "Zz_Engraulis mordax"
 
 #we can't estimate species that are only rarely observed, so we are going to drop those. 
+# in this case, there are two species will substantially less total reads that any others (<1000 reads across all samples)
 allspecies <- unique(q$Species)
 lose <- q %>% group_by(Species) %>% summarise(s = sum(Reads)) %>% arrange(s) %>% head(2) %>% pull(Species)
 keep <- allspecies[-which(allspecies %in% lose)]
 # keep <- c(keep, "Zz_Engraulis mordax") #to make Engraulis the reference species
 
 q <- q %>% 
-  select(-any_of(lose))
+  filter(Species %in% keep)
 
 mismatch <- read.csv(here("data/mocks/mock_paper_mismatches_v3.csv"))
 
@@ -114,6 +121,7 @@ ddPCR <- read.csv(here("data/mocks/mock_paper_ddPCR_v3.csv")) %>%
 mock_reads <- read.csv(here("data/mocks/mock_paper_df_v2.csv"))
 
 mock_reads$Species[which(mock_reads$Species == "Engraulis mordax")] <- "Zz_Engraulis mordax" #set as ref species
+
 #mock community gDNA proportions, by group and by species
 mock_props <- mismatch %>% 
   select(Species, Class) %>% 
@@ -258,3 +266,4 @@ mfu <- mfu %>%
   mutate(biol = 1, tech = 1) %>% 
   rename(species = Species) %>% 
   mutate(station = match(Sample, unique(Sample))) #let station = unique sampling location, treating different depths in the same x-y plane as independent
+

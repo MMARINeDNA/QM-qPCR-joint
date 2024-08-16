@@ -124,6 +124,8 @@ transformed parameters {
   // concentration_unks
   Concentration[std_idx] = known_conc; //log scale
   Concentration[unkn_idx] = envir_concentration;
+  //print("stds", Concentration[std_idx]);
+  //print("unknowns",Concentration[unkn_idx]);
   
   for(i in 1:Nobs_qpcr){
     Ct[plateSample_idx[i]] = beta_std_curve_0[plate_idx[i]] + 

@@ -1,0 +1,10 @@
+08.16.2024 Owen debugging
+Error:  Exception: normal_lpdf: Location parameter is inf, but must be finite! (in 'string', line 190, column 8 to column 73)
+Note: this is in the part of the model that samples the y[i] as a normal(Ct,sigma)
+Specifically, it had an issue with the sigma (i.e. location) param
+Investigating this further in the transformed params block, sigma is a function of the gamma params and the Concentration vector
+Gamma params have priors and so they shouldn't be the issue; once again the issue is in "filling" the Concentration vector
+Putting a print statement for the Concentration vector,we get -inf values in some of the STANDARDS, NOT the unknowns
+Identified the problem: there was a double log going on; i.e., the copy numbers in the standards were being logged before they
+went into the model, and then AGAIN in the transformed data block. Because some of the original copy numbers were 1, this messed 
+everything up (because log(1)=0 and log(0)= -Inf)

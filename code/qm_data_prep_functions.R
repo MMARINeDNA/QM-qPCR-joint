@@ -174,7 +174,9 @@ prepare_stan_data_qPCR <- function(qPCRdata){
     plateSample_idx = qPCRdata$plateSample_idx,
     y = qPCRdata$Ct,
     z = qPCRdata$z,
-    known_concentration = qPCRdata %>% filter(task == "STANDARD") %>% distinct(plateSample,.keep_all=T) %>% pull(copies_ul),
+    # known copy number from standards
+    known_concentration = qPCRdata %>% filter(task == "STANDARD") %>% 
+      distinct(plateSample,.keep_all=T) %>% pull(copies_ul),
     stdCurvePrior_intercept = c(39, 3), #normal distr, mean and sd ; hyperpriors
     stdCurvePrior_slope = c(-3, 1) #normal distr, mean and sd ; hyperpriors
   )

@@ -48,7 +48,8 @@ formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_3_treatment_envir <- NA,
                                                      Level_1_treatment_mock <- "Sample",
                                                      Level_2_treatment_mock <- "Rep",
-                                                     Level_3_treatment_mock <- NA) 
+                                                     Level_3_treatment_mock <- NA)
+
 stan_metabarcoding_data <- formatted_metabarcoding_data%>% 
   makeDesign(N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
 
@@ -80,8 +81,8 @@ Run Stan
 
 ```{r}
 n.chains <- 3
-n.warm <- 300
-n.samps <- 1000
+n.warm <- 3000
+n.samps <- 6000
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -89,10 +90,10 @@ jointMod = stan(file = m ,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 175,
+                control = list(adapt_init_buffer = 150,
                                   max_treedepth=12,
                                   stepsize=0.01,
-                                  adapt_delta=0.7,
+                                  adapt_delta=0.95,
                                   metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species),
                 refresh = 10,
