@@ -361,13 +361,15 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
   
 ###########################################
 ### Setting Initial Values
-stan_init_f1 <- function(n.chain,N_obs_mb,N_species){
+stan_init_f1 <- function(n.chain,N_obs_mb,N_species,Nplates){
   set.seed(78345)
   A <- list()
   for(i in 1:n.chain){
     A[[i]] <- list(
       log_D_raw=matrix(data=rnorm(N_obs_mb*N_species,mean=5,sd=2),nrow = N_obs_mb,ncol=N_species),
-      alpha_raw=jitter(rep(0,N_species-1),factor=0.5)
+      alpha_raw=jitter(rep(0,N_species-1),factor=0.5),
+      beta_std_curve_0=runif(Nplates,35,45),
+      beta_std_curve_1=runif(Nplates,-1.5,-1.2)
     )
   }  
   return(A)

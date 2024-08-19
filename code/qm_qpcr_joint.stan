@@ -97,9 +97,9 @@ parameters {
 transformed parameters {
   // for qPCR part
   vector[NSamples_qpcr] Concentration; //this is the concentration of standards and field samples (unknowns) combined
-  vector[NSamples_qpcr] Ct; // estimated Ct for all qPCR samples
-  vector[NSamples_qpcr] sigma; // SD of Ct values
-  vector[NSamples_qpcr] theta; // Bernoulli param, probability of amplification
+  vector[Nobs_qpcr] Ct; // estimated Ct for all qPCR samples
+  vector[Nobs_qpcr] sigma; // SD of Ct values
+  vector[Nobs_qpcr] theta; // Bernoulli param, probability of amplification
   
   // for QM part
   vector[N_species] alpha; // vector of coefficients (log-efficiencies relative to reference taxon)
@@ -127,13 +127,23 @@ transformed parameters {
   //print("stds", Concentration[std_idx]);
   //print("unknowns",Concentration[unkn_idx]);
   
+  // for(i in 1:Nobs_qpcr){
+  //   Ct[plateSample_idx[i]] = beta_std_curve_0[plate_idx[i]] + 
+  //                             beta_std_curve_1[plate_idx[i]] * Concentration[plateSample_idx[i]];
+  // 
+  //   sigma[plateSample_idx[i]] = exp(gamma_0 + gamma_1[plate_idx[i]]*Concentration[plateSample_idx[i]]);
+  //                                 
+  //   theta[plateSample_idx[i]] = inv_logit(phi_0 + phi_1*exp(Concentration[plateSample_idx[i]]));
+  //                                 
+  // }
+  // 
   for(i in 1:Nobs_qpcr){
-    Ct[plateSample_idx[i]] = beta_std_curve_0[plate_idx[i]] + 
+    Ct[i] = beta_std_curve_0[plate_idx[i]] + 
                               beta_std_curve_1[plate_idx[i]] * Concentration[plateSample_idx[i]];
 
-    sigma[plateSample_idx[i]] = exp(gamma_0 + gamma_1[plate_idx[i]]*Concentration[plateSample_idx[i]]);
+    sigma[i] = exp(gamma_0 + gamma_1[plate_idx[i]]*Concentration[plateSample_idx[i]]);
                                   
-    theta[plateSample_idx[i]] = inv_logit(phi_0 + phi_1*exp(Concentration[plateSample_idx[i]]));
+    theta[i] = inv_logit(phi_0 + phi_1*exp(Concentration[plateSample_idx[i]]));
                                   
   }
   
@@ -198,15 +208,16 @@ model {
   
 // qPCR part
   for(i in 1:Nobs_qpcr){
-     z[i]   ~ bernoulli(theta[plateSample_idx[i]]);
+     z[i]   ~ bernoulli(theta[i]);
       // z[i]   ~ bernoulli( inv_logit(theta[plateSample_idx[i]]) ) ;
     }
-    
-    for(i in 1:Nobs_qpcr){
+  for(i in 1:Nobs_qpcr){
       if (z[i]==1){ //if Ct observed, then compute likelihood
-        y[i] ~ normal(Ct[plateSample_idx[i]], sigma[plateSample_idx[i]]);   
+        y[i] ~ normal(Ct[i], sigma[i]);   
       }
     }
+
+print("Obs= ",y[1:5]," ct =",Ct[1:5],";sigma = ",sigma[1:5]);
 
   //beta standard curve params
   beta_std_curve_0 ~ normal(stdCurvePrior_intercept[1], stdCurvePrior_intercept[2]);
@@ -231,18 +242,18 @@ model {
   phi_1 ~ normal(5, 2);
   
   // QM part
-  for(i in 1:N_obs_mb_samp){ 
-    sample_data[i,] ~  multinomial(transpose(mu_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
-  }
-  for(i in 1:N_obs_mock){
-    mock_data[i,]   ~  multinomial(transpose(mu_mock[i,])); // Multinomial sampling of mu (proportions in mocks)
-  }
-  // Priors
-  for(i in 1:(N_species-1)){
-    // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
-    eta_mock_raw[i] ~ std_normal(); // N(0,tau)
-  }
-  alpha_raw ~ std_normal(); // prior of normal(alpha_prior[1],alpha_prior[2]);
-  tau ~ gamma(tau_prior[1],tau_prior[2]); //
+  // for(i in 1:N_obs_mb_samp){ 
+  //   sample_data[i,] ~  multinomial(transpose(mu_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
+  // }
+  // for(i in 1:N_obs_mock){
+  //   mock_data[i,]   ~  multinomial(transpose(mu_mock[i,])); // Multinomial sampling of mu (proportions in mocks)
+  // }
+  // // Priors
+  // for(i in 1:(N_species-1)){
+  //   // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
+  //   eta_mock_raw[i] ~ std_normal(); // N(0,tau)
+  // // }
+  // alpha_raw ~ std_normal(); // prior of normal(alpha_prior[1],alpha_prior[2]);
+  // tau ~ gamma(tau_prior[1],tau_prior[2]); //
 }
 

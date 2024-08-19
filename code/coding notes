@@ -8,3 +8,7 @@ Putting a print statement for the Concentration vector,we get -inf values in som
 Identified the problem: there was a double log going on; i.e., the copy numbers in the standards were being logged before they
 went into the model, and then AGAIN in the transformed data block. Because some of the original copy numbers were 1, this messed 
 everything up (because log(1)=0 and log(0)= -Inf)
+
+
+08.19.2024 Checking divergences
+Model is sampling, but almost all divergent transitions--why??

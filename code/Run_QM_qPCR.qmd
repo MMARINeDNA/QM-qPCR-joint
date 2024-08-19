@@ -80,9 +80,9 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-n.chains <- 3
-n.warm <- 3000
-n.samps <- 6000
+n.chains <- 1
+n.warm <- 200
+n.samps <- 20
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -92,15 +92,45 @@ jointMod = stan(file = m ,
                 iter = n.warm+n.samps,
                 control = list(adapt_init_buffer = 150,
                                   max_treedepth=12,
-                                  stepsize=0.01,
-                                  adapt_delta=0.95,
+                                  stepsize=0.03,
+                                  adapt_delta=0.9,
                                   metric="diag_e"),
-                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species),
+                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species,Nplates=stan_data_joint$Nplates),
                 refresh = 10,
                 boost_lib = NULL,
-                sample_file=NULL
+                sample_file="samples.csv"
                 )
 ```
+
+```{r}
+# inits
+inits_samps <- rstan::get_inits(jointMod) %>% 
+  set_names(1:n.chains) %>% pluck(1)
+
+# sampler params
+diagnose_sampler <- rstan::get_sampler_params(jointMod) %>% 
+  set_names(1:n.chains) %>% 
+   map_df(as_tibble,.id = 'chain') %>% 
+  group_by(chain) %>% 
+  mutate(iteration = 1:length(chain)) %>% 
+  mutate(warmup = iteration <= n.warm)
+
+# divergences
+diagnose_sampler %>% 
+  group_by(warmup, chain) %>% 
+  summarise(percent_divergent = mean(divergent__ >0)) %>% 
+  ggplot() +
+  geom_col(aes(chain, percent_divergent, fill = warmup), position = 'dodge', color = 'black') + 
+  scale_y_continuous(labels = scales::percent, name = "% Divergent Runs")
+# treedepth
+maxtd <- jointMod@stan_args[[1]]$control$max_treedepth
+diagnose_sampler %>% 
+  ggplot(aes(iteration, treedepth__, color = chain)) + 
+  geom_line() + 
+  # horizontal line at the value we set our max treedepth
+  geom_hline(aes(yintercept = maxtd), color = 'red')
+```
+
 
 ```{r}
 # param summary
@@ -143,8 +173,8 @@ shinystan::launch_shinystan(jointMod)
 
 
 ```{r}
-ests <- summary(jointMod,par="log_B")$summary
-ests2 <- summary(jointMod,par="log_B_raw")$summary
+ests <- summary(jointMod,par="log_D")$summary
+ests2 <- summary(jointMod,par="log_D_raw")$summary
 ```
 
 
