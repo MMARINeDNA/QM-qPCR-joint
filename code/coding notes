@@ -12,3 +12,7 @@ everything up (because log(1)=0 and log(0)= -Inf)
 
 08.19.2024 Checking divergences
 Model is sampling, but almost all divergent transitions--why??
+Ole and Owen went through using print statements etc.
+Added a few initial values to help (for beta_std_curve_0 and beta_std_curve_1)
+Still having an issue: Ct values are not changing across samples-- why??
+Ole and Owen going to dig into indexing issues
