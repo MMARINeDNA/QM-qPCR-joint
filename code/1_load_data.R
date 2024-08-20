@@ -31,7 +31,7 @@ select <- dplyr::select
 meta <- read_csv(here("data","metadata","Hake_2019_metadata.csv")) %>% 
   distinct(station, Niskin, depth, drop.sample, field.negative.type, volume,.keep_all = T)
 
-qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-12-15 sample details.csv'))
+qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'))
 # dat.station.id <- read_csv(here('Data','CTD_hake_data_10-2019.csv'))
 
 #### SAMPLE IDs ####
@@ -44,7 +44,7 @@ qPCR.sample.id <- qPCR.sample.id %>%
                 drop.sample,
                 field.negative.type,
                 volume = water.filtered.L) %>%
-  # mutate(ifelse(depth=="sfc","0",depth)) %>% 
+  mutate(depth=ifelse(Niskin=="sfc","0",depth)) %>% 
   mutate(depth=as.numeric(depth)) %>% 
   # empty stations or extraneous rows
   filter(!(station=="N/A"|station=="-")) %>%
@@ -62,8 +62,63 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
   mutate(hake_copies_ul=str_replace_all(hake_copies_ul,",",""),
          eulachon_copies_ul=str_replace_all(eulachon_copies_ul,",",""),
          lamprey_copies_ul=str_replace_all(lamprey_copies_ul,",","")) %>% 
-  mutate(across(contains("copies_ul"),~as.numeric(.)))
+  mutate(across(contains("copies_ul"),~as.numeric(.))) 
+  # this leaves 9208 rows
 
+# Specify an inhibition limit for retaining samples.
+INHIBIT.LIMIT <- 0.5
+# Get rid of samples with dilution == 1 if a dilution series was run on a sample and those that were inhibited
+dat.ntc <- qPCR_unk %>% filter(type=="ntc") %>% 
+  mutate(IPC_Ct = as.numeric(as.character(IPC_Ct))) %>%
+  group_by(qPCR) %>% 
+  dplyr::summarise(mean.ntc = mean(IPC_Ct),sd.ntc=sd(IPC_Ct))
+
+# This gets rid of 
+qPCR_unk <- left_join(qPCR_unk,dat.ntc) %>% mutate(mean.ntc = as.numeric(as.character(mean.ntc))) %>%
+            mutate(inhibit.val = IPC_Ct-mean.ntc,
+                      inhibit.bin=ifelse(inhibit.val < INHIBIT.LIMIT ,0,1)) %>%
+            filter(inhibit.bin ==0)
+            # This leaves 7769 rows of data.
+
+# Add wash covariate
+### CHECK THE SAMPLES THAT HAD TROUBLE WITH WASHING (drop.sample == "30EtOH" or "30EtOHpaired")
+dat.wash <- qPCR_unk %>% filter(drop.sample %in% c("30EtOH","30EtOHpaired"))
+
+# find unique depth-station combinations among these stations.
+  dat.wash$station <- as.factor(dat.wash$station)
+  uni.wash <- dat.wash %>% group_by(station,depth,Niskin,drop.sample) %>% 
+    summarise(N=length(station)) %>% mutate(status="washed") %>% ungroup()
+
+  pairs.wash <- qPCR_unk %>% filter(!drop.sample %in% c("30EtOH","30EtOHpaired"))
+  pairs.wash <- uni.wash %>% dplyr::select(station,depth) %>% left_join(.,pairs.wash) %>% 
+                  filter(!is.na(Niskin)) %>% mutate(status="unwashed")
+  dat.wash <- dat.wash %>% mutate(status="washed")
+  dat.wash.all <- bind_rows(dat.wash,pairs.wash) %>% arrange(station,depth)
+
+  dat.wash.summary <- dat.wash.all %>% group_by(station,depth,Niskin,status) %>% summarise(N=length(status)) %>% 
+                arrange(station,depth,status) %>% as.data.frame() 
+
+  # There are 27 paired samples with which to estimate the effect of the 30% EtOH treatment
+  print(nrow(dat.wash.summary[dat.wash.summary$status=="unwashed",]))
+
+  # add indicator for membership in 30EtOH club and associated pairs
+  # 0 = normal sample. 1 = washed with 30% etoh. 2= pair of washed with 30% EtOH sample
+  dat.wash.all <- dat.wash.all %>% mutate(wash.indicator = ifelse(status == "washed",1,2)) %>%
+                    dplyr::select(-status) %>% 
+  # This indicator variable gets used in the STAN code.
+  dat.wash.all <- dat.wash.all %>% mutate(wash_idx = ifelse(wash.indicator==1,1,0))
+
+  # find samples that were washed with 30% EtOH, exclude them from dat.samp, 
+  # then add them back in with needed indicator variables
+  exclude  <- unique(dat.wash.all$sample)
+  qPCR_unk <- qPCR_unk %>% mutate(wash.indicator=0,wash_idx=0) %>% filter(!sample %in% exclude) %>% 
+                bind_rows(.,dat.wash.all)
+
+
+
+
+
+####
 qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv')) %>% 
   rename(tubeID=sample)
  

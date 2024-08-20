@@ -54,6 +54,7 @@ stan_metabarcoding_data <- formatted_metabarcoding_data%>%
   makeDesign(N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
 
 #qPCR
+# 
 stan_qPCR_data <- format_qPCR_data(qPCR_unk,qPCR_std) %>% 
   prepare_stan_data_qPCR()
 
