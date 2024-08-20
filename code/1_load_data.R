@@ -66,7 +66,7 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
 
 qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv')) %>% 
   rename(tubeID=sample)
-
+ 
 #### METABARCODING DATA ####
 
 #species and all assigned metabarcoding data
