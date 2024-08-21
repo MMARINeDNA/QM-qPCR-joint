@@ -81,8 +81,8 @@ Run Stan
 
 ```{r}
 n.chains <- 1
-n.warm <- 200
-n.samps <- 20
+n.warm <- 2000
+n.samps <- 2000
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -90,15 +90,16 @@ jointMod = stan(file = m ,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 150,
+                control = list(adapt_init_buffer = 75,
                                   max_treedepth=12,
-                                  stepsize=0.03,
-                                  adapt_delta=0.9,
+                                  stepsize=0.3,
+                                  adapt_delta=0.95,
                                   metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species,Nplates=stan_data_joint$Nplates),
                 refresh = 10,
                 boost_lib = NULL,
-                sample_file="samples.csv"
+                sample_file=NULL
+                # sample_file="samples.csv"
                 )
 ```
 
@@ -129,7 +130,7 @@ diagnose_sampler %>%
   geom_line() + 
   # horizontal line at the value we set our max treedepth
   geom_hline(aes(yintercept = maxtd), color = 'red')
-```
+  ```
 
 
 ```{r}

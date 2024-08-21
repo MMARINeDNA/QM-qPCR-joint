@@ -16,3 +16,7 @@ Ole and Owen went through using print statements etc.
 Added a few initial values to help (for beta_std_curve_0 and beta_std_curve_1)
 Still having an issue: Ct values are not changing across samples-- why??
 Ole and Owen going to dig into indexing issues
+
+08.20.2024 Breaking stuff
+Working on understanding indexing of samples
+Renaming "plateSample_idx" to just "qpcr_sample_idx"

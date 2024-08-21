@@ -1,6 +1,7 @@
 data { 
   // DATA FOR qPCR PART OF THE MODEL
   
+  // note: "samples" are the unit of measure we care about. "obs" is longer and includes replicates for each sample
   int Nplates; // number of PCR plates
   int Nobs_qpcr; // number of field observations for qPCR
   int NSamples_qpcr; //number of unique biological samples, overall
@@ -8,7 +9,8 @@ data {
   int plate_idx[Nobs_qpcr]; //index denoting which PCR plate each sample is on
   int std_idx[NstdSamples]; //index relative to total samples; which ones are the standards?
   int unkn_idx[NSamples_qpcr-NstdSamples]; //index relative to total samples; which ones are the unknown/field samples?
-  int plateSample_idx[Nobs_qpcr]; //index of unique combinations of plate and biological sample
+  // int plateSample_idx[Nobs_qpcr]; //index of unique combinations of plate and biological sample
+  int qpcr_sample_idx[Nobs_qpcr]; //index of biological samples
  
   vector[Nobs_qpcr] y; //Ct observations
   int z[Nobs_qpcr]; //indicator; z = 1 if a Ct was observed, z = 0 otherwise
@@ -139,11 +141,11 @@ transformed parameters {
   // 
   for(i in 1:Nobs_qpcr){
     Ct[i] = beta_std_curve_0[plate_idx[i]] + 
-                              beta_std_curve_1[plate_idx[i]] * Concentration[plateSample_idx[i]];
+                              beta_std_curve_1[plate_idx[i]] * Concentration[qpcr_sample_idx[i]];
 
-    sigma[i] = exp(gamma_0 + gamma_1[plate_idx[i]]*Concentration[plateSample_idx[i]]);
+    sigma[i] = exp(gamma_0 + gamma_1[plate_idx[i]]*Concentration[qpcr_sample_idx[i]]);
                                   
-    theta[i] = inv_logit(phi_0 + phi_1*exp(Concentration[plateSample_idx[i]]));
+    theta[i] = inv_logit(phi_0 + phi_1*exp(Concentration[qpcr_sample_idx[i]]));
                                   
   }
   
@@ -151,7 +153,7 @@ transformed parameters {
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
       if(i==mb_link_sp_idx){ // if index is equal to link species, fill in qpcr estimate
-        log_D[j,i] = Concentration[plateSample_idx[mb_link_idx[j]]]; 
+        log_D[j,i] = Concentration[qpcr_sample_idx[mb_link_idx[j]]]; 
       }else{ // otherwise, fill from log_D_raw
         log_D[j,i] = log_D_raw[j,i];
       }
@@ -192,7 +194,7 @@ transformed parameters {
   }
   
   for (n in 1:N_species) {
-    mu_samp[,n] = transpose(prob_samp_t)[,n] ; 
+    mu_samp[,n] = transpose(prob_samp_t)[,n] ;
     mu_mock[,n] = transpose(prob_mock_t)[,n] ;
   // if(n==1){print("log_prob 1 ",log_prob);}
   }
@@ -210,14 +212,13 @@ model {
   for(i in 1:Nobs_qpcr){
      z[i]   ~ bernoulli(theta[i]);
       // z[i]   ~ bernoulli( inv_logit(theta[plateSample_idx[i]]) ) ;
-    }
-  for(i in 1:Nobs_qpcr){
       if (z[i]==1){ //if Ct observed, then compute likelihood
-        y[i] ~ normal(Ct[i], sigma[i]);   
-      }
-    }
+        y[i] ~ normal(Ct[i], sigma[i]);
+        }
+  }
 
-print("Obs= ",y[1:5]," ct =",Ct[1:5],";sigma = ",sigma[1:5]);
+// print("Obs= ",y[1:5]," ct =",Ct[1:5],";sigma = ",sigma[1:5]);
+print("Conc.=",Concentration[1:5]);
 
   //beta standard curve params
   beta_std_curve_0 ~ normal(stdCurvePrior_intercept[1], stdCurvePrior_intercept[2]);
@@ -242,18 +243,19 @@ print("Obs= ",y[1:5]," ct =",Ct[1:5],";sigma = ",sigma[1:5]);
   phi_1 ~ normal(5, 2);
   
   // QM part
-  // for(i in 1:N_obs_mb_samp){ 
-  //   sample_data[i,] ~  multinomial(transpose(mu_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
+  for(i in 1:N_obs_mb_samp){
+    sample_data[i,] ~  multinomial(transpose(mu_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
+  }
+  for(i in 1:N_obs_mock){
+    mock_data[i,]   ~  multinomial(transpose(mu_mock[i,])); // Multinomial sampling of mu (proportions in mocks)
+  }
+  // Priors
+  for(i in 1:(N_species-1)){
+    // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
+    eta_mock_raw[i] ~ std_normal(); // N(0,tau)
   // }
-  // for(i in 1:N_obs_mock){
-  //   mock_data[i,]   ~  multinomial(transpose(mu_mock[i,])); // Multinomial sampling of mu (proportions in mocks)
-  // }
-  // // Priors
-  // for(i in 1:(N_species-1)){
-  //   // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
-  //   eta_mock_raw[i] ~ std_normal(); // N(0,tau)
-  // // }
-  // alpha_raw ~ std_normal(); // prior of normal(alpha_prior[1],alpha_prior[2]);
-  // tau ~ gamma(tau_prior[1],tau_prior[2]); //
+  alpha_raw ~ std_normal(); // prior of normal(alpha_prior[1],alpha_prior[2]);
+  tau ~ gamma(tau_prior[1],tau_prior[2]); //
+  }
 }
 

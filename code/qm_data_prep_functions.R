@@ -114,17 +114,19 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
   
   # bind standards and unknowns
   qPCRdata <- qPCR_1 %>% 
+    # join standards at the end
     bind_rows(qPCR_2) %>% 
     mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
+    # unique ID for PCR plate
     mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
-    unite(c(qPCR,tubeID), col = "plateSample", remove = F) %>% 
-    mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>% 
-    group_by(plateSample) %>% 
-    add_tally(Ct==99) %>% 
-    # filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these.
-    dplyr::select(-n) %>%
-    ungroup() %>% 
-    mutate(plateSample_idx = match(plateSample, unique(plateSample)))
+    # unite(c(qPCR,tubeID), col = "plateSample", remove = F) %>% 
+    # mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>% 
+    mutate(qpcr_sample_idx=match(tubeID,unique(tubeID))) %>% 
+    # group_by(qpcr_sample_idx) %>% 
+    # add_tally(Ct==99) %>% 
+    # # filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these.
+    # dplyr::select(-n) %>%
+    ungroup()
   
   return(qPCRdata)
   
@@ -141,10 +143,11 @@ prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,qPCR_unknowns, qP
     distinct(Sample,.keep_all = T)
   
   mb_link_2 <- qpcr_formatted %>% 
-    distinct(plateSample,plateSample_idx,.keep_all = T) %>% 
+    distinct(qpcr_sample_idx,.keep_all = T) %>% 
+    # distinct(plateSample,plateSample_idx,.keep_all = T) %>% 
     left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
-    dplyr::select(plateSample_idx,mb_link) %>% 
-    arrange(plateSample_idx) %>% 
+    dplyr::select(qpcr_sample_idx,mb_link) %>% 
+    arrange(qpcr_sample_idx) %>% 
     filter(!is.na(mb_link))
   
   # get the index of the right species
@@ -161,22 +164,23 @@ prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,qPCR_unknowns, qP
 # make stan data for qPCR part
 prepare_stan_data_qPCR <- function(qPCRdata){
   
-  type <- qPCRdata %>% distinct(plateSample, task) %>% pull(task)
+  type <- qPCRdata %>% distinct(qpcr_sample_idx, task) %>% pull(task)
   
   stan_qPCR_data <- list(
     Nplates = length(unique(qPCRdata$qPCR)),
     Nobs_qpcr = nrow(qPCRdata),
-    NSamples_qpcr = length(unique(qPCRdata$plateSample)),
-    NstdSamples = qPCRdata %>% filter(task == "STANDARD") %>% distinct(plateSample) %>% nrow(),
+    NSamples_qpcr = length(unique(qPCRdata$qpcr_sample_idx)),
+    NstdSamples = qPCRdata %>% filter(task == "STANDARD") %>% distinct(qpcr_sample_idx) %>% nrow(),
     plate_idx = qPCRdata$plate_idx, 
     std_idx =  which(type=="STANDARD"),
     unkn_idx = which(type == "UNKNOWN"),
-    plateSample_idx = qPCRdata$plateSample_idx,
+    # plateSample_idx = qPCRdata$plateSample_idx,
+    qpcr_sample_idx=qPCRdata$qpcr_sample_idx,
     y = qPCRdata$Ct,
     z = qPCRdata$z,
     # known copy number from standards
     known_concentration = qPCRdata %>% filter(task == "STANDARD") %>% 
-      distinct(plateSample,.keep_all=T) %>% pull(copies_ul),
+      distinct(qpcr_sample_idx,.keep_all=T) %>% pull(copies_ul),
     stdCurvePrior_intercept = c(39, 3), #normal distr, mean and sd ; hyperpriors
     stdCurvePrior_slope = c(-3, 1) #normal distr, mean and sd ; hyperpriors
   )
