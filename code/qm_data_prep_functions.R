@@ -1,6 +1,9 @@
 # Metabarcoding calibration model function
 # RPK Aug 2022; Revised ORL July 2024
 
+library(mgcv)
+
+source(here("code","smoothers.R"),local=TRUE)
 ################DEFINE SUB-FUNCTIONS
 
 format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_data,
@@ -88,10 +91,74 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
 
 # prep qPCR data
 # function takes two dataframe inputs, for qPCR unknown samples, and the qPCR standards
-format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
+format_qPCR_data <- function(qPCR_unknowns, 
+                             qPCR_standards,
+                             unk_covariates=NULL,cov_type=NULL,
+                             unk_smoothes=NULL,
+                             unk_offsets=NULL,offset_type = rep("log",length(unk_offsets))){
+  
+  # This is just for marginal effects, not interactions.
+  FORM <- list()
+  X_cov <- list()
+  SM_FORM <- list()
+  SM <-list()
+  X_offset <- NULL
+  
+  if(is.null(unk_covariates) ==FALSE){
+    for(i in 1:length(unk_covariates)){
+      if(cov_type[i] =="continuous"){
+        FORM[[i]] <- paste("hake_Ct ~ 0+", unk_covariates[i])
+        model_frame   <- model.frame(FORM[[i]], qPCR_unknowns)  
+        X_cov[[i]] <- model.matrix(as.formula(FORM[[i]]), model_frame)
+      } else if(cov_type[i] =="factor"){
+        FORM[[i]] <- paste("hake_Ct ~ 0 + factor(", unk_covariates[i],")")
+        model_frame   <- model.frame(FORM[[i]], qPCR_unknowns)  
+        X_cov[[i]] <- model.matrix(as.formula(FORM[[i]]), model_frame)
+      }
+    }
+  }
+  if(is.null(unk_smoothes)==FALSE){
+    for(i in 1:length(unk_smoothes)){
+      SM_FORM[[i]] <- paste0("hake_Ct ~ s(", unk_smooth[i],")")
+      # Model form for smoothes
+      #FORM.smoothes <- "copies_ul ~ s(bottom.depth.consensus,by=year,k=4)"
+      SM[[i]] <- parse_smoothers(eval(SM_FORM[[i]]) ,qPCR_unknowns)
+        # Objects you care about in SM are:
+            # Zs basis function matrices
+            # Xs; // smoother linear effect matrix
+            # SM$basis_out is the basis function
+            
+            # This is for making predictions to new data using the old basis 
+            # new_smooth_pred <- parse_smoothers(eval(SM_FORM[[i]]),data=qPCR_unknowns,
+            #                              #newdata= NEWDATA,
+            #                              basis_prev = SM$basis_out)
+      
+        # other things that are somewhat convenient (mostly ported from TMB, not all relevant.)
+        # n_bs     <- ncol(SM$Xs)
+        # b_smooth_start <- SM$b_smooth_start
+        # n_smooth <- length(b_smooth_start)
+        # b_smooth <- if (SM$has_smooths) rep(0,sum(SM$sm_dims)) else array(0) 
+        # has_smooths <- SM$has_smooths
+    }
+  }
+  if(is.null(unk_offsets) ==FALSE){
+    for(i in 1:length(unk_offsets)){
+      if(offset_type =="log"){
+        if(i == 1){
+          X_offset <-qPCR_unknowns[,unk_offsets[i]] %>% log() 
+        } else{
+          X_offset <- cbind(X_offset, qPCR_unknowns[,unk_offsets[i]] %>% log())
+        }
+      }else{print("Offset type not supported at present")}
+    }
+  }
+  
+  ################################
+  ## OWEN START HERE.
+  ################################
   
   #unknowns
-  qPCR_1<- qPCR_unknowns %>% 
+  qPCR_unk<- qPCR_unknowns %>% 
     # pick columns we care about and rename
     select(qPCR, well,tubeID,type,task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     # remove completely empty rows
@@ -102,7 +169,7 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     filter(task=="UNKNOWN",type=="unknowns")
   
   #standards
-  qPCR_2 <- qPCR_standards %>% 
+  qPCR_std <- qPCR_standards %>% 
     # pick columns we care about and rename
     select(qPCR, well,tubeID,type,task=hake_task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
@@ -113,21 +180,27 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     mutate(tubeID=ifelse(tubeID=="5","5C",tubeID))
   
   # bind standards and unknowns
-  qPCRdata <- qPCR_1 %>% 
-    bind_rows(qPCR_2) %>% 
-    mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
-    mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
-    unite(c(qPCR,tubeID), col = "plateSample", remove = F) %>% 
-    mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>% 
-    group_by(plateSample) %>% 
-    add_tally(Ct==99) %>% 
-    # filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these.
-    dplyr::select(-n) %>%
-    ungroup() %>% 
-    mutate(plateSample_idx = match(plateSample, unique(plateSample)))
+  # qPCRdata <- qPCR_1 %>% 
+  #   bind_rows(qPCR_2) %>% 
+  #   mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
+  #   mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
+  #   unite(c(qPCR,tubeID), col = "plateSample", remove = F) %>% 
+  #   mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>% 
+  #   group_by(plateSample) %>% 
+  #   add_tally(Ct==99) %>% 
+  #   # filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these.
+  #   dplyr::select(-n) %>%
+  #   ungroup() %>% 
+  #   mutate(plateSample_idx = match(plateSample, unique(plateSample)))
   
+  qPCRdata <- list(qPCR_unk = qPCR_unk,
+                   qPCR_std = qPCR_std,
+                   FORM = FORM,
+                   X_cov = X_cov,
+                   X_offset = X_offset,
+                   SM_FORM = SM_FORM,
+                   SM = SM)
   return(qPCRdata)
-  
 }
 
 # a last piece is we need a sample identifier across QM and qPCR data

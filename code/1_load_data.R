@@ -37,16 +37,18 @@ qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 
 # dat.station.id <- read_csv(here('Data','CTD_hake_data_10-2019.csv'))
 
 ### SAMPLE IDs ###
-qPCR.sample.id <- qPCR.sample.id %>% 
+qPCR.sample.id <- qPCR.sample.id %>%  
+  rename(tubeID=`Tube #`) %>%
   distinct() %>% 
-  dplyr::select(tubeID=`Tube #`,
+  dplyr::select(tubeID,
                 station=`CTD cast`,
                 Niskin,
                 depth,
                 drop.sample,
                 field.negative.type,
                 volume = water.filtered.L) %>%
-  mutate(depth=ifelse(Niskin=="sfc","0",depth)) %>% 
+  mutate(depth=ifelse(Niskin=="sfc","0",depth)) %>%
+  mutate(depth=ifelse(depth=="sfc","0",depth)) %>%
   mutate(depth=as.numeric(depth)) %>% 
   # empty stations or extraneous rows
   filter(!(station=="N/A"|station=="-")) %>%
@@ -126,7 +128,21 @@ INHIBIT.LIMIT <- 0.5
   qPCR_unk <- qPCR_unk %>% 
             filter(type == "unknowns") %>% # this gets rid of is 649 rows.
             filter(!is.na(utm.lat)) # gets rid of 9 replicates (3 unique tubes) filtered from other hake projects
-
+  # Still at 6733 rows of data.
+  
+  # Classify each listed depth into one of a few categories.
+  qPCR_unk <- qPCR_unk %>% mutate(depth_cat=case_when(depth < 25 ~ 0,
+                                                      depth ==25 ~ 25,  
+                                                      depth > 25  & depth <= 60  ~ 50,
+                                                      depth > 60  & depth <= 100 ~ 100,
+                                                      depth > 119 & depth <= 150 ~ 150,
+                                                      depth > 151 & depth <= 200 ~ 200,
+                                                      depth > 240 & depth <= 350 ~ 300,
+                                                      depth > 400 & depth <= 500 ~ 500))
+  
+  # Make a new metadata file that has all of the requisite stuff.
+  META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
+  
 ####
 qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv')) %>% 
   rename(tubeID=sample)
@@ -264,9 +280,9 @@ mfu <- mfu %>%
   filter(!grepl("positive",Project)) %>%
   filter(!grepl("NTC",Project)) %>%
   filter(Project == "52193") %>%  #just keep hake-cruise samples
-  mutate(sample = as.numeric(sample)) %>% 
+  #mutate(sample = as.numeric(sample)) %>% 
   # separate(Sample_name, into = c("Primer", "Project", "sample", "Dilution", "Rep", "Well"), sep = c("-|_")) %>% 
-  left_join(meta %>% select(sample, station, depth, lat, lon))
+  left_join(.,META %>% rename(sample = tubeID))
 
 ## PRE-PROCESSING DATA FOR STAN ##
 

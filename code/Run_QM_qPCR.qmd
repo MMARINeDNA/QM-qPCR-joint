@@ -55,7 +55,14 @@ stan_metabarcoding_data <- formatted_metabarcoding_data%>%
 
 #qPCR
 # 
-stan_qPCR_data <- format_qPCR_data(qPCR_unk,qPCR_std) %>% 
+stan_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
+                                   qPCR_standards=qPCR_std,
+                                   unk_covariates=c("wash_idx"),cov_type = c("continuous"),
+                                   unk_offset =c("dilution")) 
+#### BELOW HERE BROKEN.
+
+
+%>% 
   prepare_stan_data_qPCR()
 
 # linking data
