@@ -13,7 +13,6 @@ suppressMessages(library(rstan))
 suppressMessages(library(compositions))
 suppressMessages(library(MCMCpack))
 
-
 logsumexp <- function (x) {
   y = max(x)
   y + log(sum(exp(x - y)))
@@ -25,16 +24,22 @@ softmax <- function (x) {
 
 select <- dplyr::select
       
-####Data
-      
-#hake sample metadata
+### Data
+#hake sample metadata 
 meta <- read_csv(here("data","metadata","Hake_2019_metadata.csv")) %>% 
-  distinct(station, Niskin, depth, drop.sample, field.negative.type, volume,.keep_all = T)
+            dplyr::select(tubeID=sample,
+                station,Niskin,
+                #depth,
+                drop.sample,year,month,day,
+                lat,lon,
+                utm.lat,utm.lon,
+                transect.dist.km,transect)
+# distinct(station, Niskin, depth, drop.sample, field.negative.type, volume,.keep_all = T)
 
 qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'))
 # dat.station.id <- read_csv(here('Data','CTD_hake_data_10-2019.csv'))
 
-#### SAMPLE IDs ####
+### SAMPLE IDs ###
 qPCR.sample.id <- qPCR.sample.id %>% 
   distinct() %>% 
   dplyr::select(tubeID=`Tube #`,
@@ -48,15 +53,15 @@ qPCR.sample.id <- qPCR.sample.id %>%
   mutate(depth=as.numeric(depth)) %>% 
   # empty stations or extraneous rows
   filter(!(station=="N/A"|station=="-")) %>%
-  left_join(meta,by = join_by(station, Niskin, depth, drop.sample, field.negative.type, volume)) %>% 
-  # dplyr::select(-Zymo) %>% 
+  #left_join(meta %>%  dplyr::select(-volume),by = join_by(station, Niskin, drop.sample, field.negative.type, volume)) %>% 
+  #dplyr::select(-Zymo) %>% 
   distinct()
 
 #### QPCR DATA ####
 qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-01-04 results.csv'),
                      col_types = 'ccccccdccdcccccclll') %>% 
   rename(tubeID=sample) %>% 
-  left_join(qPCR.sample.id,by=join_by(tubeID,Zymo)) %>% 
+  left_join(.,qPCR.sample.id,by=join_by(tubeID)) %>% 
   # fix some columns from chr to numeric
   mutate(IPC_Ct=str_replace_all(IPC_Ct,"Undetermined","") %>% as.numeric) %>% 
   mutate(hake_copies_ul=str_replace_all(hake_copies_ul,",",""),
@@ -65,34 +70,39 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
   mutate(across(contains("copies_ul"),~as.numeric(.))) 
   # this leaves 9208 rows
 
+# Get rid of zymo filtered samples
+qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo))
+  # 8659 rows remain.
+
+
 # Specify an inhibition limit for retaining samples.
 INHIBIT.LIMIT <- 0.5
-# Get rid of samples with dilution == 1 if a dilution series was run on a sample and those that were inhibited
-dat.ntc <- qPCR_unk %>% filter(type=="ntc") %>% 
-  mutate(IPC_Ct = as.numeric(as.character(IPC_Ct))) %>%
-  group_by(qPCR) %>% 
-  dplyr::summarise(mean.ntc = mean(IPC_Ct),sd.ntc=sd(IPC_Ct))
+  # Get rid of samples with dilution == 1 if a dilution series was run on a sample and those that were inhibited
+  dat.ntc <- qPCR_unk %>% filter(type=="ntc") %>% 
+    mutate(IPC_Ct = as.numeric(as.character(IPC_Ct))) %>%
+    group_by(qPCR) %>% 
+    dplyr::summarise(mean.ntc = mean(IPC_Ct),sd.ntc=sd(IPC_Ct))
 
-# This gets rid of 
-qPCR_unk <- left_join(qPCR_unk,dat.ntc) %>% mutate(mean.ntc = as.numeric(as.character(mean.ntc))) %>%
+  # This gets rid of inhibited samples.
+  qPCR_unk <- left_join(qPCR_unk,dat.ntc) %>% mutate(mean.ntc = as.numeric(as.character(mean.ntc))) %>%
             mutate(inhibit.val = IPC_Ct-mean.ntc,
                       inhibit.bin=ifelse(inhibit.val < INHIBIT.LIMIT ,0,1)) %>%
             filter(inhibit.bin ==0)
-            # This leaves 7769 rows of data.
+            # This leaves 7388 rows of data.
 
-# Add wash covariate
-### CHECK THE SAMPLES THAT HAD TROUBLE WITH WASHING (drop.sample == "30EtOH" or "30EtOHpaired")
-dat.wash <- qPCR_unk %>% filter(drop.sample %in% c("30EtOH","30EtOHpaired"))
+  ### Add wash covariate
+  ### CHECK THE SAMPLES THAT HAD TROUBLE WITH WASHING (drop.sample == "30EtOH" or "30EtOHpaired")
+  dat.wash <- qPCR_unk %>% filter(drop.sample %in% c("30EtOH","30EtOHpaired"))
 
-# find unique depth-station combinations among these stations.
-  dat.wash$station <- as.factor(dat.wash$station)
+  # find unique depth-station combinations among these stations.
   uni.wash <- dat.wash %>% group_by(station,depth,Niskin,drop.sample) %>% 
     summarise(N=length(station)) %>% mutate(status="washed") %>% ungroup()
-
+  dat.wash <- dat.wash %>% mutate(status="washed")
+  # Find the paired, but unwashed samples from the
   pairs.wash <- qPCR_unk %>% filter(!drop.sample %in% c("30EtOH","30EtOHpaired"))
   pairs.wash <- uni.wash %>% dplyr::select(station,depth) %>% left_join(.,pairs.wash) %>% 
                   filter(!is.na(Niskin)) %>% mutate(status="unwashed")
-  dat.wash <- dat.wash %>% mutate(status="washed")
+  
   dat.wash.all <- bind_rows(dat.wash,pairs.wash) %>% arrange(station,depth)
 
   dat.wash.summary <- dat.wash.all %>% group_by(station,depth,Niskin,status) %>% summarise(N=length(status)) %>% 
@@ -104,18 +114,21 @@ dat.wash <- qPCR_unk %>% filter(drop.sample %in% c("30EtOH","30EtOHpaired"))
   # add indicator for membership in 30EtOH club and associated pairs
   # 0 = normal sample. 1 = washed with 30% etoh. 2= pair of washed with 30% EtOH sample
   dat.wash.all <- dat.wash.all %>% mutate(wash.indicator = ifelse(status == "washed",1,2)) %>%
-                    dplyr::select(-status) %>% 
+                    dplyr::select(-status)
   # This indicator variable gets used in the STAN code.
   dat.wash.all <- dat.wash.all %>% mutate(wash_idx = ifelse(wash.indicator==1,1,0))
 
   # find samples that were washed with 30% EtOH, exclude them from dat.samp, 
   # then add them back in with needed indicator variables
-  exclude  <- unique(dat.wash.all$sample)
-  qPCR_unk <- qPCR_unk %>% mutate(wash.indicator=0,wash_idx=0) %>% filter(!sample %in% exclude) %>% 
+  qPCR_unk <- qPCR_unk %>% mutate(wash.indicator=0,wash_idx=0) %>% filter(!tubeID %in% unique(dat.wash.all$tubeID)) %>% 
                 bind_rows(.,dat.wash.all)
+  # Still at 7388 rows of data.
 
-
-
+  # Filter out various controls, field negatives, ntc, etc.
+  qPCR_unk 
+  A <- qPCR_unk %>% 
+            filter(type == "unknowns") %>% # this gets rid of is 649 rows.
+            filter(is.na(utm.lat)) # gets rid of samples filtered from other hake projects
 
 
 ####
