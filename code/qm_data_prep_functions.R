@@ -107,22 +107,22 @@ format_qPCR_data <- function(qPCR_unknowns,
   if(is.null(unk_covariates) ==FALSE){
     for(i in 1:length(unk_covariates)){
       if(cov_type[i] =="continuous"){
-        FORM[[i]] <- paste("hake_Ct ~ 0+", unk_covariates[i])
-        model_frame   <- model.frame(FORM[[i]], qPCR_unknowns)  
-        X_cov[[i]] <- model.matrix(as.formula(FORM[[i]]), model_frame)
+        FORM[[unk_covariates[i]]] <- paste("hake_Ct ~ 0+", unk_covariates[i])
+        model_frame   <- model.frame(FORM[[unk_covariates[i]]], qPCR_unknowns)  
+        X_cov[[unk_covariates[i]]] <- model.matrix(as.formula(FORM[[i]]), model_frame)
       } else if(cov_type[i] =="factor"){
-        FORM[[i]] <- paste("hake_Ct ~ 0 + factor(", unk_covariates[i],")")
-        model_frame   <- model.frame(FORM[[i]], qPCR_unknowns)  
-        X_cov[[i]] <- model.matrix(as.formula(FORM[[i]]), model_frame)
+        FORM[[unk_covariates[i]]] <- paste("hake_Ct ~ 0 + factor(", unk_covariates[i],")")
+        model_frame   <- model.frame(FORM[[unk_covariates[i]]], qPCR_unknowns)  
+        X_cov[[unk_covariates[i]]] <- model.matrix(as.formula(FORM[[unk_covariates[i]]]), model_frame)
       }
     }
   }
   if(is.null(unk_smoothes)==FALSE){
     for(i in 1:length(unk_smoothes)){
-      SM_FORM[[i]] <- paste0("hake_Ct ~ s(", unk_smooth[i],")")
+      SM_FORM[[unk_smoothes[i]]] <- paste0("hake_Ct ~ s(", unk_smoothes[i],")")
       # Model form for smoothes
       #FORM.smoothes <- "copies_ul ~ s(bottom.depth.consensus,by=year,k=4)"
-      SM[[i]] <- parse_smoothers(eval(SM_FORM[[i]]) ,qPCR_unknowns)
+      SM[[unk_smoothes[i]]] <- parse_smoothers(eval(SM_FORM[[unk_smoothes[i]]]) ,qPCR_unknowns)
         # Objects you care about in SM are:
             # Zs basis function matrices
             # Xs; // smoother linear effect matrix
@@ -149,7 +149,9 @@ format_qPCR_data <- function(qPCR_unknowns,
         } else{
           X_offset <- cbind(X_offset, qPCR_unknowns[,unk_offsets[i]] %>% log())
         }
+        colnames(X_offset)[i] = paste0("log_",unk_offsets[i])
       }else{print("Offset type not supported at present")}
+      
     }
   }
   
@@ -158,7 +160,7 @@ format_qPCR_data <- function(qPCR_unknowns,
   ################################
   
   #unknowns
-  qPCR_unk<- qPCR_unknowns %>% 
+  qPCR_unk <- qPCR_unknowns %>% 
     # pick columns we care about and rename
     select(qPCR, well,tubeID,type,task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     # remove completely empty rows
