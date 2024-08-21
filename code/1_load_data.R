@@ -26,14 +26,11 @@ select <- dplyr::select
       
 ### Data
 #hake sample metadata 
+
 meta <- read_csv(here("data","metadata","Hake_2019_metadata.csv")) %>% 
-            dplyr::select(tubeID=sample,
-                station,Niskin,
-                #depth,
-                drop.sample,year,month,day,
-                lat,lon,
-                utm.lat,utm.lon,
-                transect.dist.km,transect)
+  # keep only the relevant andd unique columns from this data 
+  select(station,Niskin,year,month,day,transect,lat,lon,utm.lat,utm.lon,bottom.depth.consensus,transect.dist.km) %>%
+  distinct()
 # distinct(station, Niskin, depth, drop.sample, field.negative.type, volume,.keep_all = T)
 
 qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'))
@@ -53,7 +50,7 @@ qPCR.sample.id <- qPCR.sample.id %>%
   mutate(depth=as.numeric(depth)) %>% 
   # empty stations or extraneous rows
   filter(!(station=="N/A"|station=="-")) %>%
-  #left_join(meta %>%  dplyr::select(-volume),by = join_by(station, Niskin, drop.sample, field.negative.type, volume)) %>% 
+  left_join(., meta,by = join_by(station,Niskin)) %>% 
   #dplyr::select(-Zymo) %>% 
   distinct()
 
@@ -70,10 +67,11 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
   mutate(across(contains("copies_ul"),~as.numeric(.))) 
   # this leaves 9208 rows
 
-# Get rid of zymo filtered samples
-qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo))
+# Get rid of zymo filtered samples 
+qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo)) 
   # 8659 rows remain.
-
+    # and 3 odd samples that don't have locations
+    # %>% filter(!is.na(utm.lat))
 
 # Specify an inhibition limit for retaining samples.
 INHIBIT.LIMIT <- 0.5
@@ -98,7 +96,7 @@ INHIBIT.LIMIT <- 0.5
   uni.wash <- dat.wash %>% group_by(station,depth,Niskin,drop.sample) %>% 
     summarise(N=length(station)) %>% mutate(status="washed") %>% ungroup()
   dat.wash <- dat.wash %>% mutate(status="washed")
-  # Find the paired, but unwashed samples from the
+  # Find the paired, but unwashed samples from the remaining samples.
   pairs.wash <- qPCR_unk %>% filter(!drop.sample %in% c("30EtOH","30EtOHpaired"))
   pairs.wash <- uni.wash %>% dplyr::select(station,depth) %>% left_join(.,pairs.wash) %>% 
                   filter(!is.na(Niskin)) %>% mutate(status="unwashed")
@@ -123,13 +121,11 @@ INHIBIT.LIMIT <- 0.5
   qPCR_unk <- qPCR_unk %>% mutate(wash.indicator=0,wash_idx=0) %>% filter(!tubeID %in% unique(dat.wash.all$tubeID)) %>% 
                 bind_rows(.,dat.wash.all)
   # Still at 7388 rows of data.
-
+ 
   # Filter out various controls, field negatives, ntc, etc.
-  qPCR_unk 
-  A <- qPCR_unk %>% 
+  qPCR_unk <- qPCR_unk %>% 
             filter(type == "unknowns") %>% # this gets rid of is 649 rows.
-            filter(is.na(utm.lat)) # gets rid of samples filtered from other hake projects
-
+            filter(!is.na(utm.lat)) # gets rid of 9 replicates (3 unique tubes) filtered from other hake projects
 
 ####
 qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv')) %>% 
