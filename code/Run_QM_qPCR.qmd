@@ -54,19 +54,15 @@ stan_metabarcoding_data <- formatted_metabarcoding_data%>%
   makeDesign(N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
 
 #qPCR
-# 
-stan_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
+formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
                                    qPCR_standards=qPCR_std,
                                    unk_covariates=c("wash_idx"),cov_type = c("continuous"),
-                                   unk_offset =c("dilution")) 
-#### BELOW HERE BROKEN.
+                                   unk_offset =c("dilution"))
 
-
-%>% 
-  prepare_stan_data_qPCR()
+stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data)
 
 # linking data
-qPCR_mb_link <- prepare_stan_qPCR_mb_join(mfu,qPCR_unk,qPCR_std,link_species = "Merluccius productus")
+qPCR_mb_link <- prepare_stan_qPCR_mb_join(mfu,unk_formatted = formatted_qPCR_data$qPCR_unk,link_species = "Merluccius productus")
 
 # join the three lists
 stan_data_joint <- c(stan_qPCR_data,stan_metabarcoding_data,qPCR_mb_link)

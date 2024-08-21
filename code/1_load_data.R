@@ -28,31 +28,26 @@ select <- dplyr::select
 #hake sample metadata 
 
 meta <- read_csv(here("data","metadata","Hake_2019_metadata.csv")) %>% 
-  # keep only the relevant andd unique columns from this data 
+  # keep only the relevant and unique columns from this data 
   select(station,Niskin,year,month,day,transect,lat,lon,utm.lat,utm.lon,bottom.depth.consensus,transect.dist.km) %>%
   distinct()
-# distinct(station, Niskin, depth, drop.sample, field.negative.type, volume,.keep_all = T)
 
-qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'))
+qPCR.sample.id <- read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'),
+                           col_select = all_of(c("Tube #", "CTD cast","Niskin","depth","drop.sample","field.negative.type","water.filtered.L")))
 # dat.station.id <- read_csv(here('Data','CTD_hake_data_10-2019.csv'))
 
 ### SAMPLE IDs ###
 qPCR.sample.id <- qPCR.sample.id %>%  
-  rename(tubeID=`Tube #`) %>%
+  rename(tubeID=`Tube #`,
+         station=`CTD cast`,
+         volume=water.filtered.L) %>%
   distinct() %>% 
-  dplyr::select(tubeID,
-                station=`CTD cast`,
-                Niskin,
-                depth,
-                drop.sample,
-                field.negative.type,
-                volume = water.filtered.L) %>%
   mutate(depth=ifelse(Niskin=="sfc","0",depth)) %>%
   mutate(depth=ifelse(depth=="sfc","0",depth)) %>%
   mutate(depth=as.numeric(depth)) %>% 
   # empty stations or extraneous rows
   filter(!(station=="N/A"|station=="-")) %>%
-  left_join(., meta,by = join_by(station,Niskin)) %>% 
+  left_join(meta,by = join_by(station,Niskin)) %>% 
   #dplyr::select(-Zymo) %>% 
   distinct()
 
@@ -70,78 +65,91 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
   # this leaves 9208 rows
 
 # Get rid of zymo filtered samples 
-qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo)) 
+qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo))
   # 8659 rows remain.
-    # and 3 odd samples that don't have locations
-    # %>% filter(!is.na(utm.lat))
 
 # Specify an inhibition limit for retaining samples.
 INHIBIT.LIMIT <- 0.5
-  # Get rid of samples with dilution == 1 if a dilution series was run on a sample and those that were inhibited
-  dat.ntc <- qPCR_unk %>% filter(type=="ntc") %>% 
-    mutate(IPC_Ct = as.numeric(as.character(IPC_Ct))) %>%
-    group_by(qPCR) %>% 
-    dplyr::summarise(mean.ntc = mean(IPC_Ct),sd.ntc=sd(IPC_Ct))
 
-  # This gets rid of inhibited samples.
-  qPCR_unk <- left_join(qPCR_unk,dat.ntc) %>% mutate(mean.ntc = as.numeric(as.character(mean.ntc))) %>%
-            mutate(inhibit.val = IPC_Ct-mean.ntc,
-                      inhibit.bin=ifelse(inhibit.val < INHIBIT.LIMIT ,0,1)) %>%
-            filter(inhibit.bin ==0)
-            # This leaves 7388 rows of data.
+# Get rid of samples with dilution == 1 if a dilution series was run on a sample and those that were inhibited
+dat.ntc <- qPCR_unk %>% filter(type=="ntc") %>% 
+  mutate(IPC_Ct = as.numeric(as.character(IPC_Ct))) %>%
+  group_by(qPCR) %>% 
+  dplyr::summarise(mean.ntc = mean(IPC_Ct),sd.ntc=sd(IPC_Ct))
 
-  ### Add wash covariate
-  ### CHECK THE SAMPLES THAT HAD TROUBLE WITH WASHING (drop.sample == "30EtOH" or "30EtOHpaired")
-  dat.wash <- qPCR_unk %>% filter(drop.sample %in% c("30EtOH","30EtOHpaired"))
+# This gets rid of inhibited samples.
+qPCR_unk <- left_join(qPCR_unk,dat.ntc,by=join_by(qPCR)) %>% 
+  # mutate(mean.ntc = as.numeric(as.character(mean.ntc))) %>%
+  mutate(inhibit.val = IPC_Ct-mean.ntc,
+         inhibit.bin=ifelse(inhibit.val < INHIBIT.LIMIT ,0,1)) %>%
+  filter(inhibit.bin ==0) %>% 
+  select(-inhibition_rate)
 
-  # find unique depth-station combinations among these stations.
-  uni.wash <- dat.wash %>% group_by(station,depth,Niskin,drop.sample) %>% 
-    summarise(N=length(station)) %>% mutate(status="washed") %>% ungroup()
-  dat.wash <- dat.wash %>% mutate(status="washed")
-  # Find the paired, but unwashed samples from the remaining samples.
-  pairs.wash <- qPCR_unk %>% filter(!drop.sample %in% c("30EtOH","30EtOHpaired"))
-  pairs.wash <- uni.wash %>% dplyr::select(station,depth) %>% left_join(.,pairs.wash) %>% 
-                  filter(!is.na(Niskin)) %>% mutate(status="unwashed")
-  
-  dat.wash.all <- bind_rows(dat.wash,pairs.wash) %>% arrange(station,depth)
+# This leaves 7388 rows of data.
 
-  dat.wash.summary <- dat.wash.all %>% group_by(station,depth,Niskin,status) %>% summarise(N=length(status)) %>% 
-                arrange(station,depth,status) %>% as.data.frame() 
+### Add wash covariate
+### CHECK THE SAMPLES THAT HAD TROUBLE WITH WASHING (drop.sample == "30EtOH" or "30EtOHpaired")
+dat.wash <- qPCR_unk %>% filter(drop.sample %in% c("30EtOH","30EtOHpaired")) %>% mutate(status="washed")
 
-  # There are 27 paired samples with which to estimate the effect of the 30% EtOH treatment
-  print(nrow(dat.wash.summary[dat.wash.summary$status=="unwashed",]))
+# find unique depth-station combinations among these stations.
+uni.wash <- dat.wash %>% 
+  group_by(station,depth,Niskin,drop.sample) %>% 
+  summarise(N=n()) %>%
+  mutate(status="washed") %>% 
+  ungroup()
 
-  # add indicator for membership in 30EtOH club and associated pairs
-  # 0 = normal sample. 1 = washed with 30% etoh. 2= pair of washed with 30% EtOH sample
-  dat.wash.all <- dat.wash.all %>% mutate(wash.indicator = ifelse(status == "washed",1,2)) %>%
-                    dplyr::select(-status)
-  # This indicator variable gets used in the STAN code.
-  dat.wash.all <- dat.wash.all %>% mutate(wash_idx = ifelse(wash.indicator==1,1,0))
+# Find the paired, but unwashed samples from the remaining samples.
+pairs.wash <- qPCR_unk %>% filter(!drop.sample %in% c("30EtOH","30EtOHpaired"))
+pairs.wash <- uni.wash %>% 
+  dplyr::select(station,depth) %>% 
+  left_join(pairs.wash,by = join_by(station, depth)) %>%
+  filter(!is.na(Niskin)) %>%
+  mutate(status="unwashed")
+#99 of these
 
-  # find samples that were washed with 30% EtOH, exclude them from dat.samp, 
-  # then add them back in with needed indicator variables
-  qPCR_unk <- qPCR_unk %>% mutate(wash.indicator=0,wash_idx=0) %>% filter(!tubeID %in% unique(dat.wash.all$tubeID)) %>% 
-                bind_rows(.,dat.wash.all)
-  # Still at 7388 rows of data.
- 
-  # Filter out various controls, field negatives, ntc, etc.
-  qPCR_unk <- qPCR_unk %>% 
-            filter(type == "unknowns") %>% # this gets rid of is 649 rows.
-            filter(!is.na(utm.lat)) # gets rid of 9 replicates (3 unique tubes) filtered from other hake projects
-  # Still at 6733 rows of data.
-  
-  # Classify each listed depth into one of a few categories.
-  qPCR_unk <- qPCR_unk %>% mutate(depth_cat=case_when(depth < 25 ~ 0,
-                                                      depth ==25 ~ 25,  
-                                                      depth > 25  & depth <= 60  ~ 50,
-                                                      depth > 60  & depth <= 100 ~ 100,
-                                                      depth > 119 & depth <= 150 ~ 150,
-                                                      depth > 151 & depth <= 200 ~ 200,
-                                                      depth > 240 & depth <= 350 ~ 300,
-                                                      depth > 400 & depth <= 500 ~ 500))
-  
-  # Make a new metadata file that has all of the requisite stuff.
-  META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
+dat.wash.all <- bind_rows(dat.wash,pairs.wash) %>% arrange(station,depth)
+
+dat.wash.summary <- dat.wash.all %>% group_by(station,depth,Niskin,status) %>% summarise(N=n()) %>% 
+              arrange(station,depth,status) %>% as_tibble() 
+
+# There are 27 paired samples with which to estimate the effect of the 30% EtOH treatment
+dat.wash.summary %>% count(status)
+
+# add indicator for membership in 30EtOH club and associated pairs
+dat.wash.all <- dat.wash.all %>% 
+  # if wash.indicator is 0 = normal sample. 1 = washed with 30% etoh. 2= pair of washed with 30% EtOH sample
+  mutate(wash.indicator = ifelse(status == "washed",1,2)) %>%
+  # for STAN, just keep track as a binary variable whether each sample was washed or not
+  # 1=washed, 0=unwashed
+  mutate(wash_idx=as.numeric(wash.indicator==1)) %>% 
+  dplyr::select(-status)
+
+# find samples that were washed with 30% EtOH, exclude them from dat.samp,
+# then add them back in with needed indicator variables
+qPCR_unk <- qPCR_unk %>% 
+  mutate(wash.indicator=0,wash_idx=0) %>% 
+  filter(!tubeID %in% unique(dat.wash.all$tubeID)) %>% 
+  bind_rows(.,dat.wash.all)
+# Still at 7388 rows of data.
+
+# Filter out various controls, field negatives, ntc, etc.
+qPCR_unk <- qPCR_unk %>%
+          filter(type == "unknowns") %>% # this gets rid of 646 rows.
+          filter(!is.na(utm.lat)) # gets rid of 9 replicates (3 unique tubes) filtered from other hake projects
+# Still at 6733 rows of data.
+
+# Classify each listed depth into one of a few categories.
+qPCR_unk <- qPCR_unk %>% mutate(depth_cat=case_when(depth < 25 ~ 0,
+                                                    depth ==25 ~ 25,  
+                                                    depth > 25  & depth <= 60  ~ 50,
+                                                    depth > 60  & depth <= 100 ~ 100,
+                                                    depth > 119 & depth <= 150 ~ 150,
+                                                    depth > 151 & depth <= 200 ~ 200,
+                                                    depth > 240 & depth <= 350 ~ 300,
+                                                    depth > 400 & depth <= 500 ~ 500))
+
+# Make a new metadata file that has all of the requisite stuff.
+META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
   
 ####
 qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv')) %>% 

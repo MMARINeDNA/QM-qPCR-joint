@@ -1,11 +1,12 @@
-# Metabarcoding calibration model function
-# RPK Aug 2022; Revised ORL July 2024
+### THIS SCRIPT INCLUDES HELPER FUNCTIONS FOR THE QM/qPCR JOINT MODEL TO HELP TRANSLATE/FEED INTO STAN
+### INCLUDING FUNCTIONS TO HELP WITH FORMATTING, DATA TRANSFORMS AND INITIAL VALUES
 
 library(mgcv)
 
+# code for parsing smoothers
 source(here("code","smoothers.R"),local=TRUE)
-################DEFINE SUB-FUNCTIONS
 
+### FORMAT THE METABARCODING DATA FOR INGESTION INTO STAN
 format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_data,
                                       Level_1_treatment_envir, #e.g., unique sampling site
                                       Level_2_treatment_envir, #nested within level1 units, e.g., unique biological samples
@@ -97,6 +98,7 @@ format_qPCR_data <- function(qPCR_unknowns,
                              unk_smoothes=NULL,
                              unk_offsets=NULL,offset_type = rep("log",length(unk_offsets))){
   
+  # Make matrices for qPCR smooths and covariates
   # This is just for marginal effects, not interactions.
   FORM <- list()
   X_cov <- list()
@@ -155,31 +157,45 @@ format_qPCR_data <- function(qPCR_unknowns,
     }
   }
   
-  ################################
-  ## OWEN START HERE.
-  ################################
-  
   #unknowns
   qPCR_unk <- qPCR_unknowns %>% 
     # pick columns we care about and rename
-    select(qPCR, well,tubeID,type,task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
-    # remove completely empty rows
-    filter(!is.na(qPCR)) %>%
+    select(qPCR, well,tubeID,type,task,IPC_Ct,inhibit.val,inhibit.bin,wash_idx,depth_cat,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
     mutate(Ct=as.numeric(Ct) %>% round(2)) %>% 
-    filter(task=="UNKNOWN",type=="unknowns")
-  
+    mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
+    filter(task=="UNKNOWN",type=="unknowns") %>%  #this shouldn't really filter anything out (i.e., the data should have been cleaned before this step)
+    # INDEX OF UNIQUE PLATES
+    mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
+    # INDEX OF UNIQUE SAMPLES
+    mutate(qpcr_sample_idx=match(tubeID,unique(tubeID)))
+  # as of 08.21.24, 31 unique plates, 1818 unique samples
+
   #standards
   qPCR_std <- qPCR_standards %>% 
     # pick columns we care about and rename
-    select(qPCR, well,tubeID,type,task=hake_task,IPC_Ct,inhibition_rate,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    select(qPCR, well,tubeID,type,task=hake_task,IPC_Ct,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
     mutate(Ct=as.numeric(Ct) %>% round(2))%>% 
-    filter(task=="STANDARD") %>% 
-  # HAD AN ISSUE WITH NON-UNIQUE SAMPLE NAMES BETWEEN STDS AND UNKS BECAUSE OF '5' BEING USED AS SAMPLE ID FOR STANDARDS WITH CONC. OF 5 COPIES
-    mutate(tubeID=ifelse(tubeID=="5","5C",tubeID))
+    mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
+    # there are 7 samples where the task is "UNKNOWN" instead of "STANDARD", but that is a lab error. let's fix these
+    mutate(copies_ul=case_when(
+      task=="STANDARD" ~ copies_ul,
+      task=="UNKNOWN"&tubeID=="E00"~1,
+      task=="UNKNOWN"&tubeID=="E01"~10,
+      task=="UNKNOWN"&tubeID=="5"~5
+    )) %>% 
+    # then we can call them all standards
+    mutate(task="STANDARD") %>% 
+    #had an issue with non-unique sample names between stds and unks because of '5' being used as sample id for standards with conc. of 5 copies
+    mutate(tubeID=ifelse(tubeID=="5","5C",tubeID)) %>% 
+    # add the plate index from the unknowns
+    left_join(distinct(qPCR_unk,qPCR,plate_idx),by=join_by(qPCR)) %>% 
+    # finally, remove plates that are in standards but not qpcr (H8,H17,H24, which we checked are plates with errors and full sets of controls with no unknowns)
+    filter(!is.na(plate_idx))
+  
   
   # bind standards and unknowns
   # qPCRdata <- qPCR_1 %>% 
@@ -207,19 +223,17 @@ format_qPCR_data <- function(qPCR_unknowns,
 
 # a last piece is we need a sample identifier across QM and qPCR data
 # We need to link unique qPCR biological samples to unique QM samples
-prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,qPCR_unknowns, qPCR_standards,link_species="Merluccius productus"){
-
-  qpcr_formatted <- format_qPCR_data(qPCR_unknowns,qPCR_standards)
+prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,unk_formatted,link_species="Merluccius productus"){
   
   mb_link_1 <- input_metabarcoding_data %>% 
     mutate(mb_link=match(Sample,unique(Sample))) %>% 
     distinct(Sample,.keep_all = T)
   
-  mb_link_2 <- qpcr_formatted %>% 
-    distinct(plateSample,plateSample_idx,.keep_all = T) %>% 
+  mb_link_2 <- unk_formatted %>% 
+    distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>% 
     left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
-    dplyr::select(plateSample_idx,mb_link) %>% 
-    arrange(plateSample_idx) %>% 
+    dplyr::select(qpcr_sample_idx,mb_link) %>% 
+    arrange(qpcr_sample_idx) %>% 
     filter(!is.na(mb_link))
   
   # get the index of the right species
@@ -236,24 +250,27 @@ prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,qPCR_unknowns, qP
 # make stan data for qPCR part
 prepare_stan_data_qPCR <- function(qPCRdata){
   
-  type <- qPCRdata %>% distinct(plateSample, task) %>% pull(task)
+  unk <- qPCRdata$qPCR_unk
+  std <- qPCRdata$qPCR_std
   
   stan_qPCR_data <- list(
-    Nplates = length(unique(qPCRdata$qPCR)),
-    Nobs_qpcr = nrow(qPCRdata),
-    NSamples_qpcr = length(unique(qPCRdata$plateSample)),
-    NstdSamples = qPCRdata %>% filter(task == "STANDARD") %>% distinct(plateSample) %>% nrow(),
-    plate_idx = qPCRdata$plate_idx, 
-    std_idx =  which(type=="STANDARD"),
-    unkn_idx = which(type == "UNKNOWN"),
-    plateSample_idx = qPCRdata$plateSample_idx,
-    y = qPCRdata$Ct,
-    z = qPCRdata$z,
-    # known copy number from standards
-    known_concentration = qPCRdata %>% filter(task == "STANDARD") %>% 
-      distinct(plateSample,.keep_all=T) %>% pull(copies_ul),
+    Nplates = length(unique(unk$qPCR)),
+    Nobs_qpcr = nrow(unk),
+    NSamples_qpcr = length(unique(unk$qpcr_sample_idx)),
+    NstdSamples = nrow(std),
+    plate_idx = unk$plate_idx,
+    qpcr_sample_idx = unk$qpcr_sample_idx,
+    y_unk = unk$Ct, # cycles, unknowns
+    z_unk = unk$z, # did it amplify? unknowns
+    y_std = std$Ct, # cycles, standards
+    z_std = std$z, # did it amplify? standards
+    known_concentration = std$copies_ul,# known copy number from standards
     stdCurvePrior_intercept = c(39, 3), #normal distr, mean and sd ; hyperpriors
-    stdCurvePrior_slope = c(-3, 1) #normal distr, mean and sd ; hyperpriors
+    stdCurvePrior_slope = c(-3, 1), #normal distr, mean and sd ; hyperpriors
+    # hard coded covariates and offsets- COULD GENERALIZE THIS LATER
+    X_wash = qPCRdata$X_cov, # wash covariate
+    X_dil = qPCRdata$X_offset # dilution offset
+    # COULD ADD SMOOTHS HERE EVENTUALLY
   )
   
   return(stan_qPCR_data)
