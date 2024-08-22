@@ -157,10 +157,15 @@ format_qPCR_data <- function(qPCR_unknowns,
     }
   }
   
+  # pull covars (not sure how to generalize this yet)
+  # X_cov <- map_df(X_cov,~bind_cols(as.numeric))
+  # X_offset <- bind_cols(X_offset)
+  
   #unknowns
   qPCR_unk <- qPCR_unknowns %>% 
     # pick columns we care about and rename
-    select(qPCR, well,tubeID,type,task,IPC_Ct,inhibit.val,inhibit.bin,wash_idx,depth_cat,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    select(qPCR, well,tubeID,type,task,IPC_Ct,inhibit.val,inhibit.bin,wash_idx_obs=wash_idx,
+           dilution,depth_cat,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
     mutate(Ct=as.numeric(Ct) %>% round(2)) %>% 
@@ -169,7 +174,9 @@ format_qPCR_data <- function(qPCR_unknowns,
     # INDEX OF UNIQUE PLATES
     mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
     # INDEX OF UNIQUE SAMPLES
-    mutate(qpcr_sample_idx=match(tubeID,unique(tubeID)))
+    mutate(qpcr_sample_idx=match(tubeID,unique(tubeID))) %>% 
+    # WASH AND DILUTION EFFECTS
+    mutate(log_dilution=log(dilution))
   # as of 08.21.24, 31 unique plates, 1818 unique samples
 
   #standards
@@ -195,21 +202,6 @@ format_qPCR_data <- function(qPCR_unknowns,
     left_join(distinct(qPCR_unk,qPCR,plate_idx),by=join_by(qPCR)) %>% 
     # finally, remove plates that are in standards but not qpcr (H8,H17,H24, which we checked are plates with errors and full sets of controls with no unknowns)
     filter(!is.na(plate_idx))
-  
-  
-  # bind standards and unknowns
-  # qPCRdata <- qPCR_1 %>% 
-  #   bind_rows(qPCR_2) %>% 
-  #   mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
-  #   mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
-  #   unite(c(qPCR,tubeID), col = "plateSample", remove = F) %>% 
-  #   mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>% 
-  #   group_by(plateSample) %>% 
-  #   add_tally(Ct==99) %>% 
-  #   # filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these.
-  #   dplyr::select(-n) %>%
-  #   ungroup() %>% 
-  #   mutate(plateSample_idx = match(plateSample, unique(plateSample)))
   
   qPCRdata <- list(qPCR_unk = qPCR_unk,
                    qPCR_std = qPCR_std,
@@ -253,12 +245,24 @@ prepare_stan_data_qPCR <- function(qPCRdata){
   unk <- qPCRdata$qPCR_unk
   std <- qPCRdata$qPCR_std
   
+  if("wash_idx_obs"%in%names(unk)){
+    wash_idx <- unk %>% 
+      group_by(qpcr_sample_idx) %>% 
+      summarise(wash_idx=mean(wash_idx_obs)) %>% 
+      pull("wash_idx")
+  }
+  log_dil <-unk %>% 
+    group_by(qpcr_sample_idx) %>% 
+    summarise(log_dil=mean(log_dilution)) %>% 
+    pull(log_dil)
+  
   stan_qPCR_data <- list(
     Nplates = length(unique(unk$qPCR)),
     Nobs_qpcr = nrow(unk),
     NSamples_qpcr = length(unique(unk$qpcr_sample_idx)),
     NstdSamples = nrow(std),
     plate_idx = unk$plate_idx,
+    std_plate_idx=std$plate_idx,
     qpcr_sample_idx = unk$qpcr_sample_idx,
     y_unk = unk$Ct, # cycles, unknowns
     z_unk = unk$z, # did it amplify? unknowns
@@ -268,8 +272,9 @@ prepare_stan_data_qPCR <- function(qPCRdata){
     stdCurvePrior_intercept = c(39, 3), #normal distr, mean and sd ; hyperpriors
     stdCurvePrior_slope = c(-3, 1), #normal distr, mean and sd ; hyperpriors
     # hard coded covariates and offsets- COULD GENERALIZE THIS LATER
-    X_wash = qPCRdata$X_cov, # wash covariate
-    X_dil = qPCRdata$X_offset # dilution offset
+    wash_idx = wash_idx, # design matrix for covariates (right now, just the wash effect)
+    wash_prior = c(-1,1),
+    log_dil = log_dil # dilution offset
     # COULD ADD SMOOTHS HERE EVENTUALLY
   )
   

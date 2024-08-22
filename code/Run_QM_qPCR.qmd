@@ -56,7 +56,7 @@ stan_metabarcoding_data <- formatted_metabarcoding_data%>%
 #qPCR
 formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
                                    qPCR_standards=qPCR_std,
-                                   unk_covariates=c("wash_idx"),cov_type = c("continuous"),
+                                   unk_covariates=c("wash_idx","day"),cov_type = c("continuous","continuous"),
                                    unk_offset =c("dilution"))
 
 stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data)
@@ -86,7 +86,7 @@ Run Stan
 ```{r}
 n.chains <- 1
 n.warm <- 200
-n.samps <- 20
+n.samps <- 200
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -102,7 +102,7 @@ jointMod = stan(file = m ,
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species,Nplates=stan_data_joint$Nplates),
                 refresh = 10,
                 boost_lib = NULL,
-                sample_file="samples.csv"
+                sample_file=NULL
                 )
 ```
 
