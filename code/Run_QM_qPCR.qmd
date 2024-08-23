@@ -84,8 +84,8 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-n.chains <- 1
-n.warm <- 200
+n.chains <- 3
+n.warm <- 500
 n.samps <- 200
 jointMod = stan(file = m ,
                 data = stan_data_joint,
@@ -99,10 +99,12 @@ jointMod = stan(file = m ,
                                   stepsize=0.03,
                                   adapt_delta=0.9,
                                   metric="diag_e"),
-                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species,Nplates=stan_data_joint$Nplates),
-                refresh = 10,
+                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
+                                    N_species = stan_data_joint$N_species,
+                                    Nplates=stan_data_joint$Nplates),
+                #refresh = 10,
                 boost_lib = NULL,
-                sample_file=NULL
+                sample_file="tmp.csv"
                 )
 ```
 
