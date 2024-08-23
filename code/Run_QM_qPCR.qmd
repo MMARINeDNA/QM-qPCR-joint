@@ -85,8 +85,13 @@ Run Stan
 
 ```{r}
 n.chains <- 3
+<<<<<<< HEAD
 n.warm <- 2000
 n.samps <- 2000
+=======
+n.warm <- 500
+n.samps <- 200
+>>>>>>> ba6ad2693275e0d5b507f3971fcad754935bb62f
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -99,10 +104,12 @@ jointMod = stan(file = m ,
                                   stepsize=0.03,
                                   adapt_delta=0.9,
                                   metric="diag_e"),
-                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,N_species = stan_data_joint$N_species,Nplates=stan_data_joint$Nplates),
-                refresh = 10,
+                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
+                                    N_species = stan_data_joint$N_species,
+                                    Nplates=stan_data_joint$Nplates),
+                #refresh = 10,
                 boost_lib = NULL,
-                sample_file=NULL
+                sample_file="tmp.csv"
                 )
 ```
 

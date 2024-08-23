@@ -64,8 +64,8 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
   mutate(across(contains("copies_ul"),~as.numeric(.))) 
   # this leaves 9208 rows
 
-# Get rid of zymo filtered samples 
-qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo))
+# Get rid of zymo filtered samples  FIX USEFUL HERE
+qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo)) 
   # 8659 rows remain.
 
 # Specify an inhibition limit for retaining samples.
@@ -108,7 +108,6 @@ pairs.wash <- uni.wash %>%
 #99 of these
 
 dat.wash.all <- bind_rows(dat.wash,pairs.wash) %>% arrange(station,depth)
-
 dat.wash.summary <- dat.wash.all %>% group_by(station,depth,Niskin,status) %>% summarise(N=n()) %>% 
               arrange(station,depth,status) %>% as_tibble() 
 
@@ -147,6 +146,9 @@ qPCR_unk <- qPCR_unk %>% mutate(depth_cat=case_when(depth < 25 ~ 0,
                                                     depth > 151 & depth <= 200 ~ 200,
                                                     depth > 240 & depth <= 350 ~ 300,
                                                     depth > 400 & depth <= 500 ~ 500))
+
+# Only keep observations with a dilution of 1 or 0.2.
+qPCR_unk <- qPCR_unk %>% filter(dilution %in% c(0.2,1))
 
 # Make a new metadata file that has all of the requisite stuff.
 META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
