@@ -84,9 +84,9 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-n.chains <- 1
-n.warm <- 200
-n.samps <- 200
+n.chains <- 3
+n.warm <- 2000
+n.samps <- 2000
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,

@@ -87,7 +87,7 @@ parameters {
   // for qPCR part
   vector<lower=0>[Nplates] beta_std_curve_0; // intercept of standard curve
   vector<upper=0>[Nplates] beta_std_curve_1; // slope of standard curve
-  real<upper=0> gamma_0; //intercept to scale variance of standard curves w the mean
+  real gamma_0; //intercept to scale variance of standard curves w the mean
   vector<upper=0>[Nplates]  gamma_1; //slopes to scale variance of standards curves w the mean
   real phi_0;
   real<lower=0> phi_1;
@@ -221,7 +221,7 @@ model {
       }
     }
 
-print("Obs= ",y_unk[1:5]," ct =",Ct[1:5],";sigma = ",sigma_samp[1:5]);
+// print("Obs= ",y_unk[1:5]," ct =",Ct[1:5],";sigma = ",sigma_samp[1:5]);
 
   //beta standard curve params
   beta_std_curve_0 ~ normal(stdCurvePrior_intercept[1], stdCurvePrior_intercept[2]);
