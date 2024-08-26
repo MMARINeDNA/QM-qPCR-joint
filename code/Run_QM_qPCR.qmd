@@ -50,22 +50,30 @@ formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_2_treatment_mock <- "Rep",
                                                      Level_3_treatment_mock <- NA)
 
-stan_metabarcoding_data <- formatted_metabarcoding_data%>% 
+stan_metabarcoding_data <- formatted_metabarcoding_data %>% 
   makeDesign(N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
 
 #qPCR
 formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
                                    qPCR_standards=qPCR_std,
-                                   unk_covariates=c("wash_idx","day"),cov_type = c("continuous","continuous"),
-                                   unk_offset =c("dilution"))
+                                   unk_covariates=c("wash_idx","station_depth_idx"),cov_type = c("continuous","factor"),
+                                   unk_offset =c("dilution","volume_offset"))
 
-stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data)
+stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>% 
+                    # Add Random effect for station
+                    c(.,
+                      list(X_bio_rep =X_bio_rep,
+                          N_bio_rep_RE = N_bio_rep_RE))
 
 # linking data
-qPCR_mb_link <- prepare_stan_qPCR_mb_join(mfu,unk_formatted = formatted_qPCR_data$qPCR_unk,link_species = "Merluccius productus")
+qPCR_mb_link <- prepare_stan_qPCR_mb_join(mfu,
+                                          unk_formatted = formatted_qPCR_data$qPCR_unk,
+                                          link_species = "Merluccius productus")
 
 # join the three lists
-stan_data_joint <- c(stan_qPCR_data,stan_metabarcoding_data,qPCR_mb_link)
+stan_data_joint <- c(stan_qPCR_data,
+                     stan_metabarcoding_data,
+                     qPCR_mb_link)
 ```
 
 Now the data should be ready for Stan. We compile the Stan model itself:

@@ -19,10 +19,18 @@ data {
   real stdCurvePrior_slope[2]; // prior on the slope of the std curves
 
   //Covariates and offsets
-  vector[NSamples_qpcr] log_dil; //log dilution
+  vector[NSamples_qpcr] X_offset; //log dilution and log volume offsets
+
+  int N_col_station_depth;
+  matrix[NSamples_qpcr,N_col_station_depth] X_station_depth; # covariate design matrices
+  
+  int N_bio_rep_RE;
+  matrix[Nobs_qpcr,N_bio_rep_RE] X_bio_rep_obs; # covariate design matrices for observation
+  matrix[NSamples_qpcr,N_bio_rep_RE] X_bio_rep_obs; # covariate design matrices for unique samples.
+
   vector[NSamples_qpcr] wash_idx;//design matrix for wash effect
   real wash_prior[2]; //priors for wash offset ~ N(wash_offset_prior[1],wash_offset_prior[2]) 
-  
+
   //END DATA FOR qPCR
   
   // DATA FOR METABARCODING PART OF THE MODEL
@@ -91,8 +99,12 @@ parameters {
   vector<upper=0>[Nplates]  gamma_1; //slopes to scale variance of standards curves w the mean
   real phi_0;
   real<lower=0> phi_1;
-  vector[NSamples_qpcr] unk_conc_raw; // log DNA concentration in field samples
+  vector[NSamples_qpcr] log_D_station_depth; // log DNA concentration in field samples
   real wash_effect; //estimate of the EtOH wash effect
+  
+  # Station-depth covariates
+  vector[N_col_cov] gamma; 
+  
   
   //for linking 
   matrix[N_obs_mb_samp,N_species] log_D_raw; // estimated true copy numbers by sample
@@ -116,6 +128,10 @@ transformed parameters {
   matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
   matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
   
+  log_D_station_depth_tube
+  
+  
+  
   // for linking
   matrix[N_obs_mb_samp,N_species] log_D; // estimated true copy numbers by sample, including the link species
   
@@ -138,6 +154,15 @@ transformed parameters {
   for(i in 1:NSamples_qpcr){
     unk_conc[i] = unk_conc_raw[i]+log_dil[i]+wash_effect*wash_idx[i];
   }
+  
+  log_D_station_depth_tube = X_station_depth * log_D_station_depth +
+                            X_bio_rep_tube * bio_rep_RE ;
+  
+  unk_conc_obs = X_station_depth * log_D_station_depth + 
+                      X_bio_rep_obs * bio_rep_RE + 
+                      wash_idx * wash_effect + 
+                      X_offset ;
+   
   for(i in 1:Nobs_qpcr){
     Ct[i] = beta_std_curve_0[plate_idx[i]]+beta_std_curve_1[plate_idx[i]]*unk_conc[qpcr_sample_idx[i]];
     

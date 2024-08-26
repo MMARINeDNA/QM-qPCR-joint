@@ -96,6 +96,7 @@ format_qPCR_data <- function(qPCR_unknowns,
                              qPCR_standards,
                              unk_covariates=NULL,cov_type=NULL,
                              unk_smoothes=NULL,
+                             #unk_random = NULL,
                              unk_offsets=NULL,offset_type = rep("log",length(unk_offsets))){
   
   # Make matrices for qPCR smooths and covariates
@@ -112,7 +113,7 @@ format_qPCR_data <- function(qPCR_unknowns,
         FORM[[unk_covariates[i]]] <- paste("hake_Ct ~ 0+", unk_covariates[i])
         model_frame   <- model.frame(FORM[[unk_covariates[i]]], qPCR_unknowns)  
         X_cov[[unk_covariates[i]]] <- model.matrix(as.formula(FORM[[i]]), model_frame)
-      } else if(cov_type[i] =="factor"){
+      }else if(cov_type[i] =="factor"){
         FORM[[unk_covariates[i]]] <- paste("hake_Ct ~ 0 + factor(", unk_covariates[i],")")
         model_frame   <- model.frame(FORM[[unk_covariates[i]]], qPCR_unknowns)  
         X_cov[[unk_covariates[i]]] <- model.matrix(as.formula(FORM[[unk_covariates[i]]]), model_frame)
@@ -143,9 +144,10 @@ format_qPCR_data <- function(qPCR_unknowns,
         # has_smooths <- SM$has_smooths
     }
   }
+  
   if(is.null(unk_offsets) ==FALSE){
     for(i in 1:length(unk_offsets)){
-      if(offset_type =="log"){
+      if(offset_type[i] =="log"){
         if(i == 1){
           X_offset <-qPCR_unknowns[,unk_offsets[i]] %>% log() 
         } else{
@@ -155,6 +157,8 @@ format_qPCR_data <- function(qPCR_unknowns,
       }else{print("Offset type not supported at present")}
       
     }
+    # Collapse multiple offsets into single vector
+    X_offset_tot = rowSums(X_offset)
   }
   
   # pull covars (not sure how to generalize this yet)
@@ -164,8 +168,10 @@ format_qPCR_data <- function(qPCR_unknowns,
   #unknowns
   qPCR_unk <- qPCR_unknowns %>% 
     # pick columns we care about and rename
-    select(qPCR, well,tubeID,type,task,IPC_Ct,inhibit.val,inhibit.bin,wash_idx_obs=wash_idx,
-           dilution,depth_cat,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    # select(qPCR, well,tubeID,type,task,IPC_Ct,inhibit.val,inhibit.bin,wash_idx_obs=wash_idx,
+    #        dilution,depth_cat,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    rename(wash_idx_obs=wash_idx,
+           Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
     mutate(Ct=as.numeric(Ct) %>% round(2)) %>% 
@@ -174,9 +180,10 @@ format_qPCR_data <- function(qPCR_unknowns,
     # INDEX OF UNIQUE PLATES
     mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
     # INDEX OF UNIQUE SAMPLES
-    mutate(qpcr_sample_idx=match(tubeID,unique(tubeID))) %>% 
+    mutate(qpcr_sample_idx=match(tubeID,unique(tubeID))) 
     # WASH AND DILUTION EFFECTS
-    mutate(log_dilution=log(dilution))
+    #mutate(log_dilution=log(dilution))
+    
   # as of 08.21.24, 31 unique plates, 1818 unique samples
 
   #standards
@@ -208,6 +215,7 @@ format_qPCR_data <- function(qPCR_unknowns,
                    FORM = FORM,
                    X_cov = X_cov,
                    X_offset = X_offset,
+                   X_offset_tot = X_offset_tot,
                    SM_FORM = SM_FORM,
                    SM = SM)
   return(qPCRdata)
@@ -215,7 +223,9 @@ format_qPCR_data <- function(qPCR_unknowns,
 
 # a last piece is we need a sample identifier across QM and qPCR data
 # We need to link unique qPCR biological samples to unique QM samples
-prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,unk_formatted,link_species="Merluccius productus"){
+prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,
+                                      unk_formatted,
+                                      link_species="Merluccius productus"){
   
   mb_link_1 <- input_metabarcoding_data %>% 
     mutate(mb_link=match(Sample,unique(Sample))) %>% 
@@ -245,16 +255,10 @@ prepare_stan_data_qPCR <- function(qPCRdata){
   unk <- qPCRdata$qPCR_unk
   std <- qPCRdata$qPCR_std
   
-  if("wash_idx_obs"%in%names(unk)){
-    wash_idx <- unk %>% 
-      group_by(qpcr_sample_idx) %>% 
-      summarise(wash_idx=mean(wash_idx_obs)) %>% 
-      pull("wash_idx")
-  }
-  log_dil <-unk %>% 
-    group_by(qpcr_sample_idx) %>% 
-    summarise(log_dil=mean(log_dilution)) %>% 
-    pull(log_dil)
+  # log_dil <-unk %>% 
+  #   group_by(qpcr_sample_idx) %>% 
+  #   summarise(log_dil=mean(log_dilution)) %>% 
+  #   pull(log_dil)
   
   stan_qPCR_data <- list(
     Nplates = length(unique(unk$qPCR)),
@@ -272,14 +276,61 @@ prepare_stan_data_qPCR <- function(qPCRdata){
     stdCurvePrior_intercept = c(39, 3), #normal distr, mean and sd ; hyperpriors
     stdCurvePrior_slope = c(-3, 1), #normal distr, mean and sd ; hyperpriors
     # hard coded covariates and offsets- COULD GENERALIZE THIS LATER
-    wash_idx = wash_idx, # design matrix for covariates (right now, just the wash effect)
+    #wash_idx = wash_idx, # design matrix for covariates (right now, just the wash effect)
     wash_prior = c(-1,1),
-    log_dil = log_dil # dilution offset
+    X_offset = X_offset # dilution and other offsets combined
     # COULD ADD SMOOTHS HERE EVENTUALLY
   )
+    
+    # if(length(unk_covariates)>=1){
+    #   for(i in 1:length(unk_covariates)){
+    #     if(i ==1){ X_cov_combined <- qPCRdata$X_cov[[i]]
+    #     }else{
+    #       X_cov_combined <- cbind(X_cov_combined,qPCRdata$X_cov[[i]])
+    #     }
+    #   }
+    # }else{X_cov_combined = NULL}
+    # 
+    # cov_prior_mu=NULL
+    # cov_prior_sigma=NULL    
+    # if(length(unk_covariates)>=1){
+    # # Add priors:
+    #   if(grepl("wash",qPCRdata$X_cov %>% names())[i]){
+    #     cov_prior_mu = c(cov_prior_mu,-1)
+    #     cov_prior_sigma = c(cov_prior_sigma,1)
+    #   }else if(grepl("station_depth",qPCRdata$X_cov %>% names())[i] ){
+    #     cov_prior_mu = c(cov_prior_mu,rep(0,ncol(qPCRdata$X_cov[[i]])))
+    #     cov_prior_sigma = c(cov_prior_sigma,rep(10,ncol(qPCRdata$X_cov[[i]])))
+    #   }
+    # }
+    # 
+    # N_col_cov <- ncol(X_cov_combined)
+    # stan_qPCR_data <- c(stan_qPCR_data,
+    #                      list(X_cov_combined = X_cov_combined,
+    #                           N_col_cov = N_col_cov,
+    #                           cov_prior_mu = cov_prior_mu,
+    #                           cov_prior_sigma = cov_prior_sigma))
+
+  if("wash_idx_obs"%in%names(unk)){
+    wash_idx <- unk %>%
+      group_by(qpcr_sample_idx) %>%
+      summarise(wash_idx=mean(wash_idx_obs)) %>%
+      pull("wash_idx")
+
+    stan_qPCR_data <- c(stan_qPCR_data,
+                        list(wash_idx = wash_idx)) # design matrix for covariates (right now, just the wash effect)
+  }
+  if("station_depth_idx"%in%names(unk)){
+    qPCRdata$X_cov[["station_depth_idx"]]
+
+    X_station_depth <- formatted_qPCR_data$X_cov[["station_depth_idx"]]
+    N_col_station_depth <- ncol(X_station_depth)
+    stan_qPCR_data <- c(stan_qPCR_data,
+                        list(X_station_depth = X_station_depth,
+                             N_col_station_depth = N_col_station_depth))
+  }
   
   return(stan_qPCR_data)
-  
 }
 
 ### END qPCR part ###
@@ -325,7 +376,6 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     library(compositions)
     library(rstan)
     library(dplyr)
-    
     
     mock <- obs$Mock %>% 
       unite(c("level1", "level2", "level3")[1:Nlevels_mock-1], col = S, sep = "_", remove = F) #create identifier to distinguish the lowest level of replication (i.e., site-sample)
@@ -411,7 +461,6 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     
     
     #### Make Stan objects
-    
     stan_data <- list(
       N_species = ncol(p_samp_all)-2,   # Number of species in data
       N_obs_mb_samp = nrow(p_samp_all), # Number of observed community samples and tech replicates ; this will be Ncreek * Nt * Nbiol * Ntech * 2 [for upstream/downstream observations]
@@ -447,9 +496,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       # beta_prior = c(0,5),    # normal prior
       tau_prior = c(1,2)   # gamma prior
     )
-    
     return(stan_data)
-    
 }
 
   #example
