@@ -41,6 +41,25 @@ source(here("code/qm_data_prep_functions.R"))
 We can prepare the data we just loaded to be input into our Stan model, using some of the functions in the previous script.
 
 ```{r}
+#qPCR
+formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
+                                   qPCR_standards=qPCR_std,
+                                   unk_covariates=c("wash_idx","station_depth_idx"),cov_type = c("continuous","factor"),
+                                   unk_offset =c("dilution","volume_offset"))
+
+
+
+  
+
+stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>% 
+                    # Add Random effect for station
+                    c(.,
+                      list(X_bio_rep_tube =X_bio_rep_tube,
+                           X_bio_rep_obs =X_bio_rep_obs,
+                           X_station_depth_tube=X_station_depth_tube,
+                           N_bio_rep_RE = N_bio_rep_RE))
+
+
 # metabarcoding
 formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_1_treatment_envir <- "Sample",
@@ -50,23 +69,13 @@ formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_2_treatment_mock <- "Rep",
                                                      Level_3_treatment_mock <- NA)
 
-stan_metabarcoding_data <- formatted_metabarcoding_data %>% 
-  makeDesign(N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
+stan_metabarcoding_data <-  makeDesign(obs= formatted_metabarcoding_data,
+                                       qPCR_obs = formatted_qPCR_data$qPCR_unk,
+                                         N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
 
-#qPCR
-formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
-                                   qPCR_standards=qPCR_std,
-                                   unk_covariates=c("wash_idx","station_depth_idx"),cov_type = c("continuous","factor"),
-                                   unk_offset =c("dilution","volume_offset"))
-
-stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>% 
-                    # Add Random effect for station
-                    c(.,
-                      list(X_bio_rep =X_bio_rep,
-                          N_bio_rep_RE = N_bio_rep_RE))
 
 # linking data
-qPCR_mb_link <- prepare_stan_qPCR_mb_join(mfu,
+qPCR_mb_link <- prepare_stan_qPCR_mb_join(input_metabarcoding_data=mfu,
                                           unk_formatted = formatted_qPCR_data$qPCR_unk,
                                           link_species = "Merluccius productus")
 
@@ -74,6 +83,11 @@ qPCR_mb_link <- prepare_stan_qPCR_mb_join(mfu,
 stan_data_joint <- c(stan_qPCR_data,
                      stan_metabarcoding_data,
                      qPCR_mb_link)
+# Check to make sure the order is correct for two of the design matrices that 
+# map to observation and the tubes.  Very important.
+    identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
+    identical(colnames(X_station_depth_tube),colnames(stan_data_joint$X_station_depth_obs))
+
 ```
 
 Now the data should be ready for Stan. We compile the Stan model itself:
@@ -93,8 +107,8 @@ Run Stan
 
 ```{r}
 n.chains <- 3
-n.warm <- 500
-n.samps <- 200
+n.warm <- 300
+n.samps <- 100
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -103,13 +117,14 @@ jointMod = stan(file = m ,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
                 control = list(adapt_init_buffer = 150,
-                                  max_treedepth=12,
-                                  stepsize=0.03,
-                                  adapt_delta=0.9,
+                                  max_treedepth=11,
+                                  stepsize=0.01,
+                                  adapt_delta=0.8,
                                   metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
-                                    Nplates=stan_data_joint$Nplates),
+                                    Nplates=stan_data_joint$Nplates,
+                                    N_station_depth=stan_data_joint$N_station_depth),
                 #refresh = 10,
                 boost_lib = NULL,
                 sample_file="tmp.csv"

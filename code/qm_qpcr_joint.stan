@@ -19,16 +19,17 @@ data {
   real stdCurvePrior_slope[2]; // prior on the slope of the std curves
 
   //Covariates and offsets
-  vector[NSamples_qpcr] X_offset; //log dilution and log volume offsets
+  vector[Nobs_qpcr] X_offset_tot; //log dilution and log volume offsets together in one vector.
 
-  int N_col_station_depth;
-  matrix[NSamples_qpcr,N_col_station_depth] X_station_depth; # covariate design matrices
+  int N_station_depth;
+  matrix[NSamples_qpcr,N_station_depth] X_station_depth_tube;// covariate design matrices
+  matrix[Nobs_qpcr,N_station_depth] X_station_depth_obs; //covariate design matrices
   
   int N_bio_rep_RE;
-  matrix[Nobs_qpcr,N_bio_rep_RE] X_bio_rep_obs; # covariate design matrices for observation
-  matrix[NSamples_qpcr,N_bio_rep_RE] X_bio_rep_obs; # covariate design matrices for unique samples.
+  matrix[NSamples_qpcr,N_bio_rep_RE] X_bio_rep_tube;// covariate design matrices for unique samples.
+  matrix[Nobs_qpcr,N_bio_rep_RE] X_bio_rep_obs;// covariate design matrices for observation
 
-  vector[NSamples_qpcr] wash_idx;//design matrix for wash effect
+  vector[Nobs_qpcr] wash_idx;//design matrix for wash effect
   real wash_prior[2]; //priors for wash offset ~ N(wash_offset_prior[1],wash_offset_prior[2]) 
 
   //END DATA FOR qPCR
@@ -87,7 +88,7 @@ transformed data {
 parameters {
   // for QM part
   //real<lower=0> tau_base; // single overdispersion sd for multinomial.
-  vector<lower=0>[N_species-1] tau; // single overdispersion sd for multinomial.
+  real<lower=0> tau; // single overdispersion sd for multinomial.
   vector[N_species-1] alpha_raw;
   //vector[N_obs_mb_samp] eta_samp_raw[N_species-1]; //overdispersion
   vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion
@@ -95,42 +96,38 @@ parameters {
   // for qPCR part
   vector<lower=0>[Nplates] beta_std_curve_0; // intercept of standard curve
   vector<upper=0>[Nplates] beta_std_curve_1; // slope of standard curve
-  real<upper=0> gamma_0; //intercept to scale variance of standard curves w the mean
-  vector<upper=0>[Nplates]  gamma_1; //slopes to scale variance of standards curves w the mean
+  real gamma_0; //intercept to scale variance of standard curves w the mean
+  real<upper=0> gamma_1; //slopes to scale variance of standards curves w the mean
   real phi_0;
   real<lower=0> phi_1;
-  vector[NSamples_qpcr] log_D_station_depth; // log DNA concentration in field samples
+  vector[N_station_depth] log_D_station_depth; // log DNA concentration in field samples in each tube
+  vector[N_bio_rep_RE] bio_rep_RE; // log DNA concentration in field samples
   real wash_effect; //estimate of the EtOH wash effect
   
-  # Station-depth covariates
-  vector[N_col_cov] gamma; 
-  
+  real<lower=0> tau_bio_rep; # random effect for biological replicates.
   
   //for linking 
-  matrix[N_obs_mb_samp,N_species] log_D_raw; // estimated true copy numbers by sample
+  matrix[N_obs_mb_samp,(N_species-1)] log_D_raw; // estimated true copy numbers by sample
 
 }
 
 transformed parameters {
   // for qPCR part
   vector[Nobs_qpcr] Ct; // estimated Ct for all unknown qPCR samples
-  vector[NSamples_qpcr] unk_conc; //log DNA concentration in field samples after adjusting for covariates and offsets
+  vector[Nobs_qpcr] unk_conc_qpcr; //log DNA concentration in field samples observed in qPCR after adjusting for covariates and offsets
+  vector[NSamples_qpcr] log_D_station_depth_tube; //log DNA concentration in field samples (tubes)
   vector[NstdSamples] Ct_std; //estimated Ct for standards
   vector[NstdSamples] sigma_std; // SD of Ct values, standards
   vector[NstdSamples] theta_std; // Bernoulli param, probability of amplification, standards
   vector[Nobs_qpcr] sigma_samp; //SD of Ct values, field samples
   vector[Nobs_qpcr] theta_samp; //Probability of amplification, field samples
-  
+
   // for QM part
   vector[N_species] alpha; // vector of coefficients (log-efficiencies relative to reference taxon)
   //vector[N_obs_mb_samp] eta_samp[N_species]; // overdispersion coefficients
   vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
   matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
   matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
-  
-  log_D_station_depth_tube
-  
-  
   
   // for linking
   matrix[N_obs_mb_samp,N_species] log_D; // estimated true copy numbers by sample, including the link species
@@ -145,39 +142,45 @@ transformed parameters {
   for(i in 1:NstdSamples){
     Ct_std[i] = beta_std_curve_0[std_plate_idx[i]] + 
                               beta_std_curve_1[std_plate_idx[i]] * known_conc[i];
-
-    sigma_std[i] = exp(gamma_0 + gamma_1[std_plate_idx[i]]*known_conc[i]);
-                                  
+    sigma_std[i] = exp(gamma_0 + gamma_1*known_conc[i]);
     theta_std[i] = inv_logit(phi_0 + phi_1*exp(known_conc[i]));
+    if(theta_std[i]==1){theta_std[i]= 1 - 1e-10; }
   }
+
   // qPCR unknowns
-  for(i in 1:NSamples_qpcr){
-    unk_conc[i] = unk_conc_raw[i]+log_dil[i]+wash_effect*wash_idx[i];
-  }
-  
-  log_D_station_depth_tube = X_station_depth * log_D_station_depth +
+  /// THIS IS THE LATENT STATE THAT WILL NEED TO CONNECT TO THE MB DATA
+  log_D_station_depth_tube = X_station_depth_tube * log_D_station_depth +
                             X_bio_rep_tube * bio_rep_RE ;
   
-  unk_conc_obs = X_station_depth * log_D_station_depth + 
-                      X_bio_rep_obs * bio_rep_RE + 
-                      wash_idx * wash_effect + 
-                      X_offset ;
+  
+  /// THIS IS THE LATENT STATE CONNECTS TO THE QPCR OBSERVATIONS
+  unk_conc_qpcr = X_station_depth_obs * log_D_station_depth + 
+                      X_bio_rep_obs * bio_rep_RE; 
+  
+  
+  unk_conc_qpcr = unk_conc_qpcr +
+                      wash_idx * wash_effect +
+                      X_offset_tot ;
+  
    
   for(i in 1:Nobs_qpcr){
-    Ct[i] = beta_std_curve_0[plate_idx[i]]+beta_std_curve_1[plate_idx[i]]*unk_conc[qpcr_sample_idx[i]];
-    
-    sigma_samp[i] = exp(gamma_0 + gamma_1[plate_idx[i]]*(unk_conc[qpcr_sample_idx[i]]));
-    
-    theta_samp[i] = inv_logit(phi_0+phi_1*exp(unk_conc[qpcr_sample_idx[i]]));
+    Ct[i] = beta_std_curve_0[plate_idx[i]]+beta_std_curve_1[plate_idx[i]]*unk_conc_qpcr[qpcr_sample_idx[i]];
+    sigma_samp[i] = exp(gamma_0 + gamma_1*(unk_conc_qpcr[qpcr_sample_idx[i]]));
+    theta_samp[i] = inv_logit(phi_0+phi_1*exp(unk_conc_qpcr[qpcr_sample_idx[i]]));
+    if(theta_samp[i]==1){theta_samp[i]= 1 - 1e-10; }
   }
   
   // Link to QM
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
       if(i==mb_link_sp_idx){ // if index is equal to link species, fill in qpcr estimate
-        log_D[j,i] = unk_conc[qpcr_sample_idx[mb_link_idx[j]]]; 
+        log_D[j,i] = log_D_station_depth_tube[qpcr_sample_idx[mb_link_idx[j]]]; 
       }else{ // otherwise, fill from log_D_raw
-        log_D[j,i] = log_D_raw[j,i];
+        if(i<mb_link_sp_idx){
+          log_D[j,i] = log_D_raw[j,i];
+        }else{
+          log_D[j,i] = log_D_raw[j,(i-1)];
+        }
       }
     }
   };
@@ -196,7 +199,7 @@ transformed parameters {
   //eta_samp[N_species] = rep_vector(0.0,N_obs_mb_samp); // final species is zero (reference species)
   // random effects vector of vectors
   for (l in 1:(N_species-1)) {
-    eta_mock[l] = eta_mock_raw[l] * tau[l] ; // non-centered param eta_mock ~ normal(0,tau)
+    eta_mock[l] = eta_mock_raw[l] * tau ; // non-centered param eta_mock ~ normal(0,tau)
     //eta_samp[l] = eta_samp_raw[l] * tau[l] ; // non-centered param eta_samp ~ normal(0,tau)
   }
 
@@ -230,23 +233,29 @@ transformed parameters {
 
 model {
   
-  
+  // print("HERE1",target());
   // qPCR part
+  z_std ~ bernoulli(theta_std);
   for(i in 1:NstdSamples){
-    z_std[i] ~ bernoulli(theta_std[i]);
     if(z_std[i]==1){
       y_std[i] ~ normal(Ct_std[i],sigma_std[i]);
     }
   }
-
+  // print("HERE2",target());
+  
+  
+  z_unk   ~ bernoulli(theta_samp);
+  // print(max(theta_samp)," IIIII ", min(theta_samp));
+  // print("HERE2.5",target());  
   for(i in 1:Nobs_qpcr){
-     z_unk[i]   ~ bernoulli(theta_samp[i]);
      if (z_unk[i]==1){ //if Ct observed, then compute likelihood
         y_unk[i] ~ normal(Ct[i], sigma_samp[i]);   
       }
     }
 
-print("Obs= ",y_unk[1:5]," ct =",Ct[1:5],";sigma = ",sigma_samp[1:5]);
+// print("HERE3",target());
+
+//print("Obs= ",y_unk[1:5]," ct =",Ct[1:5],";sigma = ",sigma_samp[1:5]);
 
   //beta standard curve params
   beta_std_curve_0 ~ normal(stdCurvePrior_intercept[1], stdCurvePrior_intercept[2]);
@@ -256,30 +265,35 @@ print("Obs= ",y_unk[1:5]," ct =",Ct[1:5],";sigma = ",sigma_samp[1:5]);
   gamma_1 ~ normal(0,5);
   gamma_0 ~ normal(-2,1);
   
-  unk_conc ~ normal(0,10); //log scale
+  log_D_station_depth ~ normal(3,10); //log scale
   
-  for(i in 1:(N_species)){
+  // print("HERE4",target());
+  bio_rep_RE ~ normal(0,tau_bio_rep); 
+  tau_bio_rep ~ gamma(1,1);
+  // print("HERE5",target());
+  
+  for(i in 1:(N_species-1)){
     // ONLY set a prior for the species that ARE NOT the qPCR link species (hake)
     // The values for the link species will come from the qPCR part of the joint model
     // (which will use prior information from envir_concentration, above)
-    if(i!=mb_link_sp_idx){
-      log_D_raw[,i] ~ normal(0,10); 
-    }
+    //if(i!=mb_link_sp_idx){
+      log_D_raw[,i] ~ normal(3,10); 
+    //}
   }
   
   phi_0 ~ normal(0.58,0.2); //assuming Poisson from bottles to replicates (pipetting)
   phi_1 ~ normal(5, 2);
-  
-  
   wash_effect ~ normal(wash_prior[1],wash_prior[2]) ;
-  
+  // print("HERE6",target());
   // QM part
   for(i in 1:N_obs_mb_samp){
     sample_data[i,] ~  multinomial(transpose(mu_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
   }
+   // print("HERE7",target());
   for(i in 1:N_obs_mock){
     mock_data[i,]   ~  multinomial(transpose(mu_mock[i,])); // Multinomial sampling of mu (proportions in mocks)
   }
+  // print("HERE8",target());
   // Priors
   for(i in 1:(N_species-1)){
     // eta_samp_raw[i] ~ std_normal(); // N(0,tau)

@@ -232,18 +232,20 @@ prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,
     distinct(Sample,.keep_all = T)
   
   mb_link_2 <- unk_formatted %>% 
-    distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>% 
+    distinct(tubeID,qpcr_sample_idx) %>%
+    #distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>%
     left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
+    filter(!is.na(mb_link)) %>%
     dplyr::select(qpcr_sample_idx,mb_link) %>% 
-    arrange(qpcr_sample_idx) %>% 
-    filter(!is.na(mb_link))
+    arrange(qpcr_sample_idx) 
+    
   
   # get the index of the right species
   qpcr_mb_link_sp_idx <- match(link_species,sort(unique(input_metabarcoding_data$species)))
   
   # return just the link vector
   return(list(
-    # datout = mb_link_2,
+    #datout = mb_link_2,
     N_mb_link = nrow(mb_link_2), # length of the linking vector
     mb_link_sp_idx= qpcr_mb_link_sp_idx,
     mb_link_idx=mb_link_2$mb_link))
@@ -278,56 +280,30 @@ prepare_stan_data_qPCR <- function(qPCRdata){
     # hard coded covariates and offsets- COULD GENERALIZE THIS LATER
     #wash_idx = wash_idx, # design matrix for covariates (right now, just the wash effect)
     wash_prior = c(-1,1),
-    X_offset = X_offset # dilution and other offsets combined
+    X_offset_tot =  qPCRdata$X_offset_tot # dilution and other offsets combined
     # COULD ADD SMOOTHS HERE EVENTUALLY
   )
     
-    # if(length(unk_covariates)>=1){
-    #   for(i in 1:length(unk_covariates)){
-    #     if(i ==1){ X_cov_combined <- qPCRdata$X_cov[[i]]
-    #     }else{
-    #       X_cov_combined <- cbind(X_cov_combined,qPCRdata$X_cov[[i]])
-    #     }
-    #   }
-    # }else{X_cov_combined = NULL}
-    # 
-    # cov_prior_mu=NULL
-    # cov_prior_sigma=NULL    
-    # if(length(unk_covariates)>=1){
-    # # Add priors:
-    #   if(grepl("wash",qPCRdata$X_cov %>% names())[i]){
-    #     cov_prior_mu = c(cov_prior_mu,-1)
-    #     cov_prior_sigma = c(cov_prior_sigma,1)
-    #   }else if(grepl("station_depth",qPCRdata$X_cov %>% names())[i] ){
-    #     cov_prior_mu = c(cov_prior_mu,rep(0,ncol(qPCRdata$X_cov[[i]])))
-    #     cov_prior_sigma = c(cov_prior_sigma,rep(10,ncol(qPCRdata$X_cov[[i]])))
-    #   }
-    # }
-    # 
-    # N_col_cov <- ncol(X_cov_combined)
-    # stan_qPCR_data <- c(stan_qPCR_data,
-    #                      list(X_cov_combined = X_cov_combined,
-    #                           N_col_cov = N_col_cov,
-    #                           cov_prior_mu = cov_prior_mu,
-    #                           cov_prior_sigma = cov_prior_sigma))
 
-  if("wash_idx_obs"%in%names(unk)){
-    wash_idx <- unk %>%
-      group_by(qpcr_sample_idx) %>%
-      summarise(wash_idx=mean(wash_idx_obs)) %>%
-      pull("wash_idx")
-
-    stan_qPCR_data <- c(stan_qPCR_data,
-                        list(wash_idx = wash_idx)) # design matrix for covariates (right now, just the wash effect)
-  }
+   if("wash_idx"%in% names(qPCRdata$X_cov)){
+     wash_idx = c(qPCRdata$X_cov[["wash_idx"]])
+     
+  #   wash_idx <- unk %>%
+  #     group_by(qpcr_sample_idx) %>%
+  #     summarise(wash_idx=mean(wash_idx_obs)) %>%
+  #     pull("wash_idx")
+  # 
+     stan_qPCR_data <- c(stan_qPCR_data,
+                         list(wash_idx = wash_idx)) # design matrix for covariates (right now, just the wash effect)
+   }
   if("station_depth_idx"%in%names(unk)){
     qPCRdata$X_cov[["station_depth_idx"]]
 
-    X_station_depth <- formatted_qPCR_data$X_cov[["station_depth_idx"]]
-    N_col_station_depth <- ncol(X_station_depth)
+    X_station_depth_obs <- formatted_qPCR_data$X_cov[["station_depth_idx"]]
+    N_station_depth <- ncol(X_station_depth_obs)
     stan_qPCR_data <- c(stan_qPCR_data,
-                        list(X_station_depth = X_station_depth,
-                             N_col_station_depth = N_col_station_depth))
+                        list(X_station_depth_obs = X_station_depth_obs,
+                             N_station_depth = N_station_depth))
   }
   
   return(stan_qPCR_data)
@@ -367,6 +343,7 @@ alrTransform <- function(MOCK,
   
   
 makeDesign <- function(obs, #obs is a named list with elements Observation, Mock, N_pcr_mock, sp_list
+                       qPCR_obs,
                          N_pcr_cycles,
                          Nlevels_mock = 2, #levels of replication. Samples with either tech or biol replicates = 2; Samples with tech AND biol replicates = 3
                          Nlevels_samp = 2 #levels of replication. Samples with either tech or biol replicates = 2; Samples with tech AND biol replicates = 3
@@ -408,6 +385,12 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       mutate(species = paste0("sp_", species)) %>% 
       #arrange(species) %>% 
       pivot_wider(names_from = species, values_from = Nreads, values_fill = 0)
+
+    ############################### 
+    # HERE IS WHERE YOU CHECK TO MAKE SURE THE SAMPLES IN THE METABARCODING ARE PRESENT IN THE QPCR DATA.
+    # OTHERWISE YOU HAVE TO EXCLUDE THEM IN THE JOINT MODEL.
+    ###############################   
+    p_samp_all <- p_samp_all %>%  filter(S %in% qPCR_obs$tubeID)
     N_pcr_samp <- rep(N_pcr_cycles, nrow(p_samp_all))
 
     ########################################################################
@@ -459,7 +442,6 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     N_obs_samp <- nrow(p_samp_all)
     N_b_samp_col <- ncol(model_matrix_b_samp)
     
-    
     #### Make Stan objects
     stan_data <- list(
       N_species = ncol(p_samp_all)-2,   # Number of species in data
@@ -505,15 +487,17 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
   
 ###########################################
 ### Setting Initial Values
-stan_init_f1 <- function(n.chain,N_obs_mb,N_species,Nplates){
-  set.seed(78345)
+stan_init_f1 <- function(n.chain,N_obs_mb,N_species,Nplates,N_station_depth){
+  # set.seed(78345)
   A <- list()
   for(i in 1:n.chain){
     A[[i]] <- list(
-      log_D_raw=matrix(data=rnorm(N_obs_mb*N_species,mean=5,sd=2),nrow = N_obs_mb,ncol=N_species),
+      log_D_raw=matrix(data=rnorm(N_obs_mb*(N_species-1),mean=2,sd=1),nrow = N_obs_mb,ncol=N_species-1),
+      log_D_station_depth=rnorm(N_station_depth,2,1),
       alpha_raw=jitter(rep(0,N_species-1),factor=0.5),
       beta_std_curve_0=runif(Nplates,35,45),
       beta_std_curve_1=runif(Nplates,-1.5,-1.2),
+      phi_0 = runif(1,0.75,1.2),
       gamma_1 = runif(1,-0.01,0)
     )
   }  
