@@ -201,11 +201,43 @@ qPCR_unk <- qPCR_unk %>% left_join(.,station_dat)
     # Check to make sure the order is correct
     identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
     
-        
 ### ONE MORE FIXED EFFECT DESIGN MATRIX AT THE TUBE LEVEL.
     form <- "depth_cat ~ 0 + factor(station_depth_idx)"
     model_frame   <- model.frame(form, tube_dat)  
     X_station_depth_tube <- model.matrix(as.formula(form), model_frame)
+    
+### Make random effect that sums to zero for the tubes.
+    tube_dat <- tube_dat %>% group_by(station_depth_idx) %>% mutate(rep_id = rep(1:n()))
+    tube_trim <- tube_dat %>% ungroup() %>% filter(rep_id != n_tube_station_depth) %>% mutate(bio_rep_idx1= 1:nrow(.))    
+    N_bio_rep1 <- nrow(tube_trim)
+    tube_dat <-  tube_dat %>% ungroup() %>%  mutate(bio_rep_idx2= 1:nrow(.))    
+    
+    
+    
+    
+    
+    
+    
+    for(i in 1:N_bio_rep2){
+      temp = 0
+      
+      
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
 # Make a new metadata file that has all of the requisite stuff.
 META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()

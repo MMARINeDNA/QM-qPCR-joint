@@ -125,14 +125,14 @@ transformed parameters {
   vector[Nobs_qpcr] theta_samp; //Probability of amplification, field samples
 
   // for QM part
-  // vector[N_species] alpha; // vector of coefficients (log-efficiencies relative to reference taxon)
-  // //vector[N_obs_mb_samp] eta_samp[N_species]; // overdispersion coefficients
-  // vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
-  // matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
-  // matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
-  // 
+  vector[N_species] alpha; // vector of coefficients (log-efficiencies relative to reference taxon)
+  //vector[N_obs_mb_samp] eta_samp[N_species]; // overdispersion coefficients
+  vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
+  matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
+  matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
+
   // for linking
-  // matrix[N_obs_mb_samp,N_species] log_D; // estimated true copy numbers by sample, including the link species
+   matrix[N_obs_mb_samp,N_species] log_D; // estimated true copy numbers by sample, including the link species
   
  
  { // local variables declaration
@@ -169,7 +169,7 @@ transformed parameters {
     theta_samp[i] = inv_logit(phi_0+phi_1*exp(unk_conc_qpcr[qpcr_sample_idx[i]]));
     if(theta_samp[i]==1){theta_samp[i]= 1 - 1e-10; }
   }
- } // end local variables
+ 
   // Link to QM
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
@@ -184,14 +184,10 @@ transformed parameters {
       }
     }
   };
-//  print("rows",log_D[7,]);
 
-//  print("columns",log_D[,2]);
-  
   // QM MODEL PIECES
   
   // Fixed effects components
-<<<<<<< HEAD
   alpha[1:(N_species-1)] = alpha_prior[1] + alpha_raw * alpha_prior[2]; 
         // non-centered param beta ~ normal(alpha_prior[1], alpha_prior[2])
   alpha[N_species] = 0; // final species is zero (reference species)
@@ -220,21 +216,19 @@ transformed parameters {
     prob_mock_t[,m] = softmax(transpose(logit_val_mock[m,])); // proportion of each taxon in mocks
   }
   
-  for (n in 1:N_species) {
-    mu_samp[,n] = transpose(prob_samp_t)[,n] ; 
-    mu_mock[,n] = transpose(prob_mock_t)[,n] ;
-  // if(n==1){print("log_prob 1 ",log_prob);}
-  }
-
+    for (n in 1:N_species) {
+      mu_samp[,n] = transpose(prob_samp_t)[,n] ; 
+      mu_mock[,n] = transpose(prob_mock_t)[,n] ;
+    // if(n==1){print("log_prob 1 ",log_prob);}
+    }
+  } // end local variables
     // print("MU_SAMP_row",mu_samp[1,]);
     // print("SUM_MU_SAMP",sum(mu_samp[1,]));
     // 
     // print("MU_SAMP_col",mu_samp[,1]);
     // print("SUM_MU_SAMP_col",sum(mu_samp[,1]));
 }
-
-model {
-  
+model{
   // print("HERE1",target());
   // qPCR part
   z_std ~ bernoulli(theta_std);
@@ -274,7 +268,7 @@ model {
   tau_bio_rep ~ gamma(1,1);
   // print("HERE5",target());
   
-<<<<<<< HEAD
+
   for(i in 1:(N_species-1)){
     // ONLY set a prior for the species that ARE NOT the qPCR link species (hake)
     // The values for the link species will come from the qPCR part of the joint model
@@ -302,6 +296,6 @@ model {
   for(i in 1:(N_species-1)){
     // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
     eta_mock_raw[i] ~ std_normal(); // N(0,tau)
-  // }
+  }
 }
 
