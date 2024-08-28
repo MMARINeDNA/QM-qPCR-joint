@@ -47,17 +47,17 @@ formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
                                    unk_covariates=c("wash_idx","station_depth_idx"),cov_type = c("continuous","factor"),
                                    unk_offset =c("dilution","volume_offset"))
 
-
-
-  
-
 stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>% 
                     # Add Random effect for station
                     c(.,
                       list(X_bio_rep_tube =X_bio_rep_tube,
                            X_bio_rep_obs =X_bio_rep_obs,
                            X_station_depth_tube=X_station_depth_tube,
-                           N_bio_rep_RE = N_bio_rep_RE))
+                           N_bio_rep_RE = N_bio_rep_RE,
+                           N_bio_rep_param = N_bio_rep_param,
+                           bio_rep_idx =bio_rep_idx,
+                           N_bio_rep_idx = N_bio_rep_idx,
+                           beta_std_curve_0_offset =36))
 
 
 # metabarcoding
@@ -69,9 +69,12 @@ formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_2_treatment_mock <- "Rep",
                                                      Level_3_treatment_mock <- NA)
 
+
+
 stan_metabarcoding_data <-  makeDesign(obs= formatted_metabarcoding_data,
                                        qPCR_obs = formatted_qPCR_data$qPCR_unk,
-                                         N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
+                                         N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2,
+                                       )
 
 
 # linking data
@@ -107,7 +110,7 @@ Run Stan
 
 ```{r}
 n.chains <- 3
-n.warm <- 300
+n.warm <- 200
 n.samps <- 100
 jointMod = stan(file = m ,
                 data = stan_data_joint,
@@ -116,8 +119,8 @@ jointMod = stan(file = m ,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 150,
-                                  max_treedepth=11,
+                control = list(#adapt_init_buffer = 150,
+                                  max_treedepth=10,
                                   stepsize=0.01,
                                   adapt_delta=0.8,
                                   metric="diag_e"),
@@ -127,7 +130,7 @@ jointMod = stan(file = m ,
                                     N_station_depth=stan_data_joint$N_station_depth),
                 #refresh = 10,
                 boost_lib = NULL,
-                sample_file="tmp.csv"
+                sample_file="tmpG.csv"
                 )
 ```
 

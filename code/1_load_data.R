@@ -180,10 +180,10 @@ qPCR_unk <- qPCR_unk %>% left_join(.,station_dat)
     # get rid of factor levels (columns) that == 0
     X_bio_rep_obs <- A[,which(colSums(A)>0)]
     # Only keep columns that have at least 2 replicates
-    THESE <- substr(colnames(X_bio_rep_obs),nchar(colnames(X_bio_rep_obs)),nchar(colnames(X_bio_rep_obs)))
-    THESE <- as.numeric(THESE)
-    X_bio_rep_obs <- X_bio_rep_obs[,which(THESE>1)]
-    N_bio_rep_RE <- ncol(X_bio_rep_obs)
+    # THESE <- substr(colnames(X_bio_rep_obs),nchar(colnames(X_bio_rep_obs)),nchar(colnames(X_bio_rep_obs)))
+    # THESE <- as.numeric(THESE)
+    # X_bio_rep_obs <- X_bio_rep_obs[,which(THESE>1)]
+    # N_bio_rep_RE <- ncol(X_bio_rep_obs)
 
 # Make a matrix for random effect associated with each station-depth combination at tubeID level 
   #reduce qPCR to just a single value for each tubeID
@@ -207,38 +207,20 @@ qPCR_unk <- qPCR_unk %>% left_join(.,station_dat)
     X_station_depth_tube <- model.matrix(as.formula(form), model_frame)
     
 ### Make random effect that sums to zero for the tubes.
-    tube_dat <- tube_dat %>% group_by(station_depth_idx) %>% mutate(rep_id = rep(1:n()))
-    tube_trim <- tube_dat %>% ungroup() %>% filter(rep_id != n_tube_station_depth) %>% mutate(bio_rep_idx1= 1:nrow(.))    
-    N_bio_rep1 <- nrow(tube_trim)
-    tube_dat <-  tube_dat %>% ungroup() %>%  mutate(bio_rep_idx2= 1:nrow(.))    
+    tube_dat <-   qPCR_unk %>% distinct(tubeID,station_depth_idx,station_idx,n_tube_station_depth,depth_cat)
+    tube_dat <- tube_dat %>% group_by(station_depth_idx) %>% mutate(bio_rep_idx = rep(1:n())) 
+    form <- "depth_cat ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
+    model_frame   <- model.frame(form, tube_dat)  
+    X_bio_rep_tube <- model.matrix(as.formula(form), model_frame)
+    X_bio_rep_tube <- A[,which(colSums(A)>0)]
     
-    
-    
-    
-    
-    
-    
-    for(i in 1:N_bio_rep2){
-      temp = 0
-      
-      
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    # figure out how many parameters you actually need to estimate for random effects: RE > param
+    N_bio_rep_RE    <- nrow(tube_dat)
+    N_bio_rep_param <- tube_dat %>% filter(bio_rep_idx != n_tube_station_depth) %>% nrow()
+    bio_rep_dat <- tube_dat %>% filter(bio_rep_idx == n_tube_station_depth)
+    bio_rep_idx <- bio_rep_dat %>%  pull(bio_rep_idx)
+    N_bio_rep_idx <- length(bio_rep_idx)
+
 # Make a new metadata file that has all of the requisite stuff.
 META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
   

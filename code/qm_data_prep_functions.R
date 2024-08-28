@@ -263,6 +263,8 @@ prepare_stan_data_qPCR <- function(qPCRdata){
   #   pull(log_dil)
   
   stan_qPCR_data <- list(
+    qpcr_unk = unk,
+    qpcr_std = std,
     Nplates = length(unique(unk$qPCR)),
     Nobs_qpcr = nrow(unk),
     NSamples_qpcr = length(unique(unk$qpcr_sample_idx)),
@@ -442,6 +444,13 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     N_obs_samp <- nrow(p_samp_all)
     N_b_samp_col <- ncol(model_matrix_b_samp)
     
+    # Make index for most abundant species in each metabarcoding sample.
+    which.max <- function(a){return(which(a == max(a)))}
+      
+      
+    ref_sp_idx <- p_samp_all %>% dplyr::select(contains("sp")) %>%
+                    apply(.,1,which.max) %>% cbind(p_samp_all,.)
+
     #### Make Stan objects
     stan_data <- list(
       N_species = ncol(p_samp_all)-2,   # Number of species in data
@@ -451,6 +460,8 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       
       # Observed data of community matrices
       sample_data = p_samp_all %>% dplyr::select(contains("sp")),
+      ref_sp_idx = ref_sp_idx,
+      
       # sample_vector = p_samp_all$S,
       mock_data   = mock %>% dplyr::select(contains("sp")),
       # sp_list = obs$sp_list,
@@ -493,11 +504,12 @@ stan_init_f1 <- function(n.chain,N_obs_mb,N_species,Nplates,N_station_depth){
   for(i in 1:n.chain){
     A[[i]] <- list(
       log_D_raw=matrix(data=rnorm(N_obs_mb*(N_species-1),mean=2,sd=1),nrow = N_obs_mb,ncol=N_species-1),
-      log_D_station_depth=rnorm(N_station_depth,2,1),
+      mean_hake  = rnorm(1,3,1),
+      log_D_station_depth=rnorm(N_station_depth,0,0.5),
       alpha_raw=jitter(rep(0,N_species-1),factor=0.5),
-      beta_std_curve_0=runif(Nplates,35,45),
+      beta_std_curve_0=runif(Nplates,-2,2),
       beta_std_curve_1=runif(Nplates,-1.5,-1.2),
-      phi_0 = runif(1,0.75,1.2),
+      phi_0 = runif(Nplates,1.5,1.8),
       gamma_1 = runif(1,-0.01,0)
     )
   }  
