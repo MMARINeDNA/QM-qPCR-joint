@@ -171,54 +171,59 @@ station_dat <- left_join(station_dat,stat2)
 # Merge back into the qPCR_unk
 qPCR_unk <- qPCR_unk %>% left_join(.,station_dat)
 
+# Make tube_idx
+tube_dat <-   qPCR_unk %>% distinct(tubeID,station_depth_idx,station_idx,n_tube_station_depth,depth_cat)
+tube_dat <- tube_dat %>% mutate(tube_idx =1:nrow(.))
 
-### RANDOM EFFECT DESIGN MATRICES
-# Make a matrix for random effect associated with each station-depth combination at observation level 
-  form <- "year ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
-  model_frame   <- model.frame(form, qPCR_unk)  
-  A <- model.matrix(as.formula(form), model_frame)
-    # get rid of factor levels (columns) that == 0
-    X_bio_rep_obs <- A[,which(colSums(A)>0)]
-    # Only keep columns that have at least 2 replicates
-    # THESE <- substr(colnames(X_bio_rep_obs),nchar(colnames(X_bio_rep_obs)),nchar(colnames(X_bio_rep_obs)))
-    # THESE <- as.numeric(THESE)
-    # X_bio_rep_obs <- X_bio_rep_obs[,which(THESE>1)]
-    # N_bio_rep_RE <- ncol(X_bio_rep_obs)
+# Merge back into the qPCR_unk
+qPCR_unk <- qPCR_unk %>% left_join(.,tube_dat)
+
 
 # Make a matrix for random effect associated with each station-depth combination at tubeID level 
   #reduce qPCR to just a single value for each tubeID
-    tube_dat <-   qPCR_unk %>% distinct(tubeID,station_depth_idx,station_idx,n_tube_station_depth,depth_cat)
-    form <- "depth_cat ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
-    model_frame   <- model.frame(form, tube_dat)  
-    A <- model.matrix(as.formula(form), model_frame)
-    # get rid of factor levels (columns) that == 0
-    X_bio_rep_tube <- A[,which(colSums(A)>0)]
-    # Only keep columns that have at least 2 replicates
-    THESE <- substr(colnames(X_bio_rep_tube),nchar(colnames(X_bio_rep_tube)),nchar(colnames(X_bio_rep_tube)))
-    THESE <- as.numeric(THESE)
-    X_bio_rep_tube <- X_bio_rep_tube[,which(THESE>1)]
-
-    # Check to make sure the order is correct
-    identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
+    #    form <- "depth_cat ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
+    # model_frame   <- model.frame(form, tube_dat)  
+    # A <- model.matrix(as.formula(form), model_frame)
+    # # get rid of factor levels (columns) that == 0
+    # X_bio_rep_tube <- A[,which(colSums(A)>0)]
+    # # Only keep columns that have at least 2 replicates
+    # THESE <- substr(colnames(X_bio_rep_tube),nchar(colnames(X_bio_rep_tube)),nchar(colnames(X_bio_rep_tube)))
+    # THESE <- as.numeric(THESE)
+    # X_bio_rep_tube <- X_bio_rep_tube[,which(THESE>1)]
+    # 
+    # # Check to make sure the order is correct
+    # identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
     
 ### ONE MORE FIXED EFFECT DESIGN MATRIX AT THE TUBE LEVEL.
     form <- "depth_cat ~ 0 + factor(station_depth_idx)"
     model_frame   <- model.frame(form, tube_dat)  
     X_station_depth_tube <- model.matrix(as.formula(form), model_frame)
-    
+
+### RANDOM EFFECT DESIGN MATRICES
+    # Make a matrix for random effect associated with each station-depth combination at observation level 
+    form <- "year ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
+    model_frame   <- model.frame(form, qPCR_unk)
+    A <- model.matrix(as.formula(form), model_frame)
+    # get rid of factor levels (columns) that == 0
+    X_bio_rep_obs <- A[,which(colSums(A)>0)]
+    #   # Only keep columns that have at least 2 replicates
+    #   THESE <- substr(colnames(X_bio_rep_obs),nchar(colnames(X_bio_rep_obs)),nchar(colnames(X_bio_rep_obs)))
+    #   THESE <- as.numeric(THESE)
+    #   X_bio_rep_obs <- X_bio_rep_obs[,which(THESE>1)]
+    # N_bio_rep_RE <- ncol(X_bio_rep_obs)
+        
 ### Make random effect that sums to zero for the tubes.
-    tube_dat <-   qPCR_unk %>% distinct(tubeID,station_depth_idx,station_idx,n_tube_station_depth,depth_cat)
-    tube_dat <- tube_dat %>% group_by(station_depth_idx) %>% mutate(bio_rep_idx = rep(1:n())) 
+    bio_rep_dat <- tube_dat %>% group_by(station_depth_idx) %>% mutate(bio_rep_idx = rep(1:n())) %>%  ungroup()
+    bio_rep_dat2 <- bio_rep_dat %>% filter(bio_rep_idx == n_tube_station_depth)
     form <- "depth_cat ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
-    model_frame   <- model.frame(form, tube_dat)  
+    model_frame   <- model.frame(form, bio_rep_dat)  
     X_bio_rep_tube <- model.matrix(as.formula(form), model_frame)
-    X_bio_rep_tube <- A[,which(colSums(A)>0)]
+    X_bio_rep_tube <- X_bio_rep_tube[,which(colSums(X_bio_rep_tube)>0)]
     
-    # figure out how many parameters you actually need to estimate for random effects: RE > param
-    N_bio_rep_RE    <- nrow(tube_dat)
-    N_bio_rep_param <- tube_dat %>% filter(bio_rep_idx != n_tube_station_depth) %>% nrow()
-    bio_rep_dat <- tube_dat %>% filter(bio_rep_idx == n_tube_station_depth)
-    bio_rep_idx <- bio_rep_dat %>%  pull(bio_rep_idx)
+     # figure out how many parameters you actually need to estimate for random effects: RE > param
+    N_bio_rep_RE    <- nrow(bio_rep_dat)
+    N_bio_rep_param <- bio_rep_dat %>% filter(bio_rep_idx != n_tube_station_depth) %>% nrow()
+    bio_rep_idx <- bio_rep_dat2 %>%  pull(bio_rep_idx)
     N_bio_rep_idx <- length(bio_rep_idx)
 
 # Make a new metadata file that has all of the requisite stuff.

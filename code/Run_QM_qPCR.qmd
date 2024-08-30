@@ -44,6 +44,7 @@ We can prepare the data we just loaded to be input into our Stan model, using so
 #qPCR
 formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
                                    qPCR_standards=qPCR_std,
+                                   tube_dat = tube_dat,
                                    unk_covariates=c("wash_idx","station_depth_idx"),cov_type = c("continuous","factor"),
                                    unk_offset =c("dilution","volume_offset"))
 
@@ -69,17 +70,20 @@ formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_2_treatment_mock <- "Rep",
                                                      Level_3_treatment_mock <- NA)
 
-
-
 stan_metabarcoding_data <-  makeDesign(obs= formatted_metabarcoding_data,
-                                       qPCR_obs = formatted_qPCR_data$qPCR_unk,
-                                         N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2,
-                                       )
+                                       qPCR_tube_obs = formatted_qPCR_data$tube_dat,
+                                  N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
 
+log_D_link_sp_init_mean = 2
+link_species = "Merluccius productus"
+log_D_inits <- makeQM_inits(sample_data =stan_metabarcoding_data$sample_data, 
+                         log_D_link_sp_init_mean = log_D_link_sp_init_mean,
+                         sp_list = formatted_metabarcoding_data$sp_list,
+                         qPCR_ref_sp = link_species )
 
-# linking data
+# linking dataåå
 qPCR_mb_link <- prepare_stan_qPCR_mb_join(input_metabarcoding_data=mfu,
-                                          unk_formatted = formatted_qPCR_data$qPCR_unk,
+                                          unk_formatted = formatted_qPCR_data$tube_dat,
                                           link_species = "Merluccius productus")
 
 # join the three lists
@@ -110,8 +114,8 @@ Run Stan
 
 ```{r}
 n.chains <- 3
-n.warm <- 200
-n.samps <- 100
+n.warm <- 500
+n.samps <- 500
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -119,18 +123,21 @@ jointMod = stan(file = m ,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(#adapt_init_buffer = 150,
-                                  max_treedepth=10,
+                control = list(adapt_init_buffer = 200,
+                                  max_treedepth=11,
                                   stepsize=0.01,
                                   adapt_delta=0.8,
                                   metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
-                                    N_station_depth=stan_data_joint$N_station_depth),
+                                    N_station_depth=stan_data_joint$N_station_depth,
+                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
+                                    log_D_raw_inits=log_D_inits$log_D_raw_inits),
+                                    #log_D_inits$log_D_inits,
                 #refresh = 10,
                 boost_lib = NULL,
-                sample_file="tmpG.csv"
+                sample_file="tmpU.csv"
                 )
 ```
 

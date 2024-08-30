@@ -7,7 +7,6 @@ data {
   int NstdSamples; //number of unique biological samples with known concentrations (standards)
   int plate_idx[Nobs_qpcr]; //index denoting which PCR plate each field sample is on
   int std_plate_idx[NstdSamples];//index denoting which PCR plate each standard sample is on
-  int qpcr_sample_idx[Nobs_qpcr]; //index linking observations to unique biological samples
   real beta_std_curve_0_offset;
  
  
@@ -45,6 +44,8 @@ data {
   int N_obs_mb_samp_small;  // Number of observed samples for individual sites.
   int N_obs_mock; // Number of observed mock samples
 
+
+
   // Observed data of community matrices
   int sample_data[N_obs_mb_samp,N_species];
   // Observed data of mock community matrices
@@ -65,7 +66,7 @@ data {
   vector[N_obs_mock]  model_vector_a_mock;
 
   // Identify a reference species for each observation (most abundant species in each sampl)
-  vector[N_obs_mb_samp] ref_sp_idx;
+  int ref_sp_idx[N_obs_mb_samp];
 
   // Priors
   real alpha_prior[2]; // Parameters of normal distribution for prior on alphas
@@ -77,7 +78,7 @@ data {
   int N_mb_link; //How many qpCR samples have a match in a MB sample
   int mb_link_idx[N_mb_link]; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
   int mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
-
+  int tube_link_idx[N_obs_mb_samp]; //index linking observations to unique biological samples
 }
 
 
@@ -95,21 +96,20 @@ transformed data {
 parameters {
   // for QM part
   //real<lower=0> tau_base; // single overdispersion sd for multinomial.
-  real<lower=0> tau; // single overdispersion sd for multinomial.
+  //real<lower=0> tau; // single overdispersion sd for multinomial.
   vector[N_species-1] alpha_raw;
-  //vector[N_obs_mb_samp] eta_samp_raw[N_species-1]; //overdispersion
-  vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion
+  // vector[N_obs_mb_samp] eta_samp_raw[N_species-1]; //overdispersion
+  // vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion
 
-  
   // for qPCR part
   real mean_hake;
   
   vector[Nplates] beta_std_curve_0; // intercept of standard curve
-  vector<upper=0>[Nplates] beta_std_curve_1; // slope of standard curve
+  vector<lower= stdCurvePrior_slope[1]>[Nplates] beta_std_curve_1; // slope of standard curve
   real gamma_0; //intercept to scale variance of standard curves w the mean
   real<upper=0> gamma_1; //slopes to scale variance of standards curves w the mean
-   vector<upper= 1.854586>[Nplates] phi_0; // this bound is the logistic transform of dpois(0,2)... which is the prob of getting at least 1 copy into the rx.
-   vector<lower=0>[Nplates] phi_1;
+   real<upper= 1.854586> phi_0; // this bound is the logistic transform of dpois(0,2)... which is the prob of getting at least 1 copy into the rx.
+   real<lower=0> phi_1;
 
   vector[N_station_depth] log_D_station_depth; // log DNA concentration in field samples in each tube
   real<lower=0> log_D_sigma;
@@ -147,16 +147,11 @@ transformed parameters {
   // for linking
   matrix[N_obs_mb_samp,N_species] log_D; // estimated true copy numbers by sample, including the link species
  
- { // local variables declaration
-  
-  matrix[N_species,N_obs_mb_samp] prob_samp_t;
-  matrix[N_species,N_obs_mock] prob_mock_t;
-  
   // qPCR standard curves (vectorized)
   Ct_std = beta_std_curve_0_offset+beta_std_curve_0[std_plate_idx] + 
                               beta_std_curve_1[std_plate_idx] .* log_known_conc;
   sigma_std = exp(gamma_0 + gamma_1 .* log_known_conc);
-  logit_theta_std = phi_0[std_plate_idx] + phi_1[std_plate_idx] .* exp(log_known_conc);
+  logit_theta_std = phi_0 + phi_1 .* exp(log_known_conc);
   
   
   // for(i in 1:NstdSamples){
@@ -205,7 +200,7 @@ transformed parameters {
   // Vectorized predictions
   Ct = (beta_std_curve_0_offset + beta_std_curve_0[plate_idx]) + beta_std_curve_1[plate_idx].*unk_conc_qpcr;
   sigma_samp = exp(gamma_0 + gamma_1 .* unk_conc_qpcr );
-  logit_theta_samp = phi_0[plate_idx]+phi_1[plate_idx].*exp(unk_conc_qpcr);
+  logit_theta_samp = phi_0 + phi_1 *exp(unk_conc_qpcr);
   // for(i in 1:Nobs_qpcr){
   //   //Ct[i] = 36+beta_std_curve_0[plate_idx[i]]+beta_std_curve_1[plate_idx[i]]*unk_conc_qpcr[i];
   //   if(theta_samp[i]==1){theta_samp[i]= 1 - 1e-10; }
@@ -215,7 +210,7 @@ transformed parameters {
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
       if(i==mb_link_sp_idx){ // if index is equal to link species, fill in qpcr estimate
-        log_D[j,i] = log_D_station_depth_tube[qpcr_sample_idx[mb_link_idx[j]]];
+        log_D[j,i] = log_D_station_depth_tube[tube_link_idx[j]];
       }else{ // otherwise, fill from log_D_raw
         if(i<mb_link_sp_idx){
           log_D[j,i] = log_D_raw[j,i];
@@ -224,7 +219,7 @@ transformed parameters {
         }
       }
     }
-  };
+  }
 
   // QM MODEL PIECES
   
@@ -233,29 +228,45 @@ transformed parameters {
         // non-centered param beta ~ normal(alpha_prior[1], alpha_prior[2])
   alpha[N_species] = 0; // final species is zero (reference species)
 
-  //tau = rep_vector(tau_base,N_species-1);
-  eta_mock[N_species] = rep_vector(0.0,N_obs_mock); // final species is zero (reference species)
+  // tau = rep_vector(tau_base,N_species-1);
+  // eta_mock[N_species] = rep_vector(0.0,N_obs_mock); // final species is zero (reference species)
       // eta_samp[N_species] = rep_vector(0.0,N_obs_mb_samp); // final species is zero (reference species)
   // random effects vector of vectors
-  for (l in 1:(N_species-1)) {
-    eta_mock[l] = eta_mock_raw[l] * tau ; // non-centered param eta_mock ~ normal(0,tau)
-    // eta_samp[l] = eta_samp_raw[l] * tau ; // non-centered param eta_samp ~ normal(0,tau)
-  }
+  // for (l in 1:(N_species-1)) {
+  //   eta_mock[l] = eta_mock_raw[l] * tau ; // non-centered param eta_mock ~ normal(0,tau)
+  //   // eta_samp[l] = eta_samp_raw[l] * tau ; // non-centered param eta_samp ~ normal(0,tau)
+  // }
 
 // from qPCR estimates, alphas, and etas we can calculate sample-specific mu
+  // Make a vector for the reference species D and for alpha
+ {// local variables for making reference species vectors
+      vector[N_obs_mb_samp] log_D_ref;
+      vector[N_obs_mb_samp] alpha_ref;
+ 
+  for(i in 1:N_obs_mb_samp){
+     log_D_ref[i] = log_D[i,ref_sp_idx[i]];
+     alpha_ref[i] = alpha[ref_sp_idx[i]];
+  }
+    // If you wanted variable reference species in the mocks, this is where you would do it.
+  // for(i in 1:N_obs_mock){
+  //    log_D_ref[i] = log_D[i,ref_sp_idx[i]];
+  //    alpha_ref[i] = alpha[ref_sp_idx[i]];
+  // }
+
   for (n in 1:N_species) {
-    logit_val_samp[,n] = model_matrix_samp * append_row((log_D[,n] - log_D[,ref_sp_idx]),alpha[n] - alpha[ref_sp_idx]);
+    logit_val_samp[,n] = (log_D[,n] - log_D_ref) + model_vector_a_samp.*(alpha[n] - alpha_ref);
+                          //model_matrix_samp * append_row((log_D[,n] - log_D[,ref_sp_idx]),alpha[n] - alpha[ref_sp_idx]);
                             //+eta_samp[n];
     logit_val_mock[,n] = alr_mock_true_prop[,n] +
-                               model_vector_a_mock * alpha[n] +
-                               eta_mock[n];
+                               model_vector_a_mock * (alpha[n]) ;
+                               // eta_mock[n];
   }
-  for(m in 1:N_obs_mb_samp){
-    prob_samp_t[,m] = softmax(transpose(logit_val_samp[m,])); // proportion of each taxon in field samples
-  }
-  for(m in 1:N_obs_mock){
-     prob_mock_t[,m] = softmax(transpose(logit_val_mock[m,])); // proportion of each taxon in mocks
-  }
+  // for(m in 1:N_obs_mb_samp){
+  //   prob_samp_t[,m] = softmax(transpose(logit_val_samp[m,])); // proportion of each taxon in field samples
+  // }
+  // for(m in 1:N_obs_mock){
+  //    prob_mock_t[,m] = softmax(transpose(logit_val_mock[m,])); // proportion of each taxon in mocks
+  // }
 
   // for (n in 1:N_species) {
   //     mu_samp[,n] = transpose(prob_samp_t)[,n] ;
@@ -291,7 +302,7 @@ model{
     }
 
   //beta standard curve params
-  beta_std_curve_0 ~ normal(stdCurvePrior_intercept[1]-36, stdCurvePrior_intercept[2]);
+  beta_std_curve_0 ~ normal(stdCurvePrior_intercept[1]-beta_std_curve_0_offset, stdCurvePrior_intercept[2]);
   beta_std_curve_1 ~ normal(stdCurvePrior_slope[1], stdCurvePrior_slope[2]);
   
   //gamma params for scaling variance on the standards
@@ -311,26 +322,31 @@ model{
   }
   
   phi_0 ~ normal(1.854586,0.3); //assuming Poisson from bottles to replicates (pipetting)
-  phi_1 ~ normal(1, 2);
+  phi_1 ~ normal(1, 1);
   wash_effect ~ normal(wash_prior[1],wash_prior[2]) ;
 
     mean_hake ~normal(2,8);
     log_D_sigma ~ normal(0,3);
     log_D_station_depth ~ normal(0,log_D_sigma); //log scale
 
+  // print("1:",target());
   // QM Likelihoods
-  for(i in 1:N_obs_mb_samp){
-    sample_data[i,] ~  multinomial_logit(transpose(logit_val_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
-  }
-  
   for(i in 1:N_obs_mock){
     mock_data[i,]   ~  multinomial_logit(transpose(logit_val_mock[i,])); // Multinomial sampling of mu (proportions in mocks)
   }
+
+  // print("2:",target());
+  for(i in 1:N_obs_mb_samp){
+    sample_data[i,] ~  multinomial_logit(transpose(logit_val_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
+  }
+ //  print("3:",target());
   
   // Priors
-  for(i in 1:(N_species-1)){
-    // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
-    eta_mock_raw[i] ~ std_normal(); // N(0,tau)
-  }
+  // for(i in 1:(N_species-1)){
+  //   // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
+  //   eta_mock_raw[i] ~ std_normal(); // N(0,tau)
+  // }
+  // tau ~ normal(tau_prior[1],tau_prior[2]);
+  
 }
 
