@@ -94,8 +94,10 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
 # function takes two dataframe inputs, for qPCR unknown samples, and the qPCR standards
 format_qPCR_data <- function(qPCR_unknowns, 
                              qPCR_standards,
+                             tube_dat,
                              unk_covariates=NULL,cov_type=NULL,
                              unk_smoothes=NULL,
+                             #unk_random = NULL,
                              unk_offsets=NULL,offset_type = rep("log",length(unk_offsets))){
   
   # Make matrices for qPCR smooths and covariates
@@ -112,7 +114,7 @@ format_qPCR_data <- function(qPCR_unknowns,
         FORM[[unk_covariates[i]]] <- paste("hake_Ct ~ 0+", unk_covariates[i])
         model_frame   <- model.frame(FORM[[unk_covariates[i]]], qPCR_unknowns)  
         X_cov[[unk_covariates[i]]] <- model.matrix(as.formula(FORM[[i]]), model_frame)
-      } else if(cov_type[i] =="factor"){
+      }else if(cov_type[i] =="factor"){
         FORM[[unk_covariates[i]]] <- paste("hake_Ct ~ 0 + factor(", unk_covariates[i],")")
         model_frame   <- model.frame(FORM[[unk_covariates[i]]], qPCR_unknowns)  
         X_cov[[unk_covariates[i]]] <- model.matrix(as.formula(FORM[[unk_covariates[i]]]), model_frame)
@@ -143,9 +145,10 @@ format_qPCR_data <- function(qPCR_unknowns,
         # has_smooths <- SM$has_smooths
     }
   }
+  
   if(is.null(unk_offsets) ==FALSE){
     for(i in 1:length(unk_offsets)){
-      if(offset_type =="log"){
+      if(offset_type[i] =="log"){
         if(i == 1){
           X_offset <-qPCR_unknowns[,unk_offsets[i]] %>% log() 
         } else{
@@ -155,6 +158,8 @@ format_qPCR_data <- function(qPCR_unknowns,
       }else{print("Offset type not supported at present")}
       
     }
+    # Collapse multiple offsets into single vector
+    X_offset_tot = rowSums(X_offset)
   }
   
   # pull covars (not sure how to generalize this yet)
@@ -164,8 +169,10 @@ format_qPCR_data <- function(qPCR_unknowns,
   #unknowns
   qPCR_unk <- qPCR_unknowns %>% 
     # pick columns we care about and rename
-    select(qPCR, well,tubeID,type,task,IPC_Ct,inhibit.val,inhibit.bin,wash_idx_obs=wash_idx,
-           dilution,depth_cat,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    # select(qPCR, well,tubeID,type,task,IPC_Ct,inhibit.val,inhibit.bin,wash_idx_obs=wash_idx,
+    #        dilution,depth_cat,Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
+    rename(wash_idx_obs=wash_idx,
+           Ct=hake_Ct,copies_ul=hake_copies_ul) %>% 
     mutate(z=ifelse(Ct=="Undetermined",0,1)) %>%
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
     mutate(Ct=as.numeric(Ct) %>% round(2)) %>% 
@@ -174,9 +181,10 @@ format_qPCR_data <- function(qPCR_unknowns,
     # INDEX OF UNIQUE PLATES
     mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
     # INDEX OF UNIQUE SAMPLES
-    mutate(qpcr_sample_idx=match(tubeID,unique(tubeID))) %>% 
+    mutate(tube_idx=match(tubeID,unique(tubeID))) 
     # WASH AND DILUTION EFFECTS
-    mutate(log_dilution=log(dilution))
+    #mutate(log_dilution=log(dilution))
+    
   # as of 08.21.24, 31 unique plates, 1818 unique samples
 
   #standards
@@ -205,9 +213,11 @@ format_qPCR_data <- function(qPCR_unknowns,
   
   qPCRdata <- list(qPCR_unk = qPCR_unk,
                    qPCR_std = qPCR_std,
+                   tube_dat = tube_dat,
                    FORM = FORM,
                    X_cov = X_cov,
                    X_offset = X_offset,
+                   X_offset_tot = X_offset_tot,
                    SM_FORM = SM_FORM,
                    SM = SM)
   return(qPCRdata)
@@ -215,28 +225,31 @@ format_qPCR_data <- function(qPCR_unknowns,
 
 # a last piece is we need a sample identifier across QM and qPCR data
 # We need to link unique qPCR biological samples to unique QM samples
-prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,unk_formatted,link_species="Merluccius productus"){
+prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,
+                                      unk_formatted,
+                                      link_species="Merluccius productus"){
   
   mb_link_1 <- input_metabarcoding_data %>% 
     mutate(mb_link=match(Sample,unique(Sample))) %>% 
     distinct(Sample,.keep_all = T)
   
   mb_link_2 <- unk_formatted %>% 
-    distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>% 
+    distinct(tubeID,tube_idx,station_depth_idx,station_idx) %>%
+    #distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>%
     left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
-    dplyr::select(qpcr_sample_idx,mb_link) %>% 
-    arrange(qpcr_sample_idx) %>% 
-    filter(!is.na(mb_link))
+    filter(!is.na(mb_link)) %>%
+    arrange(tube_idx) 
   
   # get the index of the right species
   qpcr_mb_link_sp_idx <- match(link_species,sort(unique(input_metabarcoding_data$species)))
   
   # return just the link vector
   return(list(
-    # datout = mb_link_2,
+    #datout = mb_link_2,
     N_mb_link = nrow(mb_link_2), # length of the linking vector
-    mb_link_sp_idx= qpcr_mb_link_sp_idx,
-    mb_link_idx=mb_link_2$mb_link))
+    mb_link_sp_idx = qpcr_mb_link_sp_idx,
+    tube_link_idx = mb_link_2$tube_idx,
+    mb_link_idx = mb_link_2$mb_link))
 }
 
 # make stan data for qPCR part
@@ -245,41 +258,58 @@ prepare_stan_data_qPCR <- function(qPCRdata){
   unk <- qPCRdata$qPCR_unk
   std <- qPCRdata$qPCR_std
   
-  if("wash_idx_obs"%in%names(unk)){
-    wash_idx <- unk %>% 
-      group_by(qpcr_sample_idx) %>% 
-      summarise(wash_idx=mean(wash_idx_obs)) %>% 
-      pull("wash_idx")
-  }
-  log_dil <-unk %>% 
-    group_by(qpcr_sample_idx) %>% 
-    summarise(log_dil=mean(log_dilution)) %>% 
-    pull(log_dil)
+  # log_dil <-unk %>% 
+  #   group_by(qpcr_sample_idx) %>% 
+  #   summarise(log_dil=mean(log_dilution)) %>% 
+  #   pull(log_dil)
   
   stan_qPCR_data <- list(
+    qpcr_unk = unk,
+    qpcr_std = std,
     Nplates = length(unique(unk$qPCR)),
     Nobs_qpcr = nrow(unk),
-    NSamples_qpcr = length(unique(unk$qpcr_sample_idx)),
+    NSamples_qpcr = max(unk$tube_idx),
     NstdSamples = nrow(std),
     plate_idx = unk$plate_idx,
-    std_plate_idx=std$plate_idx,
-    qpcr_sample_idx = unk$qpcr_sample_idx,
+    std_plate_idx = std$plate_idx,
+    tube_idx = tube_dat$tube_idx, # 
     y_unk = unk$Ct, # cycles, unknowns
     z_unk = unk$z, # did it amplify? unknowns
     y_std = std$Ct, # cycles, standards
     z_std = std$z, # did it amplify? standards
     known_concentration = std$copies_ul,# known copy number from standards
     stdCurvePrior_intercept = c(39, 3), #normal distr, mean and sd ; hyperpriors
-    stdCurvePrior_slope = c(-3, 1), #normal distr, mean and sd ; hyperpriors
+    stdCurvePrior_slope = c(-1.442695, 0.05), #normal distr, mean and sd ; hyperpriors 
     # hard coded covariates and offsets- COULD GENERALIZE THIS LATER
-    wash_idx = wash_idx, # design matrix for covariates (right now, just the wash effect)
+    #wash_idx = wash_idx, # design matrix for covariates (right now, just the wash effect)
     wash_prior = c(-1,1),
-    log_dil = log_dil # dilution offset
+    X_offset_tot =  qPCRdata$X_offset_tot # dilution and other offsets combined
     # COULD ADD SMOOTHS HERE EVENTUALLY
   )
+    
+
+   if("wash_idx"%in% names(qPCRdata$X_cov)){
+     wash_idx = c(qPCRdata$X_cov[["wash_idx"]])
+     
+  #   wash_idx <- unk %>%
+  #     group_by(qpcr_sample_idx) %>%
+  #     summarise(wash_idx=mean(wash_idx_obs)) %>%
+  #     pull("wash_idx")
+  # 
+     stan_qPCR_data <- c(stan_qPCR_data,
+                         list(wash_idx = wash_idx)) # design matrix for covariates (right now, just the wash effect)
+   }
+  if("station_depth_idx"%in%names(unk)){
+    qPCRdata$X_cov[["station_depth_idx"]]
+
+    X_station_depth_obs <- formatted_qPCR_data$X_cov[["station_depth_idx"]]
+    N_station_depth <- ncol(X_station_depth_obs)
+    stan_qPCR_data <- c(stan_qPCR_data,
+                        list(X_station_depth_obs = X_station_depth_obs,
+                             N_station_depth = N_station_depth))
+  }
   
   return(stan_qPCR_data)
-  
 }
 
 ### END qPCR part ###
@@ -313,9 +343,8 @@ alrTransform <- function(MOCK,
     return(p_mock)
 }
   
-  
-  
 makeDesign <- function(obs, #obs is a named list with elements Observation, Mock, N_pcr_mock, sp_list
+                       qPCR_tube_obs,
                          N_pcr_cycles,
                          Nlevels_mock = 2, #levels of replication. Samples with either tech or biol replicates = 2; Samples with tech AND biol replicates = 3
                          Nlevels_samp = 2 #levels of replication. Samples with either tech or biol replicates = 2; Samples with tech AND biol replicates = 3
@@ -325,7 +354,6 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     library(compositions)
     library(rstan)
     library(dplyr)
-    
     
     mock <- obs$Mock %>% 
       unite(c("level1", "level2", "level3")[1:Nlevels_mock-1], col = S, sep = "_", remove = F) #create identifier to distinguish the lowest level of replication (i.e., site-sample)
@@ -358,6 +386,12 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       mutate(species = paste0("sp_", species)) %>% 
       #arrange(species) %>% 
       pivot_wider(names_from = species, values_from = Nreads, values_fill = 0)
+
+    ############################### 
+    # HERE IS WHERE YOU CHECK TO MAKE SURE THE SAMPLES IN THE METABARCODING ARE PRESENT IN THE QPCR DATA.
+    # OTHERWISE YOU HAVE TO EXCLUDE THEM IN THE JOINT MODEL.
+    ###############################   
+    p_samp_all <- p_samp_all %>%  filter(S %in% tube_dat$tubeID)
     N_pcr_samp <- rep(N_pcr_cycles, nrow(p_samp_all))
 
     ########################################################################
@@ -409,9 +443,17 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     N_obs_samp <- nrow(p_samp_all)
     N_b_samp_col <- ncol(model_matrix_b_samp)
     
+    # Make index for most abundant species in each metabarcoding sample.
+    which.max <- function(a){return(which(a == max(a)))}
+      
+      
+    ref_sp_idx <- p_samp_all %>% dplyr::select(contains("sp")) %>%
+                    apply(.,1,which.max) %>% as.data.frame()
+    colnames(ref_sp_idx) <- "ref_sp_idx"
+    ref_sp_idx <- bind_cols(p_samp_all,ref_sp_idx)  
     
+
     #### Make Stan objects
-    
     stan_data <- list(
       N_species = ncol(p_samp_all)-2,   # Number of species in data
       N_obs_mb_samp = nrow(p_samp_all), # Number of observed community samples and tech replicates ; this will be Ncreek * Nt * Nbiol * Ntech * 2 [for upstream/downstream observations]
@@ -420,6 +462,8 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       
       # Observed data of community matrices
       sample_data = p_samp_all %>% dplyr::select(contains("sp")),
+      ref_sp_idx = ref_sp_idx$ref_sp_idx,
+      
       # sample_vector = p_samp_all$S,
       mock_data   = mock %>% dplyr::select(contains("sp")),
       # sp_list = obs$sp_list,
@@ -443,37 +487,57 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       model_vector_a_mock = as.array(model_vector_a_mock),
       
       # Priors
-
-      alpha_prior = c(0,0.01),  # normal prior
+      alpha_prior = c(0,0.1),  # normal prior
       # beta_prior = c(0,5),    # normal prior
-      tau_prior = c(1,2)   # gamma prior
+      tau_prior = c(0,0.5)   # normal prior
     )
-    
     return(stan_data)
-    
 }
 
+
+makeQM_inits <- function(sample_data, 
+                         log_D_link_sp_init_mean,
+                         ref_sp_idx,
+                         sp_list,
+                         qPCR_ref_sp){
+                  p <-  ((sample_data) / rowSums(sample_data)) + 1e-5
+                  log_p <- log(p / rowSums(p))
+                  ref_col = sp_list$species_idx[sp_list$species == qPCR_ref_sp]
+                  
+                  log_p_rel <- log_p - log_p[,ref_col]
+                  log_D_init <- log_p_rel + log_D_link_sp_init_mean
+                  log_D_raw_init <- log_D_init[,-ref_col]
+                  
+                  return(list(log_D_link_sp_init_mean = log_D_link_sp_init_mean,
+                              log_D_raw_init= log_D_raw_init,
+                              log_D_init = log_D_init))  
+}  
   #example
   #stan_metabarcoding_data <- makeDesign(metabarcoding_data, N_pcr_cycles = 43)    
   
   
 ###########################################
 ### Setting Initial Values
-stan_init_f1 <- function(n.chain,N_obs_mb,N_species,Nplates){
-  set.seed(78345)
+stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station_depth,
+                         log_D_link_sp_init_mean,
+                         log_D_raw_inits,
+                         log_D_inits){
+  # set.seed(78345)
   A <- list()
   for(i in 1:n.chain){
     A[[i]] <- list(
-      log_D_raw=matrix(data=rnorm(N_obs_mb*N_species,mean=5,sd=2),nrow = N_obs_mb,ncol=N_species),
+      log_D_raw=log_D_raw_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1),
+      #log_D = log_D_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1)
+        #matrix(data=rnorm(N_obs_mb*(N_species-1),mean=2,sd=1),nrow = N_obs_mb,ncol=N_species-1),
+      mean_hake  = rnorm(1,log_D_link_sp_init_mean,0.01),
+      log_D_station_depth=rnorm(N_station_depth,0,0.01),
       alpha_raw=jitter(rep(0,N_species-1),factor=0.5),
-
       beta_std_curve_0=runif(Nplates,-2,2),
       beta_std_curve_1=runif(Nplates,-1.44,-1.3),
       phi_0 = runif(1,1.5,1.8),
       phi_1 = runif(1,1,1.1),
       gamma_1 = runif(1,-0.01,0),
-      tau=runif(1,0.01,0.05),
-      alpha_0 = runif(1,10,20)
+      tau=runif(1,0.01,0.05)
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  

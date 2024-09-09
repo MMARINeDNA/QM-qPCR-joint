@@ -65,8 +65,10 @@ qPCR_unk <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2021-0
   # this leaves 9208 rows
 
 # Get rid of zymo filtered samples  FIX USEFUL HERE
-qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo)) 
-  # 8659 rows remain.
+qPCR_unk <- qPCR_unk %>% filter(is.na(Zymo)) %>% 
+                mutate(useful = ifelse(is.na(useful),"missing",useful)) %>% 
+                filter(useful %in% c("missing","YES"))
+  # 7412 rows remain.
 
 # Specify an inhibition limit for retaining samples.
 INHIBIT.LIMIT <- 0.5
@@ -84,8 +86,7 @@ qPCR_unk <- left_join(qPCR_unk,dat.ntc,by=join_by(qPCR)) %>%
          inhibit.bin=ifelse(inhibit.val < INHIBIT.LIMIT ,0,1)) %>%
   filter(inhibit.bin ==0) %>% 
   select(-inhibition_rate)
-
-# This leaves 7388 rows of data.
+# This leaves 7266 rows of data.
 
 ### Add wash covariate
 ### CHECK THE SAMPLES THAT HAD TROUBLE WITH WASHING (drop.sample == "30EtOH" or "30EtOHpaired")
@@ -129,13 +130,13 @@ qPCR_unk <- qPCR_unk %>%
   mutate(wash.indicator=0,wash_idx=0) %>% 
   filter(!tubeID %in% unique(dat.wash.all$tubeID)) %>% 
   bind_rows(.,dat.wash.all)
-# Still at 7388 rows of data.
+# Still at 7266 rows of data.
 
 # Filter out various controls, field negatives, ntc, etc.
 qPCR_unk <- qPCR_unk %>%
           filter(type == "unknowns") %>% # this gets rid of 646 rows.
           filter(!is.na(utm.lat)) # gets rid of 9 replicates (3 unique tubes) filtered from other hake projects
-# Still at 6733 rows of data.
+# Still at 6614 rows of data.
 
 # Classify each listed depth into one of a few categories.
 qPCR_unk <- qPCR_unk %>% mutate(depth_cat=case_when(depth < 25 ~ 0,
@@ -149,6 +150,81 @@ qPCR_unk <- qPCR_unk %>% mutate(depth_cat=case_when(depth < 25 ~ 0,
 
 # Only keep observations with a dilution of 1 or 0.2.
 qPCR_unk <- qPCR_unk %>% filter(dilution %in% c(0.2,1))
+# Down to 5394 rows
+
+# Add volume for offset
+qPCR_unk <- qPCR_unk %>% mutate(volume_offset = volume / 2.5)
+
+# Make a summary file for each depth-location combination.  Call this station_dat
+station_dat <- qPCR_unk %>% 
+                dplyr::select(year,tubeID, station,lat,lon,utm.lat,utm.lon,depth,depth_cat) %>% 
+                distinct() %>% group_by(year,station, lat, lon, utm.lat,utm.lon,depth,depth_cat) %>%
+                count() %>% rename(n_tube_station_depth = n) %>% ungroup() %>% 
+                mutate(station_depth_idx = 1:nrow(.))
+stat2 <- qPCR_unk %>% 
+                dplyr::select(year,tubeID, station,lat,lon,utm.lat,utm.lon) %>% 
+                distinct() %>% group_by(year,station, lat, lon, utm.lat,utm.lon) %>% 
+                count() %>% rename(n_tube_station = n) %>% ungroup() %>% 
+                mutate(station_idx = 1:nrow(.))
+station_dat <- left_join(station_dat,stat2)
+
+# Merge back into the qPCR_unk
+qPCR_unk <- qPCR_unk %>% left_join(.,station_dat)
+
+# Make tube_idx
+tube_dat <-   qPCR_unk %>% distinct(tubeID,station_depth_idx,station_idx,n_tube_station_depth,depth_cat)
+tube_dat <- tube_dat %>% mutate(tube_idx =1:nrow(.))
+
+# Merge back into the qPCR_unk
+qPCR_unk <- qPCR_unk %>% left_join(.,tube_dat)
+
+
+# Make a matrix for random effect associated with each station-depth combination at tubeID level 
+  #reduce qPCR to just a single value for each tubeID
+    #    form <- "depth_cat ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
+    # model_frame   <- model.frame(form, tube_dat)  
+    # A <- model.matrix(as.formula(form), model_frame)
+    # # get rid of factor levels (columns) that == 0
+    # X_bio_rep_tube <- A[,which(colSums(A)>0)]
+    # # Only keep columns that have at least 2 replicates
+    # THESE <- substr(colnames(X_bio_rep_tube),nchar(colnames(X_bio_rep_tube)),nchar(colnames(X_bio_rep_tube)))
+    # THESE <- as.numeric(THESE)
+    # X_bio_rep_tube <- X_bio_rep_tube[,which(THESE>1)]
+    # 
+    # # Check to make sure the order is correct
+    # identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
+    
+### ONE MORE FIXED EFFECT DESIGN MATRIX AT THE TUBE LEVEL.
+    form <- "depth_cat ~ 0 + factor(station_depth_idx)"
+    model_frame   <- model.frame(form, tube_dat)  
+    X_station_depth_tube <- model.matrix(as.formula(form), model_frame)
+
+### RANDOM EFFECT DESIGN MATRICES
+    # Make a matrix for random effect associated with each station-depth combination at observation level 
+    form <- "year ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
+    model_frame   <- model.frame(form, qPCR_unk)
+    A <- model.matrix(as.formula(form), model_frame)
+    # get rid of factor levels (columns) that == 0
+    X_bio_rep_obs <- A[,which(colSums(A)>0)]
+    #   # Only keep columns that have at least 2 replicates
+    #   THESE <- substr(colnames(X_bio_rep_obs),nchar(colnames(X_bio_rep_obs)),nchar(colnames(X_bio_rep_obs)))
+    #   THESE <- as.numeric(THESE)
+    #   X_bio_rep_obs <- X_bio_rep_obs[,which(THESE>1)]
+    # N_bio_rep_RE <- ncol(X_bio_rep_obs)
+        
+### Make random effect that sums to zero for the tubes.
+    bio_rep_dat <- tube_dat %>% group_by(station_depth_idx) %>% mutate(bio_rep_idx = rep(1:n())) %>%  ungroup()
+    bio_rep_dat2 <- bio_rep_dat %>% filter(bio_rep_idx == n_tube_station_depth)
+    form <- "depth_cat ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
+    model_frame   <- model.frame(form, bio_rep_dat)  
+    X_bio_rep_tube <- model.matrix(as.formula(form), model_frame)
+    X_bio_rep_tube <- X_bio_rep_tube[,which(colSums(X_bio_rep_tube)>0)]
+    
+     # figure out how many parameters you actually need to estimate for random effects: RE > param
+    N_bio_rep_RE    <- nrow(bio_rep_dat)
+    N_bio_rep_param <- bio_rep_dat %>% filter(bio_rep_idx != n_tube_station_depth) %>% nrow()
+    bio_rep_idx <- bio_rep_dat2 %>%  pull(bio_rep_idx)
+    N_bio_rep_idx <- length(bio_rep_idx)
 
 # Make a new metadata file that has all of the requisite stuff.
 META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
