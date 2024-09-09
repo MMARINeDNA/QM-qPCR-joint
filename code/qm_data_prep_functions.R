@@ -487,7 +487,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       model_vector_a_mock = as.array(model_vector_a_mock),
       
       # Priors
-      alpha_prior = c(0,0.1),  # normal prior
+      alpha_prior = c(0,0.01),  # normal prior
       # beta_prior = c(0,5),    # normal prior
       tau_prior = c(0,0.5)   # normal prior
     )
@@ -537,7 +537,8 @@ stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station
       phi_0 = runif(1,1.5,1.8),
       phi_1 = runif(1,1,1.1),
       gamma_1 = runif(1,-0.01,0),
-      tau=runif(1,0.01,0.05)
+      tau=runif(1,0.01,0.05),
+      alpha_0 = runif(1,10,20)
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  

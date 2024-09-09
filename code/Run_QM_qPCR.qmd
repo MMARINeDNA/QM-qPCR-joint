@@ -102,7 +102,7 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 ## Load Stan model
 
 ```{r}
-m <- here('code','qm_qpcr_joint.stan')
+m <- here('code','qm_qpcr_joint-DM.stan')
 
 #IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
 # mc <- cat(stan_model(m)@model_code)
@@ -114,8 +114,8 @@ Run Stan
 
 ```{r}
 n.chains <- 3
-n.warm <- 500
-n.samps <- 500
+n.warm <- 200
+n.samps <- 100
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -137,7 +137,7 @@ jointMod = stan(file = m ,
                                     #log_D_inits$log_D_inits,
                 #refresh = 10,
                 boost_lib = NULL,
-                sample_file="tmpU.csv"
+                sample_file="tmpW.csv"
                 )
 ```
 
