@@ -113,9 +113,9 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-n.chains <- 3
-n.warm <- 500
-n.samps <- 500
+n.chains <- 1
+n.warm <- 50
+n.samps <- 50
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -125,7 +125,7 @@ jointMod = stan(file = m ,
                 iter = n.warm+n.samps,
                 control = list(adapt_init_buffer = 200,
                                   max_treedepth=11,
-                                  stepsize=0.01,
+                                  stepsize=0.1,
                                   adapt_delta=0.8,
                                   metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
@@ -139,6 +139,32 @@ jointMod = stan(file = m ,
                 boost_lib = NULL,
                 sample_file="tmpU.csv"
                 )
+```
+
+```{r,fig.height=3,fig.width=4}
+samps <- read_csv(here('code','tmpU.csv'),skip = 25)
+sampslong <- samps %>% 
+  mutate(samp=row_number()) %>% 
+  dplyr::select(-(1:7)) %>% 
+  pivot_longer(-samp,names_to = "param",values_to="value")
+
+# function to plot the path of the sampler for a param or group of params
+plot_trace <- function(samples,param_str){
+  samples %>% 
+    filter(grepl(param_str,param)) %>% 
+    ggplot(aes(samp,value,group=param))+
+    geom_line()+
+    guides(group='none',col='none')+
+    theme_minimal()+
+    labs(title=param_str)
+}
+
+plot_trace(sampslong,"logit_val_samp")
+plot_trace(sampslong,"logit_val_mock")
+# plot_trace(sampslong,"eta_mock")
+plot_trace(sampslong,"alpha")
+plot_trace(sampslong,"log_D")
+plot_trace(sampslong,"bio_rep_RE")
 ```
 
 ```{r}
