@@ -67,7 +67,7 @@ plot_obs_pred_qPCR <- function(s,stan_data){
   
   qPCR_unk_dat <- qPCR_unk_dat %>% 
     mutate(prob_amp_fit=qPCR_unk_bin_fit$prob,
-           Ct_fit=qPCR_unk_fit$mean)
+           Ct_fit=qPCR_unk_pos_fit$mean)
   
   # plots
   qPCR_unk_bin_plot <- qPCR_unk_dat %>% 
@@ -80,6 +80,7 @@ plot_obs_pred_qPCR <- function(s,stan_data){
     guides(color='none')
   qPCR_unk_pos_plot <- qPCR_unk_dat %>% 
     filter(z==1) %>% 
+    filter(Ct_fit<50) %>% 
     ggplot(aes(Ct,Ct_fit,col=qPCR))+
     geom_point()+
     geom_abline(slope=1,intercept=0,linetype=2)+

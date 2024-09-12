@@ -113,8 +113,8 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-n.chains <- 1
-n.warm <- 300
+n.chains <- 3
+n.warm <- 500
 n.samps <- 500
 jointMod = stan(file = m ,
                 data = stan_data_joint,
@@ -135,7 +135,7 @@ jointMod = stan(file = m ,
                                     log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
                                     log_D_raw_inits=log_D_inits$log_D_raw_inits),
                                     #log_D_inits$log_D_inits,
-                #refresh = 10,
+                refresh = 10,
                 boost_lib = NULL,
                 sample_file="tmpU.csv"
                 )
@@ -165,6 +165,11 @@ plot_alphas(fit_summ)
 ```{r,fig.width=8,fig.height=7}
 plot_obs_pred_qm(fit_summ,stan_data_joint)
 ```
+
+```{r}
+plot_est_reads(fit_summ)
+```
+
 
 
 # Diagnostics- Sampler
