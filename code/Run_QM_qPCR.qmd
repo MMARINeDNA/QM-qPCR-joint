@@ -114,8 +114,8 @@ Run Stan
 
 ```{r}
 n.chains <- 1
-n.warm <- 50
-n.samps <- 50
+n.warm <- 300
+n.samps <- 500
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -124,8 +124,8 @@ jointMod = stan(file = m ,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
                 control = list(adapt_init_buffer = 200,
-                                  max_treedepth=11,
-                                  stepsize=0.1,
+                                  max_treedepth=12,
+                                  stepsize=0.01,
                                   adapt_delta=0.8,
                                   metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
@@ -140,6 +140,34 @@ jointMod = stan(file = m ,
                 sample_file="tmpU.csv"
                 )
 ```
+
+# Diagnostics - Observations and Predictions
+
+```{r}
+# Code for these diagnostic plots
+source(here('code','diagnostics.R'))
+fit_summ <- get_param_ests(jointMod)
+```
+
+## qPCR
+
+```{r}
+plot_obs_pred_qPCR(fit_summ,stan_data_joint)
+```
+
+## QM
+
+```{r}
+# alphas
+plot_alphas(fit_summ)
+```
+
+```{r,fig.width=8,fig.height=7}
+plot_obs_pred_qm(fit_summ,stan_data_joint)
+```
+
+
+# Diagnostics- Sampler
 
 ```{r,fig.height=3,fig.width=4}
 samps <- read_csv(here('code','tmpU.csv'),skip = 25)

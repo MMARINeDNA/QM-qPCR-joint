@@ -250,7 +250,7 @@ transformed parameters {
                                // eta_mock[n];
   }
   // print("logit val: ",logit_val_mock);
-  print("alpha: ", alpha);
+  // print("alpha: ", alpha);
   // for(m in 1:N_obs_mb_samp){
   //   prob_samp_t[,m] = softmax(transpose(logit_val_samp[m,])); // proportion of each taxon in field samples
   // }
@@ -318,7 +318,7 @@ model{
   log_D_sigma ~ normal(0,3);
   log_D_station_depth ~ normal(0,log_D_sigma); //log scale
 
-  print("1:",target());
+  // print("1:",target());
   
   for(i in 1:(N_species-1)){
     alpha_raw[i] ~ std_normal();
@@ -329,13 +329,13 @@ model{
     mock_data[i,]   ~  multinomial_logit(logit_val_mock[i,]'); // Multinomial sampling of mu (proportions in mocks)
   }
 
-  print("2:",target());
+  // print("2:",target());
   
   for(i in 1:N_obs_mb_samp){
     sample_data[i,] ~  multinomial_logit(logit_val_samp[i,]'); // Multinomial sampling of mu (proportions in field samples)
   }
 
-  print("3:",target());
+  // print("3:",target());
   
   // Priors
   // for(i in 1:(N_species-1)){
