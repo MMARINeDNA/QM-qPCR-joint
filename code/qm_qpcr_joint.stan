@@ -306,7 +306,7 @@ model{
     // The values for the link species will come from the qPCR part of the joint model
     // (which will use prior information from envir_concentration, above)
     //if(i!=mb_link_sp_idx){
-      log_D_raw[,i] ~ normal(3,10);
+      log_D_raw[,i] ~ normal(3,5);
     //}
   }
   

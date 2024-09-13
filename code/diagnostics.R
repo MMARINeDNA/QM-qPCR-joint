@@ -273,3 +273,5 @@ plot_est_reads <- function(s){
   
   mb_unk_reads_plot
 }
+
+#### Other variance parameters ####

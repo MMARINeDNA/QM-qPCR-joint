@@ -141,6 +141,11 @@ jointMod = stan(file = m ,
                 )
 ```
 
+```{r}
+# save (big file!)
+write_rds(jointMod,here('code','fit1.rds'))
+```
+
 # Diagnostics - Observations and Predictions
 
 ```{r}
@@ -229,23 +234,13 @@ diagnose_sampler %>%
   geom_hline(aes(yintercept = maxtd), color = 'red')
 ```
 
-
-```{r}
-# param summary
-fitsumm <- summary(jointMod)$summary %>% 
-  as.data.frame() %>% 
-  mutate(variable = rownames(.)) %>% 
-  select(variable, everything()) %>% 
-  as_tibble()
-```
-
 ```{r}
 #n_eff and Rhat
-fitsumm %>% 
+fit_summ %>% 
   ggplot(aes(n_eff)) + 
   geom_histogram() + 
   geom_vline(aes(xintercept = 3000), color = 'red')
-fitsumm %>%
+fit_summ %>%
   ggplot(aes(Rhat)) + 
   geom_histogram() + 
   geom_vline(aes(xintercept = 1.1), color = 'red')
@@ -275,18 +270,4 @@ ests <- summary(jointMod,par="log_D")$summary
 ests2 <- summary(jointMod,par="log_D_raw")$summary
 ```
 
-
-```{r}
-# QM_qPCR_joint_out <- QM_qPCR_bayes(m,
-#                          stan_data_joint,
-#                          NCHAINS=3,
-#                          WARMUP = 100,
-#                          ITER = 300)
-# write_rds(QM_qPCR_joint_out, file = here("model_output/QM_qPCR_MiFish.rds"))
-#QM_bayes_out <- readRDS(here("model_output/QM_bayes_MFU.RDS"))
-#QM_bayes_out$Bayes_estimates
-# QM_bayes_out$Bayes_alpha_est
-#summary(QM_bayes_out$Bayes_modelfit)$summary[,"Rhat"] %>% sort() %>% tail()
-# rstan::traceplot(QM_bayes_out$Bayes_modelfit, par = "alpha")
-```
 
