@@ -81,7 +81,7 @@ log_D_inits <- makeQM_inits(sample_data =stan_metabarcoding_data$sample_data,
                          sp_list = formatted_metabarcoding_data$sp_list,
                          qPCR_ref_sp = link_species )
 
-# linking dataåå
+# linking data
 qPCR_mb_link <- prepare_stan_qPCR_mb_join(input_metabarcoding_data=mfu,
                                           unk_formatted = formatted_qPCR_data$tube_dat,
                                           link_species = "Merluccius productus")
@@ -113,7 +113,7 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-n.chains <- 3
+n.chains <- 1
 n.warm <- 500
 n.samps <- 500
 jointMod = stan(file = m ,
@@ -132,8 +132,8 @@ jointMod = stan(file = m ,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
                                     N_station_depth=stan_data_joint$N_station_depth,
-                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
-                                    log_D_raw_inits=log_D_inits$log_D_raw_inits),
+                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
+                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits),
                                     #log_D_inits$log_D_inits,
                 refresh = 10,
                 boost_lib = NULL,

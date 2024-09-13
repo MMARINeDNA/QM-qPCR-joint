@@ -44,8 +44,6 @@ data {
   int N_obs_mb_samp_small;  // Number of observed samples for individual sites.
   int N_obs_mock; // Number of observed mock samples
 
-
-
   // Observed data of community matrices
   int sample_data[N_obs_mb_samp,N_species];
   // Observed data of mock community matrices
@@ -79,6 +77,8 @@ data {
   int mb_link_idx[N_mb_link]; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
   int mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
   int tube_link_idx[N_obs_mb_samp]; //index linking observations to unique biological samples
+  real log_D_mu; //prior on mean for log_D_raw, where log_D = log_D_mu + log_D_raw*log_D_scale
+  real log_D_scale; //prior on variance param for log_D_raw, where log_D = log_D_mu + log_D_raw*log_D_scale
 }
 
 
@@ -96,16 +96,16 @@ transformed data {
 parameters {
   // for QM part
   //real<lower=0> tau_base; // single overdispersion sd for multinomial.
-  //real<lower=0> tau; // single overdispersion sd for multinomial.
+  real<lower=0> tau; // single overdispersion sd for multinomial.
   vector[N_species-1] alpha_raw;
   // vector[N_obs_mb_samp] eta_samp_raw[N_species-1]; //overdispersion
-  // vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion
+  vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion in mocks
 
   // for qPCR part
   real mean_hake; //global mean hake concentration
   
   vector[Nplates] beta_std_curve_0; // intercept of standard curve
-  vector<lower= stdCurvePrior_slope[1]>[Nplates] beta_std_curve_1; // slope of standard curve
+  vector[Nplates] beta_std_curve_1; // slope of standard curve
   real gamma_0; //intercept to scale variance of standard curves w the mean
   real<upper=0> gamma_1; //slopes to scale variance of standards curves w the mean
   real<upper= 1.854586> phi_0; // this bound is the logistic transform of dpois(0,2)... which is the prob of getting at least 1 copy into the rx.
@@ -119,7 +119,7 @@ parameters {
   real<lower=0> tau_bio_rep; # random effect for biological replicates.
   
   //for linking 
-  matrix[N_obs_mb_samp,(N_species-1)] log_D_raw; // estimated true DNA concentration by sample
+  matrix[N_obs_mb_samp,(N_species-1)] log_D_raw; // estimated true DNA concentration by sample (centered)
 
 }
 
@@ -138,7 +138,7 @@ transformed parameters {
   // for QM part
   vector[N_species] alpha; // vector of coefficients (log-efficiencies relative to reference taxon)
   // vector[N_obs_mb_samp] eta_samp[N_species]; // overdispersion coefficients
-  // vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
+  vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
   matrix[N_obs_mb_samp,N_species] logit_val_samp;
   matrix[N_obs_mock,N_species] logit_val_mock;
   // matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
@@ -197,13 +197,13 @@ transformed parameters {
   //Link to QM
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
-      if(i==mb_link_sp_idx){ // if index is equal to link species, fill in qpcr estimate
+      if(i==mb_link_sp_idx){ // if index is equal to link species (hake), fill in qpcr estimate
         log_D[j,i] = log_D_station_depth_tube[tube_link_idx[j]];
       }else{ // otherwise, fill from log_D_raw
         if(i<mb_link_sp_idx){
-          log_D[j,i] = log_D_raw[j,i];
+          log_D[j,i] = log_D_mu+log_D_raw[j,i]*log_D_scale;
         }else{
-          log_D[j,i] = log_D_raw[j,(i-1)];
+          log_D[j,i] = log_D_mu+log_D_raw[j,(i-1)]*log_D_scale;
         }
       }
     }
@@ -217,13 +217,13 @@ transformed parameters {
   alpha[N_species] = 0; // final species is zero (reference species)
 
   // tau = rep_vector(tau_base,N_species-1);
-  // eta_mock[N_species] = rep_vector(0.0,N_obs_mock); // final species is zero (reference species)
+  eta_mock[N_species] = rep_vector(0.0,N_obs_mock); // final species is zero (reference species)
       // eta_samp[N_species] = rep_vector(0.0,N_obs_mb_samp); // final species is zero (reference species)
   // random effects vector of vectors
-  // for (l in 1:(N_species-1)) {
-  //   eta_mock[l] = eta_mock_raw[l] * tau ; // non-centered param eta_mock ~ normal(0,tau)
+  for (l in 1:(N_species-1)) {
+    eta_mock[l] = eta_mock_raw[l] * tau ; // non-centered param eta_mock ~ normal(0,tau)
   //   // eta_samp[l] = eta_samp_raw[l] * tau ; // non-centered param eta_samp ~ normal(0,tau)
-  // }
+  }
 
 // from qPCR estimates, alphas, and etas we can calculate sample-specific mu
 // Make a vector for the reference species D and for alpha
@@ -246,7 +246,7 @@ transformed parameters {
                           //model_matrix_samp * append_row((log_D[,n] - log_D[,ref_sp_idx]),alpha[n] - alpha[ref_sp_idx]);
                             //+eta_samp[n];
     logit_val_mock[,n] = alr_mock_true_prop[,n] +
-                               model_vector_a_mock .* alpha[n];
+                               model_vector_a_mock .* alpha[n]+eta_mock[n];
                                // eta_mock[n];
   }
   // print("logit val: ",logit_val_mock);
@@ -306,7 +306,8 @@ model{
     // The values for the link species will come from the qPCR part of the joint model
     // (which will use prior information from envir_concentration, above)
     //if(i!=mb_link_sp_idx){
-      log_D_raw[,i] ~ normal(3,5);
+      // log_D_raw[,i] ~ normal(0,5);
+      log_D_raw[,i] ~ std_normal();
     //}
   }
   
@@ -338,11 +339,11 @@ model{
   // print("3:",target());
   
   // Priors
-  // for(i in 1:(N_species-1)){
+  for(i in 1:(N_species-1)){
   //   // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
-  //   eta_mock_raw[i] ~ std_normal();//~ normal(0,tau); // N(0,tau)
-  // }
-  // tau ~ normal(tau_prior[1],tau_prior[2]);
+    eta_mock_raw[i] ~ normal(0,tau); // N(0,tau)
+  }
+  tau ~ gamma(tau_prior[1],tau_prior[2]);
   
 }
 

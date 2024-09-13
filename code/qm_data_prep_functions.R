@@ -249,7 +249,9 @@ prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,
     N_mb_link = nrow(mb_link_2), # length of the linking vector
     mb_link_sp_idx = qpcr_mb_link_sp_idx,
     tube_link_idx = mb_link_2$tube_idx,
-    mb_link_idx = mb_link_2$mb_link))
+    mb_link_idx = mb_link_2$mb_link,
+    log_D_mu = 0,
+    log_D_scale = 5))
 }
 
 # make stan data for qPCR part
@@ -489,7 +491,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       # Priors
       alpha_prior = c(0,0.1),  # normal prior
       # beta_prior = c(0,5),    # normal prior
-      tau_prior = c(0,0.5)   # normal prior
+      tau_prior = c(10,1000)   # gamma prior on eta_mock = ~0.01
     )
     return(stan_data)
 }
@@ -506,10 +508,10 @@ makeQM_inits <- function(sample_data,
                   
                   log_p_rel <- log_p - log_p[,ref_col]
                   log_D_init <- log_p_rel + log_D_link_sp_init_mean
-                  log_D_raw_init <- log_D_init[,-ref_col]
+                  # log_D_raw_init <- log_D_init[,-ref_col]
                   
                   return(list(log_D_link_sp_init_mean = log_D_link_sp_init_mean,
-                              log_D_raw_init= log_D_raw_init,
+                              # log_D_raw_init= log_D_raw_init,
                               log_D_init = log_D_init))  
 }  
   #example
@@ -520,13 +522,13 @@ makeQM_inits <- function(sample_data,
 ### Setting Initial Values
 stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station_depth,
                          log_D_link_sp_init_mean,
-                         log_D_raw_inits,
+                         # log_D_raw_inits,
                          log_D_inits){
   # set.seed(78345)
   A <- list()
   for(i in 1:n.chain){
     A[[i]] <- list(
-      log_D_raw=log_D_raw_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1),
+      # log_D_raw=log_D_raw_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1),
       #log_D = log_D_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1)
         #matrix(data=rnorm(N_obs_mb*(N_species-1),mean=2,sd=1),nrow = N_obs_mb,ncol=N_species-1),
       mean_hake  = rnorm(1,log_D_link_sp_init_mean,0.01),
@@ -537,7 +539,7 @@ stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station
       phi_0 = runif(1,1.5,1.8),
       phi_1 = runif(1,1,1.1),
       gamma_1 = runif(1,-0.01,0),
-      tau=runif(1,0.01,0.05)
+      tau=rgamma(1,10,1000),
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  
