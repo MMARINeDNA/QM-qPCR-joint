@@ -70,7 +70,8 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
     group_by(level1) %>% 
     mutate(level2 = match(level2, unique(level2))) %>% #reindex, if necess
     mutate(level3 = match(level3, unique(level3))) %>% #reindex, if necess
-    unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F)
+    unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F) %>% 
+    ungroup()
   
   station_list <- data.frame(
     station = Observation$level1 %>% unique(),
@@ -489,7 +490,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       model_vector_a_mock = as.array(model_vector_a_mock),
       
       # Priors
-      alpha_prior = c(0,0.1),  # normal prior
+      alpha_prior = c(0,0.01),  # normal prior
       # beta_prior = c(0,5),    # normal prior
       tau_prior = c(10,1000)   # gamma prior on eta_mock = ~0.01
     )
@@ -529,17 +530,17 @@ stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station
   for(i in 1:n.chain){
     A[[i]] <- list(
       # log_D_raw=log_D_raw_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1),
-      #log_D = log_D_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1)
+      # log_D = log_D_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1)
         #matrix(data=rnorm(N_obs_mb*(N_species-1),mean=2,sd=1),nrow = N_obs_mb,ncol=N_species-1),
       mean_hake  = rnorm(1,log_D_link_sp_init_mean,0.01),
       log_D_station_depth=rnorm(N_station_depth,0,0.01),
-      alpha_raw=jitter(rep(0,N_species-1),factor=0.5),
+      alpha_raw=jitter(rep(0,N_species-1),factor=1),
       beta_std_curve_0=runif(Nplates,-2,2),
       beta_std_curve_1=runif(Nplates,-1.44,-1.3),
       phi_0 = runif(1,1.5,1.8),
       phi_1 = runif(1,1,1.1),
       gamma_1 = runif(1,-0.01,0),
-      tau=rgamma(1,10,1000),
+      tau=rgamma(1,10,1000)
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  

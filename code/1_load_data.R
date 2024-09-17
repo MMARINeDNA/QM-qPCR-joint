@@ -385,6 +385,15 @@ mfu$BestTaxon[mfu$BestTaxon == "Trachurus"] <- "Trachurus symmetricus"
 mfu <- mfu %>%
   rename(Species = BestTaxon) %>% 
   filter(Species %in% keep) #just take fish species in mock
+
+
+# METADATA for metabarcoding
+mfu_META <- mfu %>% 
+  drop_na(sample, lat, Species, nReads) %>%
+  dplyr::select(sample,station:wash_idx) %>% 
+  mutate(sampleidx = match(sample, unique(sample))) %>% 
+  distinct()
+
 mfu <- mfu %>%
   select(sample, Species, nReads) %>%
   drop_na() %>%

@@ -341,7 +341,7 @@ model{
   // Priors
   for(i in 1:(N_species-1)){
   //   // eta_samp_raw[i] ~ std_normal(); // N(0,tau)
-    eta_mock_raw[i] ~ normal(0,tau); // N(0,tau)
+    eta_mock_raw[i] ~ normal(0,1); // N(0,tau)
   }
   tau ~ gamma(tau_prior[1],tau_prior[2]);
   

@@ -113,9 +113,9 @@ m <- here('code','qm_qpcr_joint.stan')
 Run Stan
 
 ```{r}
-n.chains <- 1
+n.chains <- 3
 n.warm <- 500
-n.samps <- 500
+n.samps <- 3000
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -123,7 +123,7 @@ jointMod = stan(file = m ,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 200,
+                control = list(adapt_init_buffer = 75,
                                   max_treedepth=12,
                                   stepsize=0.01,
                                   adapt_delta=0.8,
@@ -134,10 +134,10 @@ jointMod = stan(file = m ,
                                     N_station_depth=stan_data_joint$N_station_depth,
                                     log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
                                     # log_D_raw_inits=log_D_inits$log_D_raw_inits),
-                                    #log_D_inits$log_D_inits,
+                                    # log_D_log_D_inits$log_D_inits,
                 refresh = 10,
-                boost_lib = NULL,
-                sample_file="tmpU.csv"
+                boost_lib = NULL
+                # sample_file="tmpU.csv"
                 )
 ```
 
@@ -175,6 +175,30 @@ plot_obs_pred_qm(fit_summ,stan_data_joint)
 plot_est_reads(fit_summ)
 ```
 
+# Save Predictions
+
+Save the predictions of log copies for use in downstream spatial modeling and plotting
+
+```{r}
+# log_D from the model fit
+reads_fitted <- fit_summ %>% 
+    filter(grepl('log_D',variable),
+           !grepl('log_D_raw',variable),
+           !grepl('log_D_station_depth',variable),
+           !grepl('log_D_sigma',variable)) %>%
+    # extract a replicate number from the variable names using regex
+    mutate(rep=str_extract(variable,"(?<=\\[)\\d+") %>% as.integer)%>% 
+    # extract a species number from the variable names using regex
+    mutate(taxa=str_extract(variable,"(?<=\\,)\\d+") %>% as.integer)
+# station metadata
+
+reads_fitted <- reads_fitted %>% 
+  mutate(species=as.factor(unique(mfu$species))[taxa]) %>% 
+  left_join(mfu_META,by=join_by(rep==sampleidx))
+
+# write
+write_rds(reads_fitted,here('code','log_D_fitted.rds'))
+```
 
 
 # Diagnostics- Sampler
