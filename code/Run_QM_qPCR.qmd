@@ -144,6 +144,9 @@ jointMod = stan(file = m ,
 ```{r}
 # save (big file!)
 write_rds(jointMod,here('code','fit1.rds'))
+
+# if reading
+jointMod <- read_rds(here('code','fit1.rds'))
 ```
 
 # Diagnostics - Observations and Predictions
@@ -182,19 +185,40 @@ Save the predictions of log copies for use in downstream spatial modeling and pl
 ```{r}
 # log_D from the model fit
 reads_fitted <- fit_summ %>% 
-    filter(grepl('log_D',variable),
-           !grepl('log_D_raw',variable),
-           !grepl('log_D_station_depth',variable),
-           !grepl('log_D_sigma',variable)) %>%
-    # extract a replicate number from the variable names using regex
-    mutate(rep=str_extract(variable,"(?<=\\[)\\d+") %>% as.integer)%>% 
-    # extract a species number from the variable names using regex
-    mutate(taxa=str_extract(variable,"(?<=\\,)\\d+") %>% as.integer)
-# station metadata
+  filter(grepl('log_D',variable),
+         !grepl('log_D_raw',variable),
+         !grepl('log_D_station_depth',variable),
+         !grepl('log_D_sigma',variable)) %>%
+  # extract a replicate number from the variable names using regex
+  mutate(rep=str_extract(variable,"(?<=\\[)\\d+") %>% as.integer)%>% 
+  # extract a species number from the variable names using regex
+  mutate(taxa=str_extract(variable,"(?<=\\,)\\d+") %>% as.integer) %>% 
+  # add a species name
+  mutate(species=unique(mfu$species)[taxa])
 
+## Match to input qpcr/mb link data, then to metadata mfu_META
+## THIS IS HOW THE MATCHING IS SET UP IN DATA PREP- TRY TO AVOID MISTAKES BY DOING THE SAME THING HERE
+## IF 1_load_data has been run, needed objects should all be in the environment
+
+mb_link_1 <- mfu %>% 
+    mutate(mb_link=match(Sample,unique(Sample))) %>% 
+    distinct(Sample,.keep_all = T)
+  
+mb_link_2 <- tube_dat %>% 
+    distinct(tubeID,tube_idx,station_depth_idx,station_idx) %>%
+    #distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>%
+    left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
+    filter(!is.na(mb_link)) %>%
+    arrange(tube_idx) 
+# with spatial info
+mb_join_key <- mb_link_2 %>% left_join(mfu_META,by=join_by(tubeID==sample)) %>% 
+  dplyr::select(tubeID,tube_idx,lat,lon,depth,depth_cat,wash_idx) %>% 
+  mutate(rep=row_number())
+
+# join
 reads_fitted <- reads_fitted %>% 
-  mutate(species=as.factor(unique(mfu$species))[taxa]) %>% 
-  left_join(mfu_META,by=join_by(rep==sampleidx))
+  left_join(mb_join_key,by=join_by(rep)) %>% 
+  dplyr::select(-rep)
 
 # write
 write_rds(reads_fitted,here('code','log_D_fitted.rds'))
