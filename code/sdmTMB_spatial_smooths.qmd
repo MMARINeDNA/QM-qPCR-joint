@@ -15,7 +15,6 @@ format:
 editor: visual
 ---
 
-
 # Purpose
 
 The purpose of this script is to take the output of the QM/qPCR joint model and apply simple spatial models to it to make smoothed output maps.
@@ -56,8 +55,6 @@ all_mfu_samps_map <- dat %>%
 all_mfu_samps_map
 ```
 
-
-
 Set up the appropriate spatial domain for the spatial smooths, and make a prediction grid for projecting the outputs
 
 ```{r}
@@ -78,7 +75,6 @@ dat_ch <- domain <-fmesher::fm_nonconvex_hull(dat_sf,
                                     convex = -0.025)
 ```
 
-
 ```{r}
 # Load a coastline background map
 library(rnaturalearth)
@@ -89,7 +85,7 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 
 ## Plot Raw Data
 
-```{r}
+```{r,fig.width=8,fig.height=12}
 ggplot()+
   geom_sf(data=coaststates,fill='gray80')+
   geom_sf(data=dat_sf,aes(size=exp(mean),color=exp(mean)),fill=NA,shape=1)+
@@ -97,6 +93,7 @@ ggplot()+
   scale_color_viridis()+
   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])
 ```
+
 ## Projection Grid
 
 Based on the bounding box of the data, make a grid for model projection.
@@ -327,7 +324,6 @@ ggplot(p, aes(exp(log_dist), exp(est),
 visreg::visreg(anch3,"log_dist")
 ```
 
-
 Now, write a function to do this for any species. We'll stick with the smaller projection domain for now, and will adopt a consistent model equation form
 
 ## sdmTMB Wrapper
@@ -422,4 +418,3 @@ anchovy_maps$pred_map; hake_maps$pred_map; sardine_maps$pred_map; eulachon_maps$
 ```{r,fig.height=4,fig.width=6}
 anchovy_maps$cond_plot; hake_maps$cond_plot; sardine_maps$cond_plot; eulachon_maps$cond_plot; mackerel_maps$cond_plot; herring_maps$cond_plot
 ```
-

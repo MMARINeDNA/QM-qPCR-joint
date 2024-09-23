@@ -405,10 +405,10 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     formula_a <- eval(NOM) ~ N_pcr_mock -1
     model_frame <- model.frame(formula_a, p_mock_all)
     model_vector_a_mock <- model.matrix(formula_a, model_frame) %>% as.numeric()
-    N_pcr_mock_small <- cbind(N_pcr_mock, p_mock_all) %>%  slice(match(unique(p_mock_all$S), p_mock_all$S)) %>% pull(N_pcr_mock)
-    formula_b <- eval(NOM) ~ N_pcr_mock_small -1
-    model_frame <- model.frame(formula_b, p_mock_all%>% slice(match(unique(p_mock_all$S), p_mock_all$S)))
-    model_vector_a_mock_small <- model.matrix(formula_b, model_frame) %>% as.numeric()
+    # N_pcr_mock_small <- cbind(N_pcr_mock, p_mock_all) %>%  slice(match(unique(p_mock_all$S), p_mock_all$S)) %>% pull(N_pcr_mock)
+    # formula_b <- eval(NOM) ~ N_pcr_mock_small -1
+    # model_frame <- model.frame(formula_b, p_mock_all%>% slice(match(unique(p_mock_all$S), p_mock_all$S)))
+    # model_vector_a_mock_small <- model.matrix(formula_b, model_frame) %>% as.numeric()
     N_obs_mock       <- nrow(p_mock_all)
     
     # unknown communities second
@@ -461,7 +461,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       N_species = ncol(p_samp_all)-2,   # Number of species in data
       N_obs_mb_samp = nrow(p_samp_all), # Number of observed community samples and tech replicates ; this will be Ncreek * Nt * Nbiol * Ntech * 2 [for upstream/downstream observations]
       N_obs_mock = nrow(p_mock_all), # Number of observed mock samples, including tech replicates
-      N_obs_mb_samp_small = nrow(p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),]), # Number of unique observed community samples ; this will be Ncreek * Nt * Nbiol * 2 [for upstream/downstream observations]
+      # N_obs_mb_samp_small = nrow(p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),]), # Number of unique observed community samples ; this will be Ncreek * Nt * Nbiol * 2 [for upstream/downstream observations]
       
       # Observed data of community matrices
       sample_data = p_samp_all %>% dplyr::select(contains("sp")),
@@ -480,11 +480,11 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       # N_pcr_mock = N_pcr_mock,
       
       # Design matrices: field samples
-      N_b_samp_col = N_b_samp_col,
-      model_matrix_b_samp = model_matrix_b_samp,
-      model_matrix_b_samp_small = as.array(model_matrix_b_samp_small),
+      # N_b_samp_col = N_b_samp_col,
+      # model_matrix_b_samp = model_matrix_b_samp,
+      # model_matrix_b_samp_small = as.array(model_matrix_b_samp_small),
       model_vector_a_samp = model_vector_a_samp,
-      model_vector_a_samp_small = as.array(model_vector_a_samp_small),
+      # model_vector_a_samp_small = as.array(model_vector_a_samp_small),
       
       # Design matrices: mock community samples
       model_vector_a_mock = as.array(model_vector_a_mock),
@@ -540,7 +540,8 @@ stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station
       phi_0 = runif(1,1.5,1.8),
       phi_1 = runif(1,1,1.1),
       gamma_1 = runif(1,-0.01,0),
-      tau=rgamma(1,10,1000)
+      tau=rgamma(1,10,1000),
+      dm_alph0_mock=1000
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  

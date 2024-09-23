@@ -24,7 +24,7 @@ get_param_ests <- function(m){
 
 ##### qPCR PLOTS ####
 
-plot_obs_pred_qPCR <- function(s,stan_data){
+plot_obs_pred_qPCR <- function(s,stan_data,return_what="plot"){
   
   # qPCR standards
   qPCR_std_dat <- stan_data %>% pluck('qpcr_std')
@@ -87,8 +87,14 @@ plot_obs_pred_qPCR <- function(s,stan_data){
     labs(x="Observed Ct",y="Predicted Ct",title="qPCR Unknowns - Positive")+
     guides(color='none')
   
-  # combined plots
-  plot_grid(qPCR_std_bin_plot,qPCR_std_pos_plot,qPCR_unk_bin_plot,qPCR_unk_pos_plot,nrow=2)
+  if(return_what=='data'){
+    list(qPCR_unk=qPCR_unk_dat,
+         qPCR_std=qPCR_std_dat)
+  }else{
+    # combined plots
+    plot_grid(qPCR_std_bin_plot,qPCR_std_pos_plot,qPCR_unk_bin_plot,qPCR_unk_pos_plot,nrow=2)  
+  }
+  
 
 }
 
@@ -98,7 +104,7 @@ plot_alphas <- function(s){
   
   # estimated alphas
   d <- s %>% 
-    filter(grepl('alpha',variable),!grepl('alpha_raw',variable))
+    filter(grepl('alpha',variable),!grepl('alpha_raw',variable),!grepl('dm_alpha',variable))
   
   # plot
   log_eff_plot <- d %>% 

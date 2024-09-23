@@ -41,7 +41,7 @@ data {
   // DATA FOR METABARCODING PART OF THE MODEL
   int N_species; // Number of species in data
   int N_obs_mb_samp;  // Number of observed samples, also the number of groups for qPCR samps to link to MB samps
-  int N_obs_mb_samp_small;  // Number of observed samples for individual sites.
+  // int N_obs_mb_samp_small;  // Number of observed samples for individual sites.
   int N_obs_mock; // Number of observed mock samples
 
   // Observed data of community matrices
@@ -53,12 +53,12 @@ data {
  // matrix[N_obs_mock_small,N_species] alr_mock_true_prop_small ;
     
   // Design matrices: field samples
-  int N_b_samp_col; // Number of samples
-  matrix[N_obs_mb_samp,N_b_samp_col]  model_matrix_b_samp; // all samples design matrix
-  matrix[N_obs_mb_samp_small,N_b_samp_col]  model_matrix_b_samp_small; // all samples with replicates collapsed
+  // int N_b_samp_col; // Number of samples
+  // matrix[N_obs_mb_samp,N_b_samp_col]  model_matrix_b_samp; // all samples design matrix
+  // matrix[N_obs_mb_samp_small,N_b_samp_col]  model_matrix_b_samp_small; // all samples with replicates collapsed
 
   vector[N_obs_mb_samp]  model_vector_a_samp; // Npcr cycles for each sample, replicates included
-  vector[N_obs_mb_samp_small]  model_vector_a_samp_small; // Npcr cycles without replicates
+  // vector[N_obs_mb_samp_small]  model_vector_a_samp_small; // Npcr cycles without replicates
 
   // Design matrices: mock community samples
   vector[N_obs_mock]  model_vector_a_mock;
@@ -84,11 +84,11 @@ data {
 
 transformed data {
   vector[NstdSamples] log_known_conc; // log known concentration of qPCR standards
-  matrix[N_obs_mb_samp,N_b_samp_col+1] model_matrix_samp; // QM design matrix (samples by species), where the last column denotes Npcr cycles
+  // matrix[N_obs_mb_samp,N_b_samp_col+1] model_matrix_samp; // QM design matrix (samples by species), where the last column denotes Npcr cycles
   
   log_known_conc = log(known_concentration);
     
-  model_matrix_samp = append_col(model_matrix_b_samp, model_vector_a_samp); //extend MB design matrix to include Npcr cycles as the last column
+  // model_matrix_samp = append_col(model_matrix_b_samp, model_vector_a_samp); //extend MB design matrix to include Npcr cycles as the last column
   
   // The model_matrix will be multiplied by the relative abundances (log(conc) relative to qpcr reference) and efficiencies (alphas) to obtain copy numbers per species
 }
