@@ -81,7 +81,7 @@ log_D_inits <- makeQM_inits(sample_data =stan_metabarcoding_data$sample_data,
                          sp_list = formatted_metabarcoding_data$sp_list,
                          qPCR_ref_sp = link_species )
 
-# linking dataåå
+# linking data
 qPCR_mb_link <- prepare_stan_qPCR_mb_join(input_metabarcoding_data=mfu,
                                           unk_formatted = formatted_qPCR_data$tube_dat,
                                           link_species = "Merluccius productus")
@@ -89,12 +89,11 @@ qPCR_mb_link <- prepare_stan_qPCR_mb_join(input_metabarcoding_data=mfu,
 # join the three lists
 stan_data_joint <- c(stan_qPCR_data,
                      stan_metabarcoding_data,
-                     qPCR_mb_link,
-                     alpha_0=10)
+                     qPCR_mb_link)
 # Check to make sure the order is correct for two of the design matrices that 
 # map to observation and the tubes.  Very important.
-    identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
-    identical(colnames(X_station_depth_tube),colnames(stan_data_joint$X_station_depth_obs))
+identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
+identical(colnames(X_station_depth_tube),colnames(stan_data_joint$X_station_depth_obs))
 
 ```
 
@@ -103,7 +102,8 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 ## Load Stan model
 
 ```{r}
-m <- here('code','qm_qpcr_joint-DM.stan')
+m <- here('code','qm_qpcr_joint.stan')
+m_dm <- here('code','qm_qpcr_joint-DM.stan') # Dirichlet multinomial
 
 #IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
 # mc <- cat(stan_model(m)@model_code)
@@ -114,9 +114,10 @@ m <- here('code','qm_qpcr_joint-DM.stan')
 Run Stan
 
 ```{r}
-n.chains <- 1
-n.warm <- 300
-n.samps <- 100
+n.chains <- 3
+n.warm <- 500
+n.samps <- 3000
+
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -124,23 +125,169 @@ jointMod = stan(file = m ,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 200,
-                                  max_treedepth=11,
-                                  stepsize=0.1,
+                control = list(adapt_init_buffer = 75,
+                                  max_treedepth=12,
+                                  stepsize=0.01,
                                   adapt_delta=0.8,
                                   metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
                                     N_station_depth=stan_data_joint$N_station_depth,
-                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
-                                    log_D_raw_inits=log_D_inits$log_D_raw_inits),
-                                    #log_D_inits$log_D_inits,
-                #refresh = 10,
+                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
+                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits),
+                                    # log_D_log_D_inits$log_D_inits,
+                refresh = 10,
+                boost_lib = NULL
+                # sample_file="tmpU.csv"
+                )
+```
+
+## Dirichlet multinomial
+
+```{r}
+n.chains <- 1
+n.warm <- 100
+n.samps <-500
+tictoc::tic("Running DM Joint Model:")
+jointMod_dm = stan(file = m_dm,
+                data = stan_data_joint %>% c(dm_alpha0_mock=100),
+                verbose = FALSE,
+                chains = n.chains,
+                thin = 1,
+                warmup = n.warm,
+                iter = n.warm+n.samps,
+                control = list(adapt_init_buffer = 30,
+                                  max_treedepth=12,
+                                  stepsize=0.05,
+                                  adapt_delta=0.85,
+                                  metric="diag_e"),
+                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
+                                    N_species = stan_data_joint$N_species,
+                                    Nplates=stan_data_joint$Nplates,
+                                    N_station_depth=stan_data_joint$N_station_depth,
+                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
+                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits),
+                                    # log_D_log_D_inits$log_D_inits,
+                refresh = 10,
                 boost_lib = NULL,
                 sample_file="tmpU.csv"
                 )
+tictoc::toc()
 ```
+
+
+```{r}
+# save (big file!)
+write_rds(jointMod,here('code','fit1.rds'))
+
+
+write_rds(jointMod_dm,here('code','fit_dm.rds'))
+
+# if reading
+jointMod <- read_rds(here('code','fit1.rds'))
+jointMod_dm <- read_rds(here('code','fit_dm.rds'))
+```
+
+# Diagnostics - Observations and Predictions
+
+```{r}
+# Code for these diagnostic plots
+source(here('code','diagnostics.R'))
+fit_summ <- get_param_ests(jointMod_dm)
+```
+
+## qPCR
+
+```{r}
+plot_obs_pred_qPCR(fit_summ,stan_data_joint)
+```
+
+Look a little closer at the outlier field samples
+
+```{r,fig.height=3,fig.width=4}
+qpcr_out <- plot_obs_pred_qPCR(fit_summ,stan_data_joint,return_what = 'data') %>% pluck('qPCR_unk')
+qpcr_out <- qpcr_out %>% 
+  filter(z==1) %>% 
+  mutate(Ctdiff=Ct_fit-Ct)
+qpcr_out %>% 
+  ggplot(aes(Ctdiff))+geom_histogram()+labs(x="Predicted - Observed")
+
+# upper 5% most divergent
+qpcr_outliers <- qpcr_out %>% 
+  mutate(absdiff=abs(Ctdiff)) %>% 
+  mutate(percent_rank(absdiff)>0.95)
+qpcr_outliers %>% 
+  ggplot(aes(absdiff))+geom_histogram()+labs(x="Absolute Difference")
+
+# there's an obvious break between a Ct difference of ~8 and ~13. Maybe we should remove all the ones in that upper bin?
+qpcr_outliers2 <- qpcr_outliers %>% filter(absdiff>9)
+```
+
+
+## QM
+
+```{r,fig.height=3,fig.width=6}
+# alphas
+plot_alphas(fit_summ)
+```
+
+```{r,fig.width=8,fig.height=7}
+plot_obs_pred_qm(fit_summ,stan_data_joint)
+```
+
+```{r}
+plot_est_reads(fit_summ)
+```
+
+# Save Predictions
+
+Save the predictions of log copies for use in downstream spatial modeling and plotting
+
+```{r}
+# log_D from the model fit
+reads_fitted <- fit_summ %>% 
+  filter(grepl('log_D',variable),
+         !grepl('log_D_raw',variable),
+         !grepl('log_D_station_depth',variable),
+         !grepl('log_D_sigma',variable)) %>%
+  # extract a replicate number from the variable names using regex
+  mutate(rep=str_extract(variable,"(?<=\\[)\\d+") %>% as.integer)%>% 
+  # extract a species number from the variable names using regex
+  mutate(taxa=str_extract(variable,"(?<=\\,)\\d+") %>% as.integer) %>% 
+  # add a species name
+  mutate(species=unique(mfu$species)[taxa])
+
+## Match to input qpcr/mb link data, then to metadata mfu_META
+## THIS IS HOW THE MATCHING IS SET UP IN DATA PREP- TRY TO AVOID MISTAKES BY DOING THE SAME THING HERE
+## IF 1_load_data has been run, needed objects should all be in the environment
+
+mb_link_1 <- mfu %>% 
+    mutate(mb_link=match(Sample,unique(Sample))) %>% 
+    distinct(Sample,.keep_all = T)
+  
+mb_link_2 <- tube_dat %>% 
+    distinct(tubeID,tube_idx,station_depth_idx,station_idx) %>%
+    #distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>%
+    left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
+    filter(!is.na(mb_link)) %>%
+    arrange(tube_idx) 
+# with spatial info
+mb_join_key <- mb_link_2 %>% left_join(mfu_META,by=join_by(tubeID==sample)) %>% 
+  dplyr::select(tubeID,tube_idx,lat,lon,depth,depth_cat,wash_idx) %>% 
+  mutate(rep=row_number())
+
+# join
+reads_fitted <- reads_fitted %>% 
+  left_join(mb_join_key,by=join_by(rep)) %>% 
+  dplyr::select(-rep)
+
+# write
+write_rds(reads_fitted,here('code','log_D_fitted.rds'))
+```
+
+
+# Diagnostics- Sampler
 
 ```{r,fig.height=3,fig.width=4}
 samps <- read_csv(here('code','tmpU.csv'),skip = 25)
@@ -168,13 +315,13 @@ plot_trace(sampslong,"log_D")
 plot_trace(sampslong,"bio_rep_RE")
 ```
 
-```{r}
+```{r,fig.height=4}
 # inits
-inits_samps <- rstan::get_inits(jointMod) %>% 
+inits_samps <- rstan::get_inits(jointMod_dm) %>% 
   set_names(1:n.chains) %>% pluck(1)
 
 # sampler params
-diagnose_sampler <- rstan::get_sampler_params(jointMod) %>% 
+diagnose_sampler <- rstan::get_sampler_params(jointMod_dm) %>% 
   set_names(1:n.chains) %>% 
    map_df(as_tibble,.id = 'chain') %>% 
   group_by(chain) %>% 
@@ -189,7 +336,7 @@ diagnose_sampler %>%
   geom_col(aes(chain, percent_divergent, fill = warmup), position = 'dodge', color = 'black') + 
   scale_y_continuous(labels = scales::percent, name = "% Divergent Runs")
 # treedepth
-maxtd <- jointMod@stan_args[[1]]$control$max_treedepth
+maxtd <- jointMod_dm@stan_args[[1]]$control$max_treedepth
 diagnose_sampler %>% 
   ggplot(aes(iteration, treedepth__, color = chain)) + 
   geom_line() + 
@@ -197,23 +344,13 @@ diagnose_sampler %>%
   geom_hline(aes(yintercept = maxtd), color = 'red')
 ```
 
-
-```{r}
-# param summary
-fitsumm <- summary(jointMod)$summary %>% 
-  as.data.frame() %>% 
-  mutate(variable = rownames(.)) %>% 
-  select(variable, everything()) %>% 
-  as_tibble()
-```
-
 ```{r}
 #n_eff and Rhat
-fitsumm %>% 
+fit_summ %>% 
   ggplot(aes(n_eff)) + 
   geom_histogram() + 
   geom_vline(aes(xintercept = 3000), color = 'red')
-fitsumm %>%
+fit_summ %>%
   ggplot(aes(Rhat)) + 
   geom_histogram() + 
   geom_vline(aes(xintercept = 1.1), color = 'red')
@@ -234,7 +371,7 @@ fitsumm %>%
 
 
 ```{r}
-shinystan::launch_shinystan(jointMod)
+shinystan::launch_shinystan(jointMod_dm)
 ```
 
 
@@ -243,18 +380,4 @@ ests <- summary(jointMod,par="log_D")$summary
 ests2 <- summary(jointMod,par="log_D_raw")$summary
 ```
 
-
-```{r}
-# QM_qPCR_joint_out <- QM_qPCR_bayes(m,
-#                          stan_data_joint,
-#                          NCHAINS=3,
-#                          WARMUP = 100,
-#                          ITER = 300)
-# write_rds(QM_qPCR_joint_out, file = here("model_output/QM_qPCR_MiFish.rds"))
-#QM_bayes_out <- readRDS(here("model_output/QM_bayes_MFU.RDS"))
-#QM_bayes_out$Bayes_estimates
-# QM_bayes_out$Bayes_alpha_est
-#summary(QM_bayes_out$Bayes_modelfit)$summary[,"Rhat"] %>% sort() %>% tail()
-# rstan::traceplot(QM_bayes_out$Bayes_modelfit, par = "alpha")
-```
 

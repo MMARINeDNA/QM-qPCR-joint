@@ -70,7 +70,8 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
     group_by(level1) %>% 
     mutate(level2 = match(level2, unique(level2))) %>% #reindex, if necess
     mutate(level3 = match(level3, unique(level3))) %>% #reindex, if necess
-    unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F)
+    unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F) %>% 
+    ungroup()
   
   station_list <- data.frame(
     station = Observation$level1 %>% unique(),
@@ -249,7 +250,9 @@ prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,
     N_mb_link = nrow(mb_link_2), # length of the linking vector
     mb_link_sp_idx = qpcr_mb_link_sp_idx,
     tube_link_idx = mb_link_2$tube_idx,
-    mb_link_idx = mb_link_2$mb_link))
+    mb_link_idx = mb_link_2$mb_link,
+    log_D_mu = 0,
+    log_D_scale = 5))
 }
 
 # make stan data for qPCR part
@@ -402,10 +405,10 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     formula_a <- eval(NOM) ~ N_pcr_mock -1
     model_frame <- model.frame(formula_a, p_mock_all)
     model_vector_a_mock <- model.matrix(formula_a, model_frame) %>% as.numeric()
-    N_pcr_mock_small <- cbind(N_pcr_mock, p_mock_all) %>%  slice(match(unique(p_mock_all$S), p_mock_all$S)) %>% pull(N_pcr_mock)
-    formula_b <- eval(NOM) ~ N_pcr_mock_small -1
-    model_frame <- model.frame(formula_b, p_mock_all%>% slice(match(unique(p_mock_all$S), p_mock_all$S)))
-    model_vector_a_mock_small <- model.matrix(formula_b, model_frame) %>% as.numeric()
+    # N_pcr_mock_small <- cbind(N_pcr_mock, p_mock_all) %>%  slice(match(unique(p_mock_all$S), p_mock_all$S)) %>% pull(N_pcr_mock)
+    # formula_b <- eval(NOM) ~ N_pcr_mock_small -1
+    # model_frame <- model.frame(formula_b, p_mock_all%>% slice(match(unique(p_mock_all$S), p_mock_all$S)))
+    # model_vector_a_mock_small <- model.matrix(formula_b, model_frame) %>% as.numeric()
     N_obs_mock       <- nrow(p_mock_all)
     
     # unknown communities second
@@ -458,7 +461,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       N_species = ncol(p_samp_all)-2,   # Number of species in data
       N_obs_mb_samp = nrow(p_samp_all), # Number of observed community samples and tech replicates ; this will be Ncreek * Nt * Nbiol * Ntech * 2 [for upstream/downstream observations]
       N_obs_mock = nrow(p_mock_all), # Number of observed mock samples, including tech replicates
-      N_obs_mb_samp_small = nrow(p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),]), # Number of unique observed community samples ; this will be Ncreek * Nt * Nbiol * 2 [for upstream/downstream observations]
+      # N_obs_mb_samp_small = nrow(p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),]), # Number of unique observed community samples ; this will be Ncreek * Nt * Nbiol * 2 [for upstream/downstream observations]
       
       # Observed data of community matrices
       sample_data = p_samp_all %>% dplyr::select(contains("sp")),
@@ -477,19 +480,19 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       # N_pcr_mock = N_pcr_mock,
       
       # Design matrices: field samples
-      N_b_samp_col = N_b_samp_col,
-      model_matrix_b_samp = model_matrix_b_samp,
-      model_matrix_b_samp_small = as.array(model_matrix_b_samp_small),
+      # N_b_samp_col = N_b_samp_col,
+      # model_matrix_b_samp = model_matrix_b_samp,
+      # model_matrix_b_samp_small = as.array(model_matrix_b_samp_small),
       model_vector_a_samp = model_vector_a_samp,
-      model_vector_a_samp_small = as.array(model_vector_a_samp_small),
+      # model_vector_a_samp_small = as.array(model_vector_a_samp_small),
       
       # Design matrices: mock community samples
       model_vector_a_mock = as.array(model_vector_a_mock),
       
       # Priors
-      alpha_prior = c(0,0.1),  # normal prior
+      alpha_prior = c(0,0.01),  # normal prior
       # beta_prior = c(0,5),    # normal prior
-      tau_prior = c(0,0.5)   # normal prior
+      tau_prior = c(10,1000)   # gamma prior on eta_mock = ~0.01
     )
     return(stan_data)
 }
@@ -506,10 +509,10 @@ makeQM_inits <- function(sample_data,
                   
                   log_p_rel <- log_p - log_p[,ref_col]
                   log_D_init <- log_p_rel + log_D_link_sp_init_mean
-                  log_D_raw_init <- log_D_init[,-ref_col]
+                  # log_D_raw_init <- log_D_init[,-ref_col]
                   
                   return(list(log_D_link_sp_init_mean = log_D_link_sp_init_mean,
-                              log_D_raw_init= log_D_raw_init,
+                              # log_D_raw_init= log_D_raw_init,
                               log_D_init = log_D_init))  
 }  
   #example
@@ -520,25 +523,25 @@ makeQM_inits <- function(sample_data,
 ### Setting Initial Values
 stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station_depth,
                          log_D_link_sp_init_mean,
-                         log_D_raw_inits,
+                         # log_D_raw_inits,
                          log_D_inits){
   # set.seed(78345)
   A <- list()
   for(i in 1:n.chain){
     A[[i]] <- list(
-      log_D_raw=log_D_raw_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1),
-      #log_D = log_D_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1)
+      # log_D_raw=log_D_raw_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1),
+      # log_D = log_D_inits ,#+ norm(N_obs_mb*(N_species-1),mean=0,sd=0.1),nrow = N_obs_mb,ncol=N_species-1)
         #matrix(data=rnorm(N_obs_mb*(N_species-1),mean=2,sd=1),nrow = N_obs_mb,ncol=N_species-1),
       mean_hake  = rnorm(1,log_D_link_sp_init_mean,0.01),
       log_D_station_depth=rnorm(N_station_depth,0,0.01),
-      alpha_raw=jitter(rep(0,N_species-1),factor=0.5),
+      alpha_raw=jitter(rep(0,N_species-1),factor=1),
       beta_std_curve_0=runif(Nplates,-2,2),
       beta_std_curve_1=runif(Nplates,-1.44,-1.3),
       phi_0 = runif(1,1.5,1.8),
       phi_1 = runif(1,1,1.1),
       gamma_1 = runif(1,-0.01,0),
-      tau=runif(1,0.01,0.05),
-      alohpa_0 = 10
+      tau=rgamma(1,10,1000),
+      dm_alph0_mock=1000
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  

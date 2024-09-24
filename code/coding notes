@@ -16,3 +16,34 @@ Ole and Owen went through using print statements etc.
 Added a few initial values to help (for beta_std_curve_0 and beta_std_curve_1)
 Still having an issue: Ct values are not changing across samples-- why??
 Ole and Owen going to dig into indexing issues
+
+09.13.2024 New updates
+Major updates to the model, converging now
+Now, trying to optimize the sampling
+Tried centering log_D_raw and tightening the prior
+Removing the hard lower bound on beta_std_curve_1.
+Adding eta_mock back into the metabarcoding
+Check paired bio replicates
+Added eta_mock back in, and made it N(0,tau) with tau ~ gamma(100,1000)
+
+09.19.2024 New updates
+Have added some output plotting and spatial smoothing, but still issues with eta and alphas (variability in the mocks)
+Trying to swap to the Dirichlet multinomial to account for overdispersion, and removing eta for now
+To do this, edited the code in qm_qpcr_joint-DM. Now there are two versions of the Stan model (Dirichlet vs. multinomial)
+Removed model_matrix_samp and other declared data and params that weren't being used anymore in our parameterization
+
+09.20.2024 Science Friday
+Discussed Dirichlet multinomial as a group, and agreed to move forward with it for now
+dm_alpha_0 should be bigger. give it a less informative/bigger prior
+Tried modeling ONLY the mocks with the Dirichlet multinomial; field samples have the regular multinomial
+
+...tried adding different alpha_0 for samples and mocks. Didn't really work
+
+TODO:
+Check the few outliers in the qPCR
+Check stepsize after the warmup is complete
+Compare qPCR samples that match MB vs. non-matched samples and compare overdispersion
+Add depth plots to diagnostics
+Check indexing again for MB samples
+Try not reporting some transformated params
+
