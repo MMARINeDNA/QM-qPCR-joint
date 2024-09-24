@@ -44,8 +44,6 @@ data {
   int N_obs_mb_samp_small;  // Number of observed samples for individual sites.
   int N_obs_mock; // Number of observed mock samples
 
-
-
   // Observed data of community matrices
   int sample_data[N_obs_mb_samp,N_species];
   // Observed data of mock community matrices
@@ -330,6 +328,11 @@ model{
   }
 
   print("2:",target());
+  
+  print("logit_val_mock[1:2,]  ::: ",logit_val_mock[1:2,]);
+  print("logit_val_mock[1:2,]' ::: ",logit_val_mock[1:2,]');
+  print("p_mock ",softmax(logit_val_mock[1,]'));
+  print("mock_data[1,] ",mock_data[1,]);
   
   for(i in 1:N_obs_mb_samp){
     sample_data[i,] ~  multinomial_logit(logit_val_samp[i,]'); // Multinomial sampling of mu (proportions in field samples)

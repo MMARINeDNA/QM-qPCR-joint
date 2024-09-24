@@ -89,7 +89,8 @@ qPCR_mb_link <- prepare_stan_qPCR_mb_join(input_metabarcoding_data=mfu,
 # join the three lists
 stan_data_joint <- c(stan_qPCR_data,
                      stan_metabarcoding_data,
-                     qPCR_mb_link)
+                     qPCR_mb_link,
+                     alpha_0=10)
 # Check to make sure the order is correct for two of the design matrices that 
 # map to observation and the tubes.  Very important.
     identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
@@ -102,7 +103,7 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 ## Load Stan model
 
 ```{r}
-m <- here('code','qm_qpcr_joint.stan')
+m <- here('code','qm_qpcr_joint-DM.stan')
 
 #IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
 # mc <- cat(stan_model(m)@model_code)
@@ -114,8 +115,8 @@ Run Stan
 
 ```{r}
 n.chains <- 1
-n.warm <- 50
-n.samps <- 50
+n.warm <- 300
+n.samps <- 100
 jointMod = stan(file = m ,
                 data = stan_data_joint,
                 verbose = FALSE,

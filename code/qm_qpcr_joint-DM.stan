@@ -56,7 +56,7 @@ data {
   int N_obs_mb_samp_small;  // Number of observed samples for individual sites.
   int N_obs_mock; // Number of observed mock samples
 
-
+  real alpha_0;
 
   // Observed data of community matrices
   int sample_data[N_obs_mb_samp,N_species];
@@ -110,7 +110,7 @@ parameters {
   //real<lower=0> tau_base; // single overdispersion sd for multinomial.
   //real<lower=0> tau; // single overdispersion sd for multinomial.
   vector[N_species-1] alpha_raw;
-  real<lower=0> alpha_0;
+  //real<lower=0> alpha_0;
   // vector[N_obs_mb_samp] eta_samp_raw[N_species-1]; //overdispersion
   // vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion
 
@@ -367,6 +367,8 @@ model{
   //   eta_mock_raw[i] ~ std_normal(); // N(0,tau)
   // }
   // tau ~ normal(tau_prior[1],tau_prior[2]);
+  
+  //alpha_0 ~ normal(10,0.001) ;
   
 }
 
