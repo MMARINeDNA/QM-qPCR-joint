@@ -541,7 +541,7 @@ stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station
       phi_1 = runif(1,1,1.1),
       gamma_1 = runif(1,-0.01,0),
       tau=rgamma(1,10,1000),
-      dm_alph0_mock=1000
+      log_dm_alpha0_mock=log(10000)
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  

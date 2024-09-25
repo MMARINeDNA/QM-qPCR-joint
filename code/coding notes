@@ -39,6 +39,17 @@ Tried modeling ONLY the mocks with the Dirichlet multinomial; field samples have
 
 ...tried adding different alpha_0 for samples and mocks. Didn't really work
 
+
+09.23.24
+Tried a version with D-M for both mocks and field samples. dm_alpha0_mock fixed at 100 for the mocks
+This converged with dm_alpha0_samp ~1.75, alpha (for QM) smaller than before -0.06-0.04
+
+Tried again with a fixed dm_alpha0_mock, but a regular multinomial for the field samples
+The field samples fit well, but large alphas and bad fitting mocks still; lots of divergences
+
+Tried again with just a large prior on dm_alpha0_mock (N(100,10))
+...dm_alpha0_mock still ends up at ~3, and mock fits do not look good
+
 TODO:
 Check the few outliers in the qPCR
 Check stepsize after the warmup is complete

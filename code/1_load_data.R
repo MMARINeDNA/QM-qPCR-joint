@@ -427,9 +427,6 @@ mock <- mock %>%
          species = Species) %>% 
   arrange(species)
 
-#samples w no hake MB reads  
-no_hake_MB <- colnames(mfu)[2:ncol(mfu)][which(mfu[which(mfu$Species == "Merluccius productus"), 2:ncol(mfu)] == 0)] %>% as.numeric()
-
 mfu <- mfu %>% 
   pivot_longer(cols = -Species, names_to = "Sample", values_to = "Nreads") %>% 
   group_by(Sample) %>%
@@ -437,8 +434,21 @@ mfu <- mfu %>%
   filter(totalReads > 1000) %>% #impose total read-depth min
   ungroup() %>% 
   select(-totalReads) %>% 
-  filter(!Sample %in% no_hake_MB) %>%  #filter out samples w no hake MB reads
+  # filter(!Sample %in% no_hake_MB) %>%  #filter out samples w no hake MB reads
   mutate(biol = 1, tech = 1) %>% 
-  rename(species = Species) %>% 
-  mutate(station = match(Sample, unique(Sample))) #let station = unique sampling location, treating different depths in the same x-y plane as independent
+  rename(species = Species)
 
+#samples w no hake MB reads  
+no_hake_MB <- mfu %>% filter(Nreads==0,species=="Merluccius productus") %>% 
+  pull(Sample)
+
+# 09.24.24 IDENTIFIED A LEVERAGE ISSUE WITH TOO MANY ZEROES- REMOVE samples with no MB reads for anything EXCEPT hake
+no_others_MB <- mfu %>% 
+  filter(species!="Merluccius productus") %>% 
+  group_by(Sample) %>% summarise(totreads=sum(Nreads)) %>% 
+  filter(totreads==0) %>% 
+  pull(Sample)
+
+mfu <- mfu %>% 
+  filter(!(Sample%in% union(no_hake_MB,no_others_MB))) %>% 
+  mutate(station = match(Sample, unique(Sample))) #let station = unique sampling location, treating different depths in the same x-y plane as independent

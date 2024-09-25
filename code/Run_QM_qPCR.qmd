@@ -146,22 +146,22 @@ jointMod = stan(file = m ,
 ## Dirichlet multinomial
 
 ```{r}
-n.chains <- 1
-n.warm <- 100
+n.chains <- 3
+n.warm <- 500
 n.samps <-500
 tictoc::tic("Running DM Joint Model:")
 jointMod_dm = stan(file = m_dm,
-                data = stan_data_joint %>% c(dm_alpha0_mock=100),
+                data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 30,
-                                  max_treedepth=12,
-                                  stepsize=0.05,
-                                  adapt_delta=0.85,
-                                  metric="diag_e"),
+                control = list(adapt_init_buffer = 200,
+                                max_treedepth=12,
+                                stepsize=0.05,
+                                adapt_delta=0.85,
+                                metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
@@ -170,8 +170,8 @@ jointMod_dm = stan(file = m_dm,
                                     # log_D_raw_inits=log_D_inits$log_D_raw_inits),
                                     # log_D_log_D_inits$log_D_inits,
                 refresh = 10,
-                boost_lib = NULL,
-                sample_file="tmpU.csv"
+                boost_lib = NULL
+                # sample_file="tmpU.csv"
                 )
 tictoc::toc()
 ```
@@ -290,7 +290,7 @@ write_rds(reads_fitted,here('code','log_D_fitted.rds'))
 # Diagnostics- Sampler
 
 ```{r,fig.height=3,fig.width=4}
-samps <- read_csv(here('code','tmpU.csv'),skip = 25)
+samps <- read_csv(here('code','tmpU.csv'),skip = 25,col_select = c(1:100))
 sampslong <- samps %>% 
   mutate(samp=row_number()) %>% 
   dplyr::select(-(1:7)) %>% 
@@ -310,10 +310,29 @@ plot_trace <- function(samples,param_str){
 plot_trace(sampslong,"logit_val_samp")
 plot_trace(sampslong,"logit_val_mock")
 # plot_trace(sampslong,"eta_mock")
-plot_trace(sampslong,"alpha")
-plot_trace(sampslong,"log_D")
-plot_trace(sampslong,"bio_rep_RE")
+plot_trace(sampslong,"alpha.2")
+plot_trace(sampslong,'mean_hake')
+plot_trace(sampslong,"log_D_sigma")
+plot_trace(sampslong,"dm_alpha0_mock")
+# plot_trace(sampslong,"bio_rep_RE")
 ```
+
+```{r}
+# Dirichlet alpha vs. likelihood
+testdm <- sampslong %>% 
+    filter(grepl("log_dm_alpha0_mock",param)) %>% 
+  rename(log_dm_alpha0=value) %>% 
+  select(-param)
+testlp <- samps %>% 
+  mutate(samp=row_number()) %>% 
+  dplyr::select(samp,"lp__") %>% 
+  pivot_longer(-samp,names_to = "param",values_to="value") %>% 
+  left_join(testdm) %>% 
+  mutate(across(c(3,4),as.numeric))
+testlp %>% 
+  ggplot(aes(log_dm_alpha0,value))+geom_point()
+```
+
 
 ```{r,fig.height=4}
 # inits
