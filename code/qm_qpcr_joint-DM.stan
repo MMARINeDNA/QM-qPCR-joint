@@ -1,11 +1,3 @@
-functions {
-  real dirichlet_multinomial_lpmf(int[] y, vector probs, real DM_alpha_0) {
-    vector[num_elements(probs)] alpha = probs*DM_alpha_0;
-    return lgamma(DM_alpha_0) - lgamma(sum(y) + DM_alpha_0)
-    // + lgamma(sum(y)+1) - sum(lgamma(to_vector(y)+1) // constant, may omit
-                                + sum(lgamma(to_vector(y) + alpha)) - sum(lgamma(alpha));
-  }
-}
 
 data { 
   
@@ -15,19 +7,19 @@ data {
   int Nobs_qpcr; // number of field observations for qPCR
   int NSamples_qpcr; //number of unique biological samples, overall
   int NstdSamples; //number of unique biological samples with known concentrations (standards)
-  int plate_idx[Nobs_qpcr]; //index denoting which PCR plate each field sample is on
-  int std_plate_idx[NstdSamples];//index denoting which PCR plate each standard sample is on
+  array[Nobs_qpcr] int plate_idx; //index denoting which PCR plate each field sample is on
+  array[NstdSamples] int std_plate_idx;//index denoting which PCR plate each standard sample is on
   real beta_std_curve_0_offset;
  
  
   vector[Nobs_qpcr] y_unk; //Ct for field observations
-  int z_unk[Nobs_qpcr]; //indicator for field obs; z = 1 if a Ct was observed, z = 0 otherwise
+  array[Nobs_qpcr] int z_unk; //indicator for field obs; z = 1 if a Ct was observed, z = 0 otherwise
   vector[NstdSamples] y_std; //Ct for standards
-  int z_std[NstdSamples]; //indicator for standards; z = 1 if a Ct was observed, z = 0 otherwise
+  array[NstdSamples] int z_std; //indicator for standards; z = 1 if a Ct was observed, z = 0 otherwise
   vector[NstdSamples] known_concentration; //known concentration (copies/vol) in standards
   
-  real stdCurvePrior_intercept[2]; // prior on the intercept of the std curves
-  real stdCurvePrior_slope[2]; // prior on the slope of the std curves
+  array[2] real stdCurvePrior_intercept; // prior on the intercept of the std curves
+  array[2] real stdCurvePrior_slope; // prior on the slope of the std curves
 
   //Covariates and offsets
   vector[Nobs_qpcr] X_offset_tot; //log dilution and log volume offsets together in one vector.
@@ -39,12 +31,12 @@ data {
   int N_bio_rep_RE;
   int N_bio_rep_param;
   int N_bio_rep_idx;
-  int bio_rep_idx[N_bio_rep_idx]; //index of biological replicates
+  array[N_bio_rep_idx] int bio_rep_idx; //index of biological replicates
   matrix[NSamples_qpcr,N_bio_rep_RE] X_bio_rep_tube;// covariate design matrices for unique samples
   matrix[Nobs_qpcr,N_bio_rep_RE] X_bio_rep_obs;// covariate design matrices for observations
 
   vector[Nobs_qpcr] wash_idx;//design matrix for wash effect
-  real wash_prior[2]; //priors for wash offset ~ N(wash_offset_prior[1],wash_offset_prior[2]) 
+  array[2] real wash_prior; //priors for wash offset ~ N(wash_offset_prior[1],wash_offset_prior[2]) 
 
   // END DATA FOR qPCR
   
@@ -55,9 +47,9 @@ data {
   int N_obs_mock; // Number of observed mock samples
 
   // Observed data of community matrices
-  int sample_data[N_obs_mb_samp,N_species];
+  array[N_obs_mb_samp, N_species] int sample_data;
   // Observed data of mock community matrices
-  int mock_data[N_obs_mock,N_species];  
+  array[N_obs_mock,N_species] int mock_data;  
   // True proportions for mock community in log ratios
   matrix[N_obs_mock,N_species] alr_mock_true_prop ;
     
@@ -69,20 +61,20 @@ data {
   vector[N_obs_mock]  model_vector_a_mock;
 
   // Identify a reference species for each observation (most abundant species in each sample)
-  int ref_sp_idx[N_obs_mb_samp];
+  array[N_obs_mb_samp] int ref_sp_idx;
 
   // Priors
-  real alpha_prior[2]; // Parameters of normal distribution for prior on alphas
-  // real dm_alpha0_mock = 100; // if you want a fixed Dirichlet alpha0 value
+  array[2] real alpha_prior;// Parameters of normal distribution for prior on alphas
+  // real dm_alpha0_mock; // if you want a fixed Dirichlet alpha0 value
   // real tau_prior[2]; // Parameters of gamma distribution for prior on tau (observation precision)
   
   // END DATA FOR METABARCODING
   
   // DATA FOR LINKING QM AND QPCR
   int N_mb_link; //How many qpCR samples have a match in a MB sample
-  int mb_link_idx[N_mb_link]; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
+  array[N_mb_link] int mb_link_idx; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
   int mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
-  int tube_link_idx[N_obs_mb_samp]; //index linking observations to unique biological samples
+  array[N_obs_mb_samp] int tube_link_idx; //index linking observations to unique biological samples
   real log_D_mu; //prior on mean for log_D_raw, where log_D = log_D_mu + log_D_raw*log_D_scale
   real log_D_scale; //prior on variance param for log_D_raw, where log_D = log_D_mu + log_D_raw*log_D_scale
 }
@@ -99,7 +91,7 @@ parameters {
   // for QM part
   // real<lower=0> tau; // single overdispersion sd for multinomial.
   vector[N_species-1] alpha_raw; // log-efficiencies of PCR in MB
-  real<lower=0> dm_alpha0_mock; //alpha param for the Dirichlet multinomial, mocks
+  real log_dm_alpha0_mock; //log-scale alpha param for the Dirichlet multinomial, mocks
   // real<lower=0> dm_alpha0_samp; //alpha param for the Dirichlet multinomial, field samples
   // vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion in mocks
 
@@ -118,7 +110,7 @@ parameters {
   vector[N_bio_rep_param] bio_rep_param; // log DNA concentration in field samples
   real<upper=0> wash_effect; //estimate of the EtOH wash effect
   
-  real<lower=0> tau_bio_rep; # random effect between biological replicates.
+  real<lower=0> tau_bio_rep; //random effect between biological replicates.
   
   //for linking 
   matrix[N_obs_mb_samp,(N_species-1)] log_D_raw; // estimated true DNA concentration by sample (centered)
@@ -138,9 +130,10 @@ transformed parameters {
   vector[N_bio_rep_RE] bio_rep_RE; // log DNA concentration in field samples
 
   // for QM part
-  vector[N_species] alpha; // vector of coefficients (log-efficiencies relative to reference taxon)
+  vector[N_species] alpha; // vector of efficiency coefficients (log-efficiencies relative to reference taxon)
   // vector[N_obs_mb_samp] eta_samp[N_species]; // overdispersion coefficients
   // vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
+  real dm_alpha0_mock; // alpha param for the Dirichlet multinomial, mocks
   matrix[N_obs_mb_samp,N_species] logit_val_samp; //species proportions in metabarcoding, logit
   matrix[N_obs_mock,N_species] logit_val_mock; //species proportions in metabarcoding, logit
   matrix[N_obs_mb_samp,N_species] prop_samp; // proportion of each taxon in field samples= softmax(transpose(logit_val_samp[m,]));
@@ -158,7 +151,7 @@ transformed parameters {
   logit_theta_std = phi_0 + phi_1 .* exp(log_known_conc);
 
   // qPCR unknowns 
-    {// locals for making sum to 0 random effects.
+    {// locals for making sum-to-0 random effects.
       int count_tot;
       int count_par;
       real bio_rep_sum;
@@ -241,6 +234,9 @@ transformed parameters {
 
     logit_val_mock[,n] = alr_mock_true_prop[,n] + model_vector_a_mock .* alpha[n]; //+eta_mock[n]
   }
+ }
+ 
+ dm_alpha0_mock = exp(log_dm_alpha0_mock);
   
   // print("logit val: ",logit_val_mock);
   // print("alpha: ", alpha);
@@ -252,18 +248,6 @@ transformed parameters {
   }  
   // print("prop mock: ",prop_mock);
   // print("alpha: ", alpha);
-
-  // for (n in 1:N_species) {
-  //     mu_samp[,n] = transpose(prob_samp_t)[,n] ;
-  //     mu_mock[,n] = transpose(prob_mock_t)[,n] ;
-  //   // if(n==1){print("log_prob 1 ",log_prob);}
-  // }
-   } // end local variables
-    // print("MU_SAMP_row",mu_samp[1,]);
-    // print("SUM_MU_SAMP",sum(mu_samp[1,]));
-    // 
-    // print("MU_SAMP_col",mu_samp[,1]);
-    // print("SUM_MU_SAMP_col",sum(mu_samp[,1]));
 }
 
 model{
@@ -317,12 +301,12 @@ model{
     alpha_raw[i] ~ std_normal();
   }
   
-  dm_alpha0_mock ~ normal(10,10); // prior on Dirichlet multinomial alpha0 for mock communities
+  log_dm_alpha0_mock ~ normal(8,2); // prior on log of Dirichlet multinomial alpha0 for mock communities
   // dm_alpha0_samp ~ normal(10,10); // prior on Dirichlet multinomial alpha0 for mb field samples
   
   // QM Likelihoods
   for(i in 1:N_obs_mock){
-    mock_data[i,]   ~  dirichlet_multinomial(to_vector(prop_mock[i,]),dm_alpha0_mock); // Multinomial sampling of mu (proportions in mocks)
+    mock_data[i,]   ~  dirichlet_multinomial(to_vector(prop_mock[i,])*dm_alpha0_mock); // Multinomial sampling of mu (proportions in mocks)
   }
 
   // print("2:",target());
