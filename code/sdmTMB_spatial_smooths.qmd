@@ -26,6 +26,7 @@ library(sdmTMB)
 library(viridis)
 library(cowplot)
 library(here)
+library(marmap)
 library(visreg)
 ```
 
@@ -42,6 +43,9 @@ Load data from the joint model output. These data have estimates of copy numbers
 ```{r}
 dat <- read_rds(here('code','log_D_fitted.rds'))
 glimpse(dat)
+
+# change Engraulis name back
+dat <- dat %>% mutate(species=ifelse(species=="Zz_Engraulis mordax","Engraulis mordax",species))
 ```
 
 # Spatial Domain
@@ -86,12 +90,21 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 ## Plot Raw Data
 
 ```{r,fig.width=8,fig.height=12}
-ggplot()+
-  geom_sf(data=coaststates,fill='gray80')+
-  geom_sf(data=dat_sf,aes(size=exp(mean),color=exp(mean)),fill=NA,shape=1)+
-  facet_grid(species~depth_cat)+
-  scale_color_viridis()+
-  xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])
+sp_dat_maps <- purrr::map(unique(dat_sf$species),function(sp){
+  df <- dat_sf %>% 
+    filter(species==sp)
+  ggplot()+
+    geom_sf(data=coaststates,fill='gray80')+
+    geom_sf(data=df,aes(size=exp(mean)),fill=NA,shape=1)+
+    facet_wrap(~depth_cat,nrow=1)+
+    coord_sf(datum=NA)+
+    # scale_color_viridis()+
+    scale_size_continuous(range=c(1,10))+
+    xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+    labs(title=sp,size="Conc.")
+})
+sp_maps <- cowplot::plot_grid(plotlist=sp_dat_maps,nrow=3)
+ggsave(here('plots','log_D_maps.png'),sp_maps,h=12,w=8,bg='white')
 ```
 
 ```{r,fig.height=6,fig.width=8}
@@ -99,7 +112,8 @@ ggplot()+
 rawdat_depth_plot <- dat_utm %>% 
   ggplot(aes(mean,fill=factor(species)))+
   geom_histogram(alpha=0.4,bins=20)+
-  facet_wrap(~depth_cat,scales='free_x')
+  facet_wrap(~depth_cat,scales='free_x')+
+  labs(fill="Species",x="Log Conc.")
 
 rawdat_depth_plot
 
@@ -108,7 +122,8 @@ rawdat_depth_plot2 <- dat_utm %>%
   filter(mean>log(5)) %>% 
   ggplot(aes(mean,fill=factor(species)))+
   geom_histogram(alpha=0.4,bins=10)+
-  facet_wrap(~depth_cat,scales='free_x')
+  facet_wrap(~depth_cat,scales='free_x')+
+  labs(fill="Species",x="Log Conc.")
 
 rawdat_depth_plot2
 
@@ -118,7 +133,8 @@ rawdat_depth_plot3 <- dat_utm %>%
   ggplot(aes(-depth_cat,mean))+
   geom_point()+
   coord_flip()+
-  facet_wrap(~species,scales='free_x')
+  facet_wrap(~species,scales='free_x')+
+  labs(fill="Species",x="Log Conc.")
 
 rawdat_depth_plot3
 
@@ -129,19 +145,21 @@ rawdat_depth_plot4 <- dat_utm %>%
   ggplot(aes(-depth_cat,tot))+
   geom_col()+
   coord_flip()+
-  facet_wrap(~species,scales='free_x')
+  facet_wrap(~species,scales='free_x')+
+  labs(fill="Species",x="Sum Across Samples")
 
 rawdat_depth_plot4
 
 # depth and latitude
 rawdat_depth_plot5 <- dat_utm %>%
-  ggplot(aes(depth_cat,utm.lat.km,size=exp(mean)))+
-  geom_point(shape=1)+
+  ggplot(aes(factor(depth_cat),utm.lat.km,size=exp(mean)))+
+  geom_point()+
   scale_size_continuous(range = c(1,10))+
-  facet_wrap(~species)
+  facet_wrap(~species)+
+  labs(x="Depth",y="Northings (km)",size="Conc.")
 
 rawdat_depth_plot5
-
+ggsave(here('plots','log_D_lat_depth.png'),rawdat_depth_plot5,h=6,w=8,bg='white')
 ```
 
 
@@ -174,70 +192,153 @@ ch_pred_df <- ch_pred %>%
   mutate(grID=row_number())
 ```
 
+## Bathymetry
+
+```{r}
+### Go get bathymetric data from NOAA to overlay on the samples
+limits.for.map <- dat_sf %>%
+  st_transform(4326) %>% 
+  st_bbox()+c(-1,-1,1,1) #add an extra degree on each side for buffer
+
+xy <- dat_sf %>% st_transform(4326) %>% st_coordinates()
+
+b = getNOAA.bathy(lon1 = limits.for.map["xmin"],
+          lon2 = limits.for.map[ "xmax" ],
+          lat1 = limits.for.map["ymin"],
+          lat2 = limits.for.map["ymax"],
+          resolution = 1,keep = TRUE)
+
+# We can pull depth from each sample point
+stations.bathy <- get.depth(b,xy,locator=F) %>% 
+  rename(bathy=depth)
+
+dat_utm <- dat_utm %>% 
+  mutate(bathy=-stations.bathy$bathy,
+         log_bathy=log(bathy),
+         log_bathy2=log_bathy^2) %>%
+  mutate(log_bathy_scaled=(log_bathy-mean(log_bathy))/sd(log_bathy),
+         log_bathy_scaled2=log_bathy_scaled^2)
+```
+
+
+```{r}
+# for the prediction grid
+ch_pred_xy <- ch_pred_df %>% 
+  st_as_sf(coords=c('utm.lon.km','utm.lat.km'),crs="+proj=utm +zone=10 +datum=WGS84 +units=km +no_defs +type=crs") %>% 
+  st_transform(4326) %>% 
+  st_coordinates()
+ch_pred_bathy <- get.depth(b,ch_pred_xy,locator=F) %>% 
+  rename(bathy=depth)
+ch_pred_df <- ch_pred_df %>% 
+  mutate(bathy=-ch_pred_bathy$bathy,
+         log_bathy=log(bathy),
+         log_bathy2=log_bathy^2)%>%
+  filter(bathy>0) %>% 
+  mutate(log_bathy_scaled=(log_bathy-mean(log_bathy))/sd(log_bathy),
+         log_bathy_scaled2=log_bathy_scaled^2)
+ch_pred <- ch_pred %>% 
+  mutate(bathy=-ch_pred_bathy$bathy,
+         log_bathy=log(bathy),
+         log_bathy2=log_bathy^2)%>%
+  filter(bathy>0) %>% 
+  mutate(log_bathy_scaled=(log_bathy-mean(log_bathy))/sd(log_bathy),
+         log_bathy_scaled2=log_bathy_scaled^2)
+
+# make sure this looks right
+ch_pred %>% 
+  ggplot(aes(fill=bathy))+
+  geom_sf(color=NA)+
+  scale_fill_viridis(option="A",direction=-1)+
+  labs(title="Bathymetry",fill="Depth(m)")
+```
+
 ## Distance from Shore
 
 Derive a predictor that measures straight-line distance to the coast
 
 ```{r}
-# distances for the two grids
-gr_dists <- st_distance(st_centroid(gr_pred),summarise(coaststates))
+# gr_pred_df <- gr_pred_df %>% mutate(dist_shore=as.numeric(gr_dists),dist_shore2=dist_shore^2) %>% 
+#   mutate(log_dist=log(dist_shore),log_dist2=log_dist^2)
+# gr_pred_df <- purrr::map(unique(dat$depth_cat),function(x)gr_pred_df %>% mutate(depth_cat=x)) %>% list_rbind() %>% 
+#   mutate(depth_cat=as.factor(depth_cat))
+```
+
+```{r}
+# distances from shore
 ch_dists <- st_distance(st_centroid(ch_pred),summarise(coaststates))
-gr_pred_df <- gr_pred_df %>% mutate(dist_shore=as.numeric(gr_dists),dist_shore2=dist_shore^2) %>% 
-  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2)
-ch_pred_df <- ch_pred_df %>% mutate(dist_shore=as.numeric(ch_dists),dist_shore2=dist_shore^2) %>% 
-  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2)
+
+ch_pred_df <- ch_pred_df %>% 
+  mutate(dist_shore=as.numeric(ch_dists)+0.01,dist_shore2=dist_shore^2) %>% 
+  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2) %>% 
+  mutate(log_dist_scaled=(log_dist-mean(log_dist,na.rm=T))/sd(log_dist,na.rm=T),
+         log_dist_scaled2=log_dist_scaled^2)
 
 # distances for the data
 dat_dists <- st_distance(dat_sf,summarise(coaststates))
 dat_utm$dist_shore=as.numeric(dat_dists)
 dat_utm$dist_shore2=dat_utm$dist_shore^2
+dat_utm <- dat_utm%>% 
+  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2) %>% 
+  mutate(log_dist_scaled=(log_dist-mean(log_dist,na.rm = T))/sd(log_dist,na.rm=T),
+         log_dist_scaled2=log_dist_scaled^2)
 
 # what does this covariate look like?
 ch_pred %>% 
   mutate(dist_shore=as.numeric(ch_dists)) %>% 
   ggplot(aes(fill=dist_shore))+
   geom_sf(color=NA)+
-  scale_fill_viridis()
+  scale_fill_viridis(option="A")+
+  labs(title="Distance from Shore",fill="km")
 
 # duplicate the prediction df for different depth categories
-gr_pred_df <- purrr::map(unique(dat$depth_cat),function(x)gr_pred_df %>% mutate(depth_cat=x)) %>% list_rbind() %>% 
-  mutate(depth_cat=as.factor(depth_cat))
-
-ch_pred_df <- purrr::map(unique(dat$depth_cat),function(x)ch_pred_df %>% mutate(depth_cat=x)) %>% list_rbind() %>% 
-  mutate(depth_cat=as.factor(depth_cat))
+# ch_pred_df <- purrr::map(unique(dat$depth_cat),function(x)ch_pred_df %>% mutate(depth_cat=x)) %>% list_rbind() %>% 
+#   mutate(depth_cat=as.factor(depth_cat))
 ```
+
+```{r}
+# how correlated are depth and distance?
+ch_pred_df %>% 
+  ggplot(aes(bathy,dist_shore))+
+  geom_point()+
+  labs(x="Depth",y="Distance (km)")
+ch_pred_df %>% 
+  ggplot(aes(log_bathy,log_dist))+
+  geom_point()+
+  labs(x="Log Depth",y="Log Distance (km)")
+```
+
 
 ## Model Mesh
 
 Create an INLA mesh for the sdmTMB models
 
 ```{r}
-mesh1 <- fmesher::fm_mesh_2d_inla(
-  loc = cbind(dat_utm$utm.lon.km, dat_utm$utm.lat.km), # coordinates
-  max.edge = c(80, 100), # max triangle edge length; inner and outer meshes
-  offset = c(5, 25),  # inner and outer border widths
-  cutoff = 10 # minimum triangle edge length
-)
-plot(mesh1)
-
-mesh2 <- fmesher::fm_mesh_2d_inla(
-  loc = cbind(dat_utm$utm.lon.km, dat_utm$utm.lat.km), # coordinates
-  max.edge = c(80, 100), # max triangle edge length; inner and outer meshes
-  offset = c(10, 30),  # inner and outer border widths
-  cutoff = 20 # minimum triangle edge length
-)
-plot(mesh2)
+# mesh1 <- fmesher::fm_mesh_2d_inla(
+#   loc = cbind(dat_utm$utm.lon.km, dat_utm$utm.lat.km), # coordinates
+#   max.edge = c(80, 100), # max triangle edge length; inner and outer meshes
+#   offset = c(5, 25),  # inner and outer border widths
+#   cutoff = 10 # minimum triangle edge length
+# )
+# plot(mesh1)
+# 
+# mesh2 <- fmesher::fm_mesh_2d_inla(
+#   loc = cbind(dat_utm$utm.lon.km, dat_utm$utm.lat.km), # coordinates
+#   max.edge = c(80, 100), # max triangle edge length; inner and outer meshes
+#   offset = c(10, 30),  # inner and outer border widths
+#   cutoff = 20 # minimum triangle edge length
+# )
+# plot(mesh2)
 
 mesh3 <- fmesher::fm_mesh_2d_inla(
   loc = cbind(dat_utm$utm.lon.km, dat_utm$utm.lat.km), # coordinates
-  max.edge = c(80, 100), # max triangle edge length; inner and outer meshes
+  max.edge = c(80, 150), # max triangle edge length; inner and outer meshes
   offset = c(10, 30),  # inner and outer border widths
   cutoff = 40 # minimum triangle edge length
 )
 plot(mesh3)
 
-mesh1$n
-mesh2$n
+# mesh1$n
+# mesh2$n
 mesh3$n
 ```
 
@@ -246,18 +347,15 @@ mesh3$n
 ```{r}
 # Try a simple spatial model for one species, surface samples only
 dat_anchovy <- dat_utm %>%
-  filter(species=="Zz_Engraulis mordax",depth_cat==0) %>%
-  mutate(copies=exp(mean)) %>%
-  # remove huge outliers- probably need to decide what to do with these in general
-  # mutate(quant=percent_rank(copies)) %>%
-  # filter(quant>=0.025,quant<=0.975) %>%
-  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2)
+  filter(species=="Engraulis mordax",depth_cat==0) %>%
+  mutate(copies=exp(mean))
 
 # distance from shore is the only covariate
 # anisotropic variance OFF for now
 anch1 <-  sdmTMB(
   data = dat_anchovy,
-  formula = copies~log_dist+log_dist2,
+  # formula = copies~log_dist+log_dist2,
+  formula = copies~log_bathy_scaled+log_bathy_scaled2,
   mesh=make_mesh(dat_anchovy,c('utm.lon.km','utm.lat.km'),mesh=mesh3),
   family = tweedie(link='log'),
   spatial = "on"
@@ -291,21 +389,12 @@ anch3 <-  sdmTMB(
   anisotropy = F
 )
 
-# on the rectangular grid
-# anch1_preds_gr <- predict(anch1,newdata=gr_pred_df %>% filter(depth_cat==0)) %>% 
-#   left_join(gr_pred,by=join_by(grID)) %>% 
-#   filter(dist_shore>5) %>% 
-#   st_as_sf()
-# 
-# # on the restricted domain hull
-anch1_preds_ch <- predict(anch1,newdata=ch_pred_df %>% filter(depth_cat==0)) %>%
+# predict
+
+anch1_preds_ch <- predict(anch1,newdata=ch_pred_df) %>%
   left_join(ch_pred,by=join_by(grID)) %>%
   filter(dist_shore>5) %>%
   st_as_sf()
-# anch2_preds_ch <- predict(anch2,newdata=ch_pred_df %>% filter(depth_cat==0)) %>% 
-#   left_join(ch_pred,by=join_by(grID)) %>%  
-#   filter(dist_shore>5) %>%
-#   st_as_sf()
 anch3_preds_ch <- predict(anch3,newdata=ch_pred_df %>% filter(depth_cat==0)) %>% 
   left_join(ch_pred,by=join_by(grID)) %>%
   filter(dist_shore>5) %>%
@@ -406,7 +495,7 @@ ggplot(p, aes(exp(log_dist), exp(est),
   labs(x = "Distance from Shore (km)", y = "Anchovy Copies")
 
 # in link space
-visreg::visreg(anch3,"log_dist")
+visreg::visreg(anch1,"log_bathy")
 ```
 
 Now, write a function to do this for any species. We'll stick with the smaller projection domain for now, and will adopt a consistent model equation form

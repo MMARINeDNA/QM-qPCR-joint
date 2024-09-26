@@ -264,6 +264,9 @@ plot_est_reads <- function(s){
     filter(grepl('log_D',variable),
            !grepl('log_D_raw',variable),
            !grepl('log_D_station_depth',variable),
+           !grepl('log_D_sp',variable),
+           !grepl('log_D_mu',variable),
+           !grepl('log_D_sigma',variable),
            !grepl('log_D_sigma',variable)) %>%
     # extract a replicate number from the variable names using regex
     mutate(rep=str_extract(variable,"(?<=\\[)\\d+") %>% as.integer)%>% 

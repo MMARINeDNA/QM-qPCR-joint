@@ -34,10 +34,16 @@ Removed model_matrix_samp and other declared data and params that weren't being 
 
 09.25.24
 Managed to get a decent fit if dm_alpha0 is fixed (~1000) and applied to both mocks and samples
+Also removed many MB field samples that had only hake and nothing else in them, because we suspect it was messing with fitting
 This results in reasonable estimates that are in the ballpark of what we expect
 
-TODO:
-Check the few outliers in the qPCR
-Check stepsize after the warmup is complete
-Compare qPCR samples that match MB vs. non-matched samples and compare overdispersion
+09.26.24
+Ole has been working on a set of model runs with FIXED alphas (from a separate mocks-only model) and no mocks
+One version includes the reduced set of MB samples (the ones with only hake), and one includes the original set of samples
+Both converged, and provide quantitatively similar predictions of log_D
+BUT, the alphas are different
 
+Trying a version with LIKELIHOOD WEIGHTING on the mocks, and adding a separate mean and variance for each species' log_D,
+but no fixed alphas and regular multinomial for field samples
+Seemed to work okay with a fixed dm_alpha0
+Trying with dm_alpha0 as a param

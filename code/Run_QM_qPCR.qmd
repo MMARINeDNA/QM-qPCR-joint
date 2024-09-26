@@ -59,7 +59,6 @@ stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>%
                            bio_rep_idx =bio_rep_idx,
                            N_bio_rep_idx = N_bio_rep_idx))
 
-
 # metabarcoding
 formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_1_treatment_envir <- "Sample",
@@ -145,8 +144,8 @@ Run Stan
 
 ```{r}
 n.chains <- 1
-n.warm <- 200
-n.samps <-50
+n.warm <- 100
+n.samps <-5
 tictoc::tic("Running DM Joint Model:")
 jointMod_dm = stan(file = m_dm,
                 data = stan_data_joint,
@@ -178,8 +177,6 @@ tictoc::toc()
 ```{r}
 # save (big file!)
 write_rds(jointMod,here('code','fit1.rds'))
-
-
 write_rds(jointMod_dm,here('code','fit_dm.rds'))
 
 # if reading
@@ -358,7 +355,7 @@ diagnose_sampler %>%
   ggplot(aes(iteration, treedepth__, color = chain)) + 
   geom_line() + 
   # horizontal line at the value we set our max treedepth
-  geom_hline(aes(yintercept = maxtd), color = 'red')
+  geom_hline(aes(yintercept = maxtd), color = 'blue')
 ```
 
 ```{r}
