@@ -57,8 +57,7 @@ stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>%
                            N_bio_rep_RE = N_bio_rep_RE,
                            N_bio_rep_param = N_bio_rep_param,
                            bio_rep_idx =bio_rep_idx,
-                           N_bio_rep_idx = N_bio_rep_idx,
-                           beta_std_curve_0_offset =36))
+                           N_bio_rep_idx = N_bio_rep_idx))
 
 
 # metabarcoding
@@ -114,40 +113,40 @@ m_dm <- here('code','qm_qpcr_joint-DM.stan') # Dirichlet multinomial
 Run Stan
 
 ```{r}
-n.chains <- 3
-n.warm <- 500
-n.samps <- 3000
-jointMod = stan(file = m ,
-                data = stan_data_joint,
-                verbose = FALSE,
-                chains = n.chains,
-                thin = 1,
-                warmup = n.warm,
-                iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 75,
-                                  max_treedepth=12,
-                                  stepsize=0.01,
-                                  adapt_delta=0.8,
-                                  metric="diag_e"),
-                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
-                                    N_species = stan_data_joint$N_species,
-                                    Nplates=stan_data_joint$Nplates,
-                                    N_station_depth=stan_data_joint$N_station_depth,
-                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
-                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits),
-                                    # log_D_log_D_inits$log_D_inits,
-                refresh = 10,
-                boost_lib = NULL
-                # sample_file="tmpU.csv"
-                )
+# n.chains <- 3
+# n.warm <- 500
+# n.samps <- 3000
+# jointMod = stan(file = m ,
+#                 data = stan_data_joint,
+#                 verbose = FALSE,
+#                 chains = n.chains,
+#                 thin = 1,
+#                 warmup = n.warm,
+#                 iter = n.warm+n.samps,
+#                 control = list(adapt_init_buffer = 75,
+#                                   max_treedepth=12,
+#                                   stepsize=0.01,
+#                                   adapt_delta=0.8,
+#                                   metric="diag_e"),
+#                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
+#                                     N_species = stan_data_joint$N_species,
+#                                     Nplates=stan_data_joint$Nplates,
+#                                     N_station_depth=stan_data_joint$N_station_depth,
+#                                     log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
+#                                     # log_D_raw_inits=log_D_inits$log_D_raw_inits),
+#                                     # log_D_log_D_inits$log_D_inits,
+#                 refresh = 10,
+#                 boost_lib = NULL
+#                 # sample_file="tmpU.csv"
+#                 )
 ```
 
 ## Dirichlet multinomial
 
 ```{r}
-n.chains <- 3
-n.warm <- 500
-n.samps <-500
+n.chains <- 1
+n.warm <- 200
+n.samps <-50
 tictoc::tic("Running DM Joint Model:")
 jointMod_dm = stan(file = m_dm,
                 data = stan_data_joint,
@@ -156,8 +155,8 @@ jointMod_dm = stan(file = m_dm,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 200,
-                                max_treedepth=12,
+                control = list(adapt_init_buffer = 60,
+                                max_treedepth=10,
                                 stepsize=0.05,
                                 adapt_delta=0.85,
                                 metric="diag_e"),
@@ -169,8 +168,8 @@ jointMod_dm = stan(file = m_dm,
                                     # log_D_raw_inits=log_D_inits$log_D_raw_inits),
                                     # log_D_log_D_inits$log_D_inits,
                 refresh = 10,
-                boost_lib = NULL
-                # sample_file="tmpU.csv"
+                boost_lib = NULL,
+                sample_file="tmpU.csv"
                 )
 tictoc::toc()
 ```

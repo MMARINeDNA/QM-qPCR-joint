@@ -32,29 +32,12 @@ Trying to swap to the Dirichlet multinomial to account for overdispersion, and r
 To do this, edited the code in qm_qpcr_joint-DM. Now there are two versions of the Stan model (Dirichlet vs. multinomial)
 Removed model_matrix_samp and other declared data and params that weren't being used anymore in our parameterization
 
-09.20.2024 Science Friday
-Discussed Dirichlet multinomial as a group, and agreed to move forward with it for now
-dm_alpha_0 should be bigger. give it a less informative/bigger prior
-Tried modeling ONLY the mocks with the Dirichlet multinomial; field samples have the regular multinomial
-
-...tried adding different alpha_0 for samples and mocks. Didn't really work
-
-
-09.23.24
-Tried a version with D-M for both mocks and field samples. dm_alpha0_mock fixed at 100 for the mocks
-This converged with dm_alpha0_samp ~1.75, alpha (for QM) smaller than before -0.06-0.04
-
-Tried again with a fixed dm_alpha0_mock, but a regular multinomial for the field samples
-The field samples fit well, but large alphas and bad fitting mocks still; lots of divergences
-
-Tried again with just a large prior on dm_alpha0_mock (N(100,10))
-...dm_alpha0_mock still ends up at ~3, and mock fits do not look good
+09.25.24
+Managed to get a decent fit if dm_alpha0 is fixed (~1000) and applied to both mocks and samples
+This results in reasonable estimates that are in the ballpark of what we expect
 
 TODO:
 Check the few outliers in the qPCR
 Check stepsize after the warmup is complete
 Compare qPCR samples that match MB vs. non-matched samples and compare overdispersion
-Add depth plots to diagnostics
-Check indexing again for MB samples
-Try not reporting some transformated params
 

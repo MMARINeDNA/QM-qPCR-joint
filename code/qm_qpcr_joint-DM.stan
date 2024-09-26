@@ -65,6 +65,7 @@ data {
 
   // Priors
   array[2] real alpha_prior;// Parameters of normal distribution for prior on alphas
+  real log_dm_alpha0_mock; //log-scale alpha param for the Dirichlet multinomial, mocks
   // real dm_alpha0_mock; // if you want a fixed Dirichlet alpha0 value
   // real tau_prior[2]; // Parameters of gamma distribution for prior on tau (observation precision)
   
@@ -91,7 +92,7 @@ parameters {
   // for QM part
   // real<lower=0> tau; // single overdispersion sd for multinomial.
   vector[N_species-1] alpha_raw; // log-efficiencies of PCR in MB
-  real log_dm_alpha0_mock; //log-scale alpha param for the Dirichlet multinomial, mocks
+  // real log_dm_alpha0_mock; //log-scale alpha param for the Dirichlet multinomial, mocks
   // real<lower=0> dm_alpha0_samp; //alpha param for the Dirichlet multinomial, field samples
   // vector[N_obs_mock] eta_mock_raw[N_species-1]; //overdispersion in mocks
 
@@ -180,7 +181,7 @@ transformed parameters {
   log_D_station_depth_tube = mean_hake + X_station_depth_tube * log_D_station_depth +
                             X_bio_rep_tube * bio_rep_RE ;
 
-  /// THIS IS THE LATENT STATE CONNECTS TO THE QPCR OBSERVATIONS
+  /// THIS IS THE LATENT STATE THAT CONNECTS TO THE QPCR OBSERVATIONS
   unk_conc_qpcr = mean_hake + X_station_depth_obs * log_D_station_depth + 
                       X_bio_rep_obs * bio_rep_RE +
                       wash_idx * wash_effect +
@@ -301,7 +302,7 @@ model{
     alpha_raw[i] ~ std_normal();
   }
   
-  log_dm_alpha0_mock ~ normal(8,2); // prior on log of Dirichlet multinomial alpha0 for mock communities
+  // log_dm_alpha0_mock ~ normal(8,2); // prior on log of Dirichlet multinomial alpha0 for mock communities
   // dm_alpha0_samp ~ normal(10,10); // prior on Dirichlet multinomial alpha0 for mb field samples
   
   // QM Likelihoods
@@ -310,14 +311,14 @@ model{
   }
 
   // print("2:",target());
-  // for(i in 1:N_obs_mb_samp){
-  //   sample_data[i,] ~  dirichlet_multinomial(to_vector(prop_samp[i,]),dm_alpha0_samp); // Multinomial sampling of mu (proportions in field samples)
-  // }
+  for(i in 1:N_obs_mb_samp){
+    sample_data[i,] ~  dirichlet_multinomial(to_vector(prop_samp[i,]*dm_alpha0_mock)); // Multinomial sampling of mu (proportions in field samples)
+  }
   
   // if you're only using the Dirichlet for the mocks...
-  for(i in 1:N_obs_mb_samp){
-    sample_data[i,] ~  multinomial_logit(to_vector(logit_val_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
-  }
+  // for(i in 1:N_obs_mb_samp){
+  //   sample_data[i,] ~  multinomial_logit(to_vector(logit_val_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
+  // }
 
   // print("3:",target());
   

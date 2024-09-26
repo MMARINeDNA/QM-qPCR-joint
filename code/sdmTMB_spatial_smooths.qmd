@@ -89,10 +89,61 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 ggplot()+
   geom_sf(data=coaststates,fill='gray80')+
   geom_sf(data=dat_sf,aes(size=exp(mean),color=exp(mean)),fill=NA,shape=1)+
-  facet_grid(depth_cat~species)+
+  facet_grid(species~depth_cat)+
   scale_color_viridis()+
   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])
 ```
+
+```{r,fig.height=6,fig.width=8}
+# plot of estimates across depth (non-spatial)
+rawdat_depth_plot <- dat_utm %>% 
+  ggplot(aes(mean,fill=factor(species)))+
+  geom_histogram(alpha=0.4,bins=20)+
+  facet_wrap(~depth_cat,scales='free_x')
+
+rawdat_depth_plot
+
+# with presumptive zeroes filtered out
+rawdat_depth_plot2 <- dat_utm %>% 
+  filter(mean>log(5)) %>% 
+  ggplot(aes(mean,fill=factor(species)))+
+  geom_histogram(alpha=0.4,bins=10)+
+  facet_wrap(~depth_cat,scales='free_x')
+
+rawdat_depth_plot2
+
+# as a scatter plot
+rawdat_depth_plot3 <- dat_utm %>%  
+  filter(mean>log(5)) %>% 
+  ggplot(aes(-depth_cat,mean))+
+  geom_point()+
+  coord_flip()+
+  facet_wrap(~species,scales='free_x')
+
+rawdat_depth_plot3
+
+# summed
+rawdat_depth_plot4 <- dat_utm %>%
+  group_by(species,depth_cat) %>% 
+  summarise(tot=sum(exp(mean))) %>% 
+  ggplot(aes(-depth_cat,tot))+
+  geom_col()+
+  coord_flip()+
+  facet_wrap(~species,scales='free_x')
+
+rawdat_depth_plot4
+
+# depth and latitude
+rawdat_depth_plot5 <- dat_utm %>%
+  ggplot(aes(depth_cat,utm.lat.km,size=exp(mean)))+
+  geom_point(shape=1)+
+  scale_size_continuous(range = c(1,10))+
+  facet_wrap(~species)
+
+rawdat_depth_plot5
+
+```
+
 
 ## Projection Grid
 
@@ -194,23 +245,23 @@ mesh3$n
 
 ```{r}
 # Try a simple spatial model for one species, surface samples only
-# dat_anchovy <- dat_utm %>% 
-#   filter(species=="Zz_Engraulis mordax",depth_cat==0) %>%
-#   mutate(copies=exp(mean)) %>%
-#   # remove huge outliers- probably need to decide what to do with these in general
-#   # mutate(quant=percent_rank(copies)) %>% 
-#   # filter(quant>=0.025,quant<=0.975) %>% 
-#   mutate(log_dist=log(dist_shore),log_dist2=log_dist^2)
+dat_anchovy <- dat_utm %>%
+  filter(species=="Zz_Engraulis mordax",depth_cat==0) %>%
+  mutate(copies=exp(mean)) %>%
+  # remove huge outliers- probably need to decide what to do with these in general
+  # mutate(quant=percent_rank(copies)) %>%
+  # filter(quant>=0.025,quant<=0.975) %>%
+  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2)
 
 # distance from shore is the only covariate
 # anisotropic variance OFF for now
-# anch1 <-  sdmTMB(
-#   data = dat_anchovy,
-#   formula = copies~log_dist+log_dist2,
-#   mesh=make_mesh(dat_anchovy,c('utm.lon.km','utm.lat.km'),mesh=mesh2),
-#   family = tweedie(link='log'),
-#   spatial = "on"
-# )
+anch1 <-  sdmTMB(
+  data = dat_anchovy,
+  formula = copies~log_dist+log_dist2,
+  mesh=make_mesh(dat_anchovy,c('utm.lon.km','utm.lat.km'),mesh=mesh3),
+  family = tweedie(link='log'),
+  spatial = "on"
+)
 # # with anisotropy
 # anch2 <-  sdmTMB(
 #   data = dat_anchovy,
@@ -230,11 +281,11 @@ dat_anchovy_int <- dat_utm %>%
   # depth-integrated copies
   summarise(tot=sum(copies)) %>% 
   ungroup()
-  
+
 anch3 <-  sdmTMB(
   data = dat_anchovy_int,
   formula = tot~log_dist+log_dist2,
-  mesh=make_mesh(dat_anchovy_int,c('utm.lon.km','utm.lat.km'),mesh=mesh2),
+  mesh=make_mesh(dat_anchovy_int,c('utm.lon.km','utm.lat.km'),mesh=mesh3),
   family = tweedie(link='log'),
   spatial = "on",
   anisotropy = F
@@ -247,10 +298,10 @@ anch3 <-  sdmTMB(
 #   st_as_sf()
 # 
 # # on the restricted domain hull
-# anch1_preds_ch <- predict(anch1,newdata=ch_pred_df %>% filter(depth_cat==0)) %>% 
-#   left_join(ch_pred,by=join_by(grID)) %>%  
-#   filter(dist_shore>5) %>%
-#   st_as_sf()
+anch1_preds_ch <- predict(anch1,newdata=ch_pred_df %>% filter(depth_cat==0)) %>%
+  left_join(ch_pred,by=join_by(grID)) %>%
+  filter(dist_shore>5) %>%
+  st_as_sf()
 # anch2_preds_ch <- predict(anch2,newdata=ch_pred_df %>% filter(depth_cat==0)) %>% 
 #   left_join(ch_pred,by=join_by(grID)) %>%  
 #   filter(dist_shore>5) %>%
@@ -262,6 +313,41 @@ anch3_preds_ch <- predict(anch3,newdata=ch_pred_df %>% filter(depth_cat==0)) %>%
 ```
 
 ```{r}
+# depth-integrated hake
+dat_hake_int <- dat_utm %>%
+  mutate(copies=exp(mean)) %>%
+  filter(species=="Merluccius productus") %>% 
+  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2) %>% 
+  group_by(utm.lon.km,utm.lat.km,dist_shore, dist_shore2, log_dist, log_dist2,species) %>% 
+  # depth-integrated copies
+  summarise(tot=sum(copies)) %>% 
+  ungroup()
+
+hake1 <-  sdmTMB(
+  data = dat_hake_int,
+  formula = tot~log_dist+log_dist2,
+  mesh=make_mesh(dat_hake_int,c('utm.lon.km','utm.lat.km'),mesh=mesh3),
+  family = tweedie(link='log'),
+  spatial = "on",
+  anisotropy = F
+)
+hake1_preds_ch <- predict(hake1,newdata=ch_pred_df %>% filter(depth_cat==0)) %>% 
+  left_join(ch_pred,by=join_by(grID)) %>%
+  filter(dist_shore>5) %>%
+  st_as_sf()
+hake1_preds_ch_plot <- ggplot()+
+  geom_sf(data=coaststates,fill='gray80')+
+  geom_sf(data=hake1_preds_ch,aes(fill=est),color=NA)+
+  # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
+  scale_fill_viridis()+
+  xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+  labs(fill="Log Total Copies",title="Merluccius productus",x="")
+hake1_preds_ch_plot
+```
+
+
+
+```{r}
 # anch1_preds_gr_plot <- ggplot()+
 #   geom_sf(data=coaststates,fill='gray80')+
 #   geom_sf(data=anch1_preds_gr,aes(fill=est),color=NA)+
@@ -271,13 +357,13 @@ anch3_preds_ch <- predict(anch3,newdata=ch_pred_df %>% filter(depth_cat==0)) %>%
 #   labs(fill="Log Copies",title="Engraulis mordax",x="")
 # anch1_preds_gr_plot
 
-# anch1_preds_ch_plot <- ggplot()+
-#   geom_sf(data=coaststates,fill='gray80')+
-#   geom_sf(data=anch1_preds_ch,aes(fill=est),color=NA)+
-#   # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
-#   scale_fill_viridis()+
-#   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
-#   labs(fill="Log Copies",title="Engraulis mordax",x="")
+anch1_preds_ch_plot <- ggplot()+
+  geom_sf(data=coaststates,fill='gray80')+
+  geom_sf(data=anch1_preds_ch,aes(fill=est),color=NA)+
+  # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
+  scale_fill_viridis()+
+  xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+  labs(fill="Log Copies",title="Engraulis mordax",x="")
 # 
 # anch2_preds_ch_plot <- ggplot()+
 #   geom_sf(data=coaststates,fill='gray80')+
@@ -289,14 +375,13 @@ anch3_preds_ch <- predict(anch3,newdata=ch_pred_df %>% filter(depth_cat==0)) %>%
 
 anch3_preds_ch_plot <- ggplot()+
   geom_sf(data=coaststates,fill='gray80')+
-  geom_sf(data=anch3_preds_ch,aes(fill=exp(est)/1e5),color=NA)+
+  geom_sf(data=anch3_preds_ch,aes(fill=est),color=NA)+
   # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
-  scale_fill_viridis(trans='sqrt')+
+  scale_fill_viridis()+
   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
-  labs(fill="1e5 Copies",title="Engraulis mordax",x="")
+  labs(fill="Log Total Copies",title="Engraulis mordax",x="")
 
-
-# anch1_preds_ch_plot
+anch1_preds_ch_plot
 # anch2_preds_ch_plot
 anch3_preds_ch_plot
 ```
