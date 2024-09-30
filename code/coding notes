@@ -46,4 +46,15 @@ BUT, the alphas are different
 Trying a version with LIKELIHOOD WEIGHTING on the mocks, and adding a separate mean and variance for each species' log_D,
 but no fixed alphas and regular multinomial for field samples
 Seemed to work okay with a fixed dm_alpha0
-Trying with dm_alpha0 as a param
+Trying with dm_alpha0 as a param - this ran super slowly and unclear whether it was converging
+
+
+9.27.24
+Figures needed:
+Depth integrated spatial smooths
+summarize inshore/offshore of 200m isobath/shelf break
+Depth as a separate model/smooth for each species
+
+09.30.24
+Made progress with Ole's outputs on defining a consistent spatial smoothing/SDM method
+Folded Ole's fixed-alphas version of the Stan models into this main code

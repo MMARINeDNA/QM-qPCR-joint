@@ -477,7 +477,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       alr_mock_true_prop = p_mock_all %>% dplyr::select(contains("alr")),
       
       # Dirichlet alpha0
-      # log_dm_alpha0_mock = 7,
+      log_dm_alpha0_mock = log(1000),
       # vectors of PCR numbers
       # N_pcr_samp = N_pcr_samp,
       # N_pcr_mock = N_pcr_mock,
@@ -542,9 +542,9 @@ stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station
       beta_std_curve_1=runif(Nplates,-1.44,-1.3),
       phi_0 = runif(1,1.5,1.8),
       phi_1 = runif(1,1,1.1),
-      gamma_1 = runif(1,-0.01,0),
+      gamma_1 = runif(1,-0.01,0)
       # tau=rgamma(1,10,1000),
-      log_dm_alpha0_mock=log(1000)
+      # log_dm_alpha0_mock=log(1000)
       #eta_mock_raw = matrix((rnorm(N_species-1)*N_obs_mock),N_obs_mock,N_species-1)
     )
   }  

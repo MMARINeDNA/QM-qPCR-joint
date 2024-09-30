@@ -103,6 +103,7 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 ```{r}
 m <- here('code','qm_qpcr_joint.stan')
 m_dm <- here('code','qm_qpcr_joint-DM.stan') # Dirichlet multinomial
+m_dm_mock <- here('code','qm_mocks-DM.stan') # Dirichlet multinomial for mocks
 #IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
 # mc <- cat(stan_model(m)@model_code)
 ```
@@ -143,32 +144,75 @@ Run Stan
 ## Dirichlet multinomial
 
 ```{r}
-n.chains <- 1
-n.warm <- 100
-n.samps <-5
-tictoc::tic("Running DM Joint Model:")
-jointMod_dm = stan(file = m_dm,
+# Mocks only
+n.chains <- 3
+n.warm <- 500
+n.samps <- 10000
+
+mocksMod = stan(file = m_dm_mock ,
                 data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 60,
-                                max_treedepth=10,
+                control = list(adapt_init_buffer = 75,
+                                  max_treedepth=12,
+                                  stepsize=0.01,
+                                  adapt_delta=0.8,
+                                  metric="diag_e"),
+                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
+                                    N_species = stan_data_joint$N_species,
+                                    Nplates=stan_data_joint$Nplates,
+                                    N_station_depth=stan_data_joint$N_station_depth,
+                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
+                                    log_D_raw_inits=log_D_inits$log_D_raw_inits,
+                                    log_D_inits = log_D_inits$log_D_inits),
+                #refresh = 100,
+                boost_lib = NULL,
+                sample_file="tmpU.csv"
+                )
+
+#summary(mocksMod)
+A <- summary(mocksMod,pars="alpha")
+B <- summary(mocksMod,pars="dm_alpha0_mock")
+
+# rstan::traceplot(mocksMod,pars=c("alpha"))
+# rstan::traceplot(mocksMod,pars=c("log_dm_alpha0_mock"))
+
+  alpha_fix <- A$summary %>% as.data.frame() %>% dplyr::select(mean) 
+  dm_alpha0_mock <- A$summary %>% as.data.frame() %>% dplyr::select(mean)
+
+stan_data_joint <- c(stan_data_joint,
+                     list(alpha_fix=(alpha_fix$mean),
+                                                dm_alpha0_mock=dm_alpha0_mock$mean))
+
+n.chains <- 3
+n.warm <- 400
+n.samps <-100
+tictoc::tic("Running DM Joint Model:")
+jointMod_dm = stan(file = "qm_qpcr_joint-DM_alpha-fix.stan",
+                data = stan_data_joint,
+                verbose = FALSE,
+                chains = n.chains,
+                thin = 1,
+                warmup = n.warm,
+                iter = n.warm+n.samps,
+                control = list(adapt_init_buffer = 80,
+                                max_treedepth=11,
                                 stepsize=0.05,
-                                adapt_delta=0.85,
+                                adapt_delta=0.70,
                                 metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
                                     N_station_depth=stan_data_joint$N_station_depth,
-                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
-                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits),
-                                    # log_D_log_D_inits$log_D_inits,
+                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
+                                    log_D_raw_inits=log_D_inits$log_D_raw_inits,
+                                    log_D_inits=log_D_inits$log_D_inits),
                 refresh = 10,
                 boost_lib = NULL,
-                sample_file="tmpU.csv"
+                sample_file="tmpX.csv"
                 )
 tictoc::toc()
 ```
