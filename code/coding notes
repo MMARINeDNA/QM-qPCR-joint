@@ -58,3 +58,7 @@ Depth as a separate model/smooth for each species
 09.30.24
 Made progress with Ole's outputs on defining a consistent spatial smoothing/SDM method
 Folded Ole's fixed-alphas version of the Stan models into this main code
+
+10.01.24
+Continuing to work on SDMs
+Running a version of the joint model with fixed alphas, but species-specific means for log_D

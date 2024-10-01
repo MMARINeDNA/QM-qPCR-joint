@@ -525,7 +525,7 @@ makeQM_inits <- function(sample_data,
 ###########################################
 ### Setting Initial Values
 stan_init_f1 <- function(n.chain,N_obs_mb,N_obs_mock,N_species,Nplates,N_station_depth,
-                         log_D_link_sp_init_mean,
+                         # log_D_link_sp_init_mean,
                          # log_D_raw_inits,
                          log_D_inits){
   # set.seed(78345)

@@ -256,6 +256,62 @@ plot_obs_pred_qm <- function(s,stan_data){
   out
 }
 
+# if you're running a model with no integrated mock communities
+plot_obs_pred_qm_no_mocks <- function(s,stan_data){
+  
+  # metabarcoding field samples - reads
+  mb_unk_reads_dat <- stan_data %>%
+    pluck('sample_data') %>% 
+    mutate(rep=row_number()) %>% 
+    pivot_longer(-rep,names_to = 'taxa',values_to='reads') %>% 
+    # add total reads
+    group_by(rep) %>% 
+    mutate(sumreads=sum(reads),
+           prop=reads/sumreads) %>% 
+    ungroup()
+  
+  # metabarcoding field samples - fitted (estimated) reads
+  mb_unk_reads_fit <- s %>% 
+    filter(grepl('logit_val_samp',variable)) %>% 
+    # extract a replicate number from the variable names using regex
+    mutate(rep=str_extract(variable,"(?<=\\[)\\d+") %>% as.integer) %>% 
+    mutate(se_mean=ifelse(is.nan(se_mean),0,se_mean)) %>% 
+    group_by(rep) %>% 
+    mutate(prop=softmax(mean),prop_upper=softmax(mean+se_mean),prop_lower=softmax(mean-se_mean)) %>% 
+    ungroup()
+  
+  mb_unk_join <- mb_unk_reads_dat %>% 
+    mutate(prop_fit=mb_unk_reads_fit$prop,
+           prop_upper=mb_unk_reads_fit$prop_upper,
+           prop_lower=mb_unk_reads_fit$prop_lower) %>% 
+    # back out estimated reads from proportions
+    mutate(reads_fit=prop_fit*sumreads,
+           reads_upper=prop_upper*sumreads,
+           reads_lower=prop_lower*sumreads)
+  
+  # metabarcoding field samples - plots
+  
+  mb_unk_prop_plot <- mb_unk_join %>%
+    ggplot(aes(prop_fit,prop,col=taxa,xmin=prop_lower,xmax=prop_upper))+
+    geom_pointrange()+
+    geom_abline(slope=1,intercept=0,linetype=2)+
+    labs(x="Proportion - Predicted",y="Proportion - Observed",title="Metabarcoding Field Samples - Proportions")+
+    guides(color='none')
+  mb_unk_reads_plot <- mb_unk_join %>% 
+    # log 10 scaling:
+    ggplot(aes(log10(reads_fit+1),log10(reads+1),col=taxa,xmin=log10(reads_lower+1),xmax=log10(reads_upper+1)))+
+    # untransformed scaling:
+    # ggplot(aes(reads_fit,reads,col=taxa,xmin=reads_lower,xmax=reads_upper))+
+    geom_pointrange()+
+    geom_abline(slope=1,intercept=0,linetype=2)+
+    labs(x="Log10 Reads- Predicted",y="Log10 Reads - Observed",title="Metabarcoding Field Samples - Reads")
+  
+  # Combined plots
+  out <- plot_grid(mb_unk_prop_plot,mb_unk_reads_plot,nrow=1)
+  
+  out
+}
+
 #### distribution of log_D (estimated reads, i.e., our quantity of interest) ####
 
 plot_est_reads <- function(s){

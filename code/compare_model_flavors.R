@@ -4,7 +4,7 @@ dat1 <- read_rds(here('code','log_D_fitted.rds')) %>%
   dplyr::select(variable,mean,se_mean,taxa:wash_idx) %>% 
   rename(dat1mean=mean,dat1se=se_mean)
 glimpse(dat1)
-dat2 <- read_rds(here('code','2024 multispecies analyses & outputs (of 2019 data)','log_D_fitted_Ole_no_pure_hake_mocks_fixed.rds')) %>%  
+dat2 <- read_rds(here('code',"2024 multispecies analyses & outputs (of 2019 data)",'log_D_fitted_Ole_all_hake_mocks_fixed.rds')) %>%  
   dplyr::select(variable,mean,se_mean,taxa:wash_idx) %>% 
   rename(dat2mean=mean,dat2se=se_mean)
 glimpse(dat2)
@@ -30,8 +30,8 @@ scatter_resids
 # same pattern here- all of the difference is in the estimation of zeroes
 
 # What about the alphas?
-mod1 <- read_rds(here('code','fit_dm.rds')) %>% extract()
-mod1$alpha %>% summary()
-
-mod2 <- read_rds(here('code','2024 multispecies analyses & outputs (of 2019 data)','fit_dm_Ole_no_pure_hake_mocks_fixed.rds')) %>% extract()
-mod2$alpha %>% summary()
+# mod1 <- read_rds(here('code','fit_dm.rds')) %>% extract()
+# mod1$alpha %>% summary()
+# 
+# mod2 <- read_rds(here('code','2024 multispecies analyses & outputs (of 2019 data)','fit_dm_Ole_no_pure_hake_mocks_fixed.rds')) %>% extract()
+# mod2$alpha %>% summary()

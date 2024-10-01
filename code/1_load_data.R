@@ -450,5 +450,6 @@ no_others_MB <- mfu %>%
   pull(Sample)
 
 mfu <- mfu %>% 
-  filter(!(Sample%in% union(no_hake_MB,no_others_MB))) %>% 
+  # filter(!(Sample%in% union(no_hake_MB,no_others_MB))) %>% 
+  filter(!(Sample%in% no_hake_MB)) %>% 
   mutate(station = match(Sample, unique(Sample))) #let station = unique sampling location, treating different depths in the same x-y plane as independent

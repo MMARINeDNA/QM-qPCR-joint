@@ -43,7 +43,8 @@ theme_set(plot_theme)
 Load data from the joint model output. These data have estimates of copy numbers for species in the metabarcoding data. The data also include spatial information on where each sample was collected (lat,lon,depth).
 
 ```{r}
-dat <- read_rds(here('code',"2024 multispecies analyses & outputs (of 2019 data)",'log_D_fitted_Ole_all_hake_mocks_fixed.rds'))
+# dat <- read_rds(here('code',"2024 multispecies analyses & outputs (of 2019 data)",'log_D_fitted_Ole_all_hake_mocks_fixed.rds'))
+dat <- read_rds(here('code','log_D_fitted.rds'))
 glimpse(dat)
 
 # change Engraulis name back
@@ -105,7 +106,7 @@ sp_dat_maps <- purrr::map(unique(dat_sf$species),function(sp){
     xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
     labs(title=sp,size="Conc.")
 })
-sp_maps <- cowplot::plot_grid(plotlist=sp_dat_maps,nrow=3)
+sp_maps <- plot_grid(plotlist=sp_dat_maps,nrow=3)
 ggsave(here('plots','log_D_maps.png'),sp_maps,h=12,w=8,bg='white')
 ```
 
@@ -121,7 +122,7 @@ rawdat_depth_plot
 
 # with presumptive zeroes filtered out
 rawdat_depth_plot2 <- dat_utm %>% 
-  filter(mean>log(5)) %>% 
+  filter(mean>-5) %>% 
   ggplot(aes(mean,fill=factor(species)))+
   geom_histogram(alpha=0.4,bins=10)+
   facet_wrap(~depth_cat,scales='free_x')+
@@ -374,7 +375,9 @@ ch_pred_df_depth <- purrr::map(unique(dat$depth_cat),function(x)ch_pred_df %>% m
   list_rbind() %>%
   filter(depth_cat<=bathy) %>% 
   mutate(depth_num=depth_cat) %>% 
-  mutate(depth_cat=as.factor(depth_cat))
+  mutate(depth_cat=as.factor(depth_cat)) %>% 
+  # if doing the weird 'depth as time' to make a separate spatial field by depth
+  mutate(depth_as_time=as.integer(depth_cat))
 ```
 
 
@@ -403,13 +406,13 @@ depth_int_hist
 
 ## Zero-informed
 
-What about a version of the data where we impose absence as <0.5 estimated copies
+In the distributions above, there is a clear delineation for all species except hake at ~ -5 log copies =  ~0.006 copies. Let's make a version of the data where we impose absence as <-5 estimated log copies
 
 ```{r}
 dat_zeroes <- dat_utm %>% 
   mutate(depth_num=depth) %>% 
   mutate(conc=exp(mean)) %>% 
-  mutate(conc=ifelse(conc<0.5,0,conc))
+  mutate(conc=ifelse(conc<exp(-5),0,conc))
 # look at the 'raw' integrated data
 dat_zeroes_hist <- dat_zeroes %>% 
   ggplot(aes(log(conc)))+
@@ -421,13 +424,13 @@ dat_zeroes_hist
 
 ## Model Mesh
 
-Create an INLA mesh for the sdmTMB models
+Create candidate INLA meshes for the sdmTMB models.
 
 ```{r}
 # make a range of meshes to try, with different cutoffs = different complexity/number of triangles
 cds <- dat_zeroes %>% distinct(utm.lon.km,utm.lat.km)
 
-meshes <- purrr::map(seq(5,80,by=5),function(co){
+meshes <- purrr::map(seq(10,80,by=4),function(co){
   fmesher::fm_mesh_2d_inla(
     loc = cbind(cds$utm.lon.km, cds$utm.lat.km), # coordinates
     # max.edge = c(80, 150), # max triangle edge length; inner and outer meshes
@@ -437,31 +440,43 @@ meshes <- purrr::map(seq(5,80,by=5),function(co){
 })
 
 walk(meshes,plot)
-map_dbl(meshes,function(x)x$n)
+
+meshes.table <- tibble(meshnum=1:length(meshes),vertices=map_dbl(meshes,function(x)x$n))
 ```
 
 # Run Models
 
+Testing ground
+
 ```{r}
 # distance from shore is the only covariate
 # anisotropic variance OFF for now
-dat_anchovy <- dat_zeroes %>% 
+# dat_anchovy <- dat_zeroes %>% 
+#   filter(species=="Engraulis mordax") %>% 
+#   mutate(depth_cat=as.factor(depth_cat)) %>% 
+#   mutate(depth_as_time=as.integer(depth_cat))
+
+dat_anchovy <- dat_utm %>% 
   filter(species=="Engraulis mordax") %>% 
-  mutate(depth_cat=as.factor(depth_cat))
+  mutate(depth_cat=as.factor(depth_cat)) %>% 
+  mutate(depth_as_time=as.integer(depth_cat)) %>% 
+  mutate(conc=exp(mean))
 
 anch1 <-  sdmTMB(
   data = dat_anchovy,
   # formula = conc~s(dist_shelf_scaled,k=3)+s(depth_num,k=3),
   # formula = conc~s(dist_shelf_scaled,k=3)+depth_cat,
-  formula = conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat,
+  formula = conc~0+dist_shelf_scaled+dist_shelf_scaled2,
   # formula = conc~log_dist_scaled+log_dist_scaled2+depth_cat,
   # formula = conc~s(log_dist_scaled,k=3)+depth_cat,
   # formula = conc~s(log_bathy_scaled,k=3)+depth_cat,
   # formula = conc~log_bathy_scaled+log_bathy_scaled2+depth_cat,
   # formula = conc~log_bathy_scaled+log_bathy_scaled2+s(depth_num),
-  mesh=make_mesh(dat_anchovy,c('utm.lon.km','utm.lat.km'),mesh=meshes[[4]]),
+  mesh=make_mesh(dat_anchovy,c('utm.lon.km','utm.lat.km'),mesh=meshes[[2]]),
   family = tweedie(),
-  spatial = "on"
+  spatial = "on",
+  time = "depth_as_time",
+  spatiotemporal = "IID"
 )
 sanity(anch1)
 mresids <- residuals(anch1,model=1)
@@ -484,7 +499,7 @@ anch1_preds_ch_plot <- ggplot()+
   geom_sf(data=anch1_preds_ch,aes(fill=est),color=NA)+
   # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
   scale_fill_viridis()+
-  facet_wrap(~depth_cat)+
+  facet_wrap(~depth_cat,nrow=1)+
   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
   labs(fill="Log Copies",title="Engraulis mordax",x="")
 
@@ -516,11 +531,11 @@ anch1_preds_ch_plot
 
 ```{r}
 # conditional effects
-
-nd <- data.frame(
+nd <- crossing(
   dist_shelf_scaled = seq(min(dat_anchovy$dist_shelf_scaled),
     max(dat_anchovy$dist_shelf_scaled),
-    length.out = 100)) %>% 
+    length.out = 100),
+  depth_as_time=c(1:5)) %>% 
   mutate(dist_shelf_scaled2=dist_shelf_scaled^2) %>% 
   mutate(depth_cat=as.factor(0))
 p <- predict(anch1, newdata = nd, se_fit = TRUE, re_form = NA)
@@ -550,16 +565,33 @@ spatial_only_model <- function(df=dat_utm,spp,mesh,f){
   
   dat_sub <- df %>% 
     filter(species==spp) %>% 
-    mutate(depth_cat=as.factor(depth_cat))
+    mutate(depth_cat=as.factor(depth_cat)) %>% 
+    mutate(depth_as_time=as.integer(depth_cat))
   
+  # if species is hake, use lognormal instead of tweedie (because hake data has no zeroes)
+  if(spp=="Merluccius productus"){
+    m <-  sdmTMB(
+      data = dat_sub,
+      formula = as.formula(f),
+      mesh=make_mesh(dat_sub,c('utm.lon.km','utm.lat.km'),mesh=mesh),
+      family = lognormal(link='log'),
+      spatial = "on",
+      anisotropy = F,
+      time = "depth_as_time",
+      spatiotemporal = "IID"
+    ) 
+  } else {
   m <-  sdmTMB(
     data = dat_sub,
     formula = as.formula(f),
     mesh=make_mesh(dat_sub,c('utm.lon.km','utm.lat.km'),mesh=mesh),
     family = tweedie(link='log'),
     spatial = "on",
-    anisotropy = F
+    anisotropy = F,
+    time = "depth_as_time",
+    spatiotemporal = "IID"
   )
+  }
   
   # print sdmTMB::sanity() to catch bad models
   sanity(m)
@@ -593,9 +625,13 @@ spatial_only_model <- function(df=dat_utm,spp,mesh,f){
 
 ## Mesh Complexity Test
 
+For each species, we find the mesh (out of a starter set varying in complexity) that leads to the highest likelihood of the SDM.
+
+### Anchovy
+
 ```{r}
 anchovy_test <- purrr::map(meshes,function(x){
-  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Engraulis mordax",mesh = x)
+  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Engraulis mordax",mesh = x)
 })
 sanity_check <- which(map_chr(anchovy_test,class)=="sdmTMB")
 anchovy_test <- anchovy_test[sanity_check]
@@ -609,13 +645,53 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Anchovy Models Mesh Test")
 ```
+Looks like Mesh 4 is the best for anchovy, with 116 vertices.
 
-Looks like Mesh 4 is the best (at least for anchovy), with 124 vertices.
-Eulachon and herring had a tougher time fitting with this one:
+### Mackerel
+
+```{r}
+mackerel_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Trachurus symmetricus",mesh = x)
+})
+sanity_check <- which(map_chr(mackerel_test,class)=="sdmTMB")
+mackerel_test <- mackerel_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(mackerel_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Mackerel Models Mesh Test")
+```
+Looks like Mesh 2 is the best for mackerel, with 168 vertices.
+
+### Sardine
+
+```{r}
+sardine_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Sardinops sagax",mesh = x)
+})
+sanity_check <- which(map_chr(sardine_test,class)=="sdmTMB")
+sardine_test <- sardine_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(sardine_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Sardine Models Mesh Test")
+```
+Looks like Mesh 2 is the best for sardine, with 168 vertices.
+
+### Eulachon
 
 ```{r}
 eul_test <- purrr::map(meshes,function(x){
-  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Thaleichthys pacificus",mesh = x)
+  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Thaleichthys pacificus",mesh = x)
 })
 sanity_check <- which(map_chr(eul_test,class)=="sdmTMB")
 eul_test <- eul_test[sanity_check]
@@ -629,11 +705,13 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Eulachon Models Mesh Test")
 ```
-For eulachon, the mesh with only 36 vertices worked best (Mesh 16)
+For eulachon, the mesh with only 44 vertices worked best (Mesh 14). If this is too sparse, maybe the one with 116 vertices (Mesh 4)
+
+### Herring
 
 ```{r}
 clu_test <- purrr::map(meshes,function(x){
-  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Clupea pallasii",mesh = x)
+  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Clupea pallasii",mesh = x)
 })
 sanity_check <- which(map_chr(clu_test,class)=="sdmTMB")
 clu_test <- clu_test[sanity_check]
@@ -647,32 +725,57 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Herring Models Mesh Test")
 ```
-For herring, we can use the mesh with 64 vertices (Mesh 8)
+Looks like Mesh 9 is the best for herring, with 63 vertices.
+
+### Hake
+
+Hake is unique because it has no zeroes. We use a lognormal instead of a Tweedie
+
+```{r}
+hake_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Merluccius productus",mesh = x)
+})
+sanity_check <- which(map_chr(hake_test,class)=="sdmTMB")
+hake_test <- hake_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(hake_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Hake Models Mesh Test")
+
+```
+Looks like Mesh 1 is the best for hake, with 204 vertices.
 
 ## All Species
 
 Using the chosen mesh and formula from the examples above, try for all species
 
 ```{r,fig.height=6,fig.width=4}
-anchovy_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Engraulis mordax",mesh=meshes[[4]])
+anchovy_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Engraulis mordax",mesh=meshes[[4]])
 
-hake_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Merluccius productus",mesh=meshes[[4]])
+hake_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Merluccius productus",mesh=meshes[[1]])
 
-sardine_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Sardinops sagax",mesh=meshes[[4]])
+sardine_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Sardinops sagax",mesh=meshes[[2]])
 
-mackerel_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Trachurus symmetricus",mesh=meshes[[4]])
+mackerel_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Trachurus symmetricus",mesh=meshes[[2]])
 
-eulachon_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Thaleichthys pacificus",mesh=meshes[[16]])
+eulachon_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Thaleichthys pacificus",mesh=meshes[[4]])
 
-herring_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2+depth_cat',spp = "Clupea pallasii",mesh=meshes[[8]])
+herring_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Clupea pallasii",mesh=meshes[[9]])
 
 all_m <- list(anchovy=anchovy_m,hake=hake_m,sardine=sardine_m,mackerel=mackerel_m,eulachon=eulachon_m,herring=herring_m)
 ```
 
+# Query Outputs
+
 ## Maps
 
-```{r,fig.height=8,fig.width=6}
-make_pred_map <- function(fit){
+```{r,fig.height=5,fig.width=8}
+make_pred_map <- function(fit,return_what="plot"){
   preds <- predict(fit,newdata=ch_pred_df_depth) %>%
     left_join(ch_pred %>% select(grID),by=join_by(grID)) %>%
     st_as_sf()
@@ -681,35 +784,44 @@ make_pred_map <- function(fit){
     geom_sf(data=coaststates,fill='gray80')+
     geom_sf(data=preds,aes(fill=est),color=NA)+
     # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
-    scale_fill_viridis()+
-    facet_wrap(~depth_cat)+
+    scale_fill_viridis(option="H")+
+    coord_sf(datum=NA)+
+    facet_wrap(~depth_cat,nrow=1)+
     xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
     labs(fill="Log Copies",x="")
-  
-  preds_plot
+  if(return_what=="data") return(preds)
+  else(return(preds_plot))
 }
-make_pred_map(anchovy_m)+ggtitle("Anchovy")
-make_pred_map(hake_m)+ggtitle("Hake")
-make_pred_map(sardine_m)+ggtitle("Sardine")
-make_pred_map(mackerel_m)+ggtitle("Mackerel")
-make_pred_map(eulachon_m)+ggtitle("Eulachon")
-make_pred_map(herring_m)+ggtitle("Herring")
+anchovy_map <- make_pred_map(anchovy_m)+ggtitle("Anchovy")
+hake_map <- make_pred_map(hake_m)+ggtitle("Hake")
+sardine_map <- make_pred_map(sardine_m)+ggtitle("Sardine")
+mackerel_map <- make_pred_map(mackerel_m)+ggtitle("Mackerel")
+eulachon_map <- make_pred_map(eulachon_m)+ggtitle("Eulachon")
+herring_map <- make_pred_map(herring_m)+ggtitle("Herring")
+
+ggsave(here('plots','anchovy_preds.png'),anchovy_map,h=6,w=8,bg='white')
+ggsave(here('plots','hake_preds.png'),hake_map,h=6,w=8,bg='white')
+ggsave(here('plots','sardine_preds.png'),sardine_map,h=6,w=8,bg='white')
+ggsave(here('plots','mackerel_preds.png'),mackerel_map,h=6,w=8,bg='white')
+ggsave(here('plots','eulachon_preds.png'),eulachon_map,h=6,w=8,bg='white')
+ggsave(here('plots','herring_preds.png'),herring_map,h=6,w=8,bg='white')
+
 ```
 
 ## Inshore/Offshore
 
 ```{r}
-nd <- data.frame(
+nd <- crossing(
   dist_shelf_scaled = seq(min(dat_anchovy$dist_shelf_scaled),
     max(dat_anchovy$dist_shelf_scaled),
-    length.out = 100)) %>% 
-  mutate(dist_shelf_scaled2=dist_shelf_scaled^2) %>% 
-  mutate(depth_cat=as.factor(0))
+    length.out = 100),
+  depth_as_time=1:5) %>%
+  mutate(dist_shelf_scaled2=dist_shelf_scaled^2)
 
-in_off_cond <- map2(all_m,names(all_m),function(x,y){predict(x, newdata = nd, se_fit = TRUE, re_form = NA) %>% mutate(species=y)}) %>% 
+in_off_cond <- map2(all_m,names(all_m),function(x,y){predict(x, newdata = nd, se_fit = TRUE, re_form = NA) %>% mutate(species=y)}) %>%
   list_rbind()
 
-in_off_plot <- in_off_cond %>% 
+in_off_plot <- in_off_cond %>%
   ggplot(aes(dist_shelf_scaled, est,
   ymin = est - est_se,
   ymax = est + est_se,
@@ -723,5 +835,67 @@ in_off_plot <- in_off_cond %>%
   coord_cartesian(expand = F) +
   labs(x = "Distance from 200m Isobath", y = "eDNA Conc.")
 in_off_plot
+
+ggsave(here('plots','inshore_offshore_conditional.png'),in_off_plot,h=6,w=8,bg='white')
+```
+## Species Stacking
+
+We can stack models and look at overlap
+
+```{r}
+preds_all <- map2(all_m,names(all_m),function(k,l){
+  make_pred_map(k,return_what='data') %>% 
+  mutate(species=l)
+}) %>% list_rbind()
+
+# quantiles of predictions for each species
+preds_all <- preds_all %>% 
+  group_by(species) %>% 
+  mutate(quant=cume_dist(est)) %>% 
+  ungroup()
+
+# as a simple start, map the number of species above their X% quantile
+overlap_quant50 <- preds_all %>% 
+  ungroup() %>% 
+  mutate(is_abun=quant>=0.5) %>% 
+  filter(is_abun) %>% 
+  group_by(grID,depth_cat,depth_as_time) %>% 
+  summarise(num_spp=sum(is_abun)) %>% 
+  ungroup() %>% 
+  left_join(ch_pred,by="grID") %>% st_as_sf()
+
+overlap_quant50_map <- ggplot()+
+  geom_sf(data=coaststates,fill='gray80')+
+  geom_sf(data=overlap_quant50,aes(fill=factor(num_spp)),color=NA)+
+  scale_fill_viridis_d(option = "C")+
+  coord_sf(datum=NA)+
+  facet_wrap(~depth_cat,nrow=1)+
+  xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+  labs(fill="Num Species",title="Number of Species at 50% quantile abundance or higher")
+overlap_quant50_map
+
+ggsave(here('plots','species overlap 50 percent quantile.png'),overlap_quant50_map,h=6,w=8,bg='white')
+
+# as a simple start, map the number of species above their X% quantile
+overlap_quant80 <- preds_all %>% 
+  ungroup() %>% 
+  mutate(is_abun=quant>=0.8) %>% 
+  filter(is_abun) %>% 
+  group_by(grID,depth_cat,depth_as_time) %>% 
+  summarise(num_spp=sum(is_abun)) %>% 
+  ungroup() %>% 
+  left_join(ch_pred,by="grID") %>% st_as_sf()
+
+overlap_quant80_map <- ggplot()+
+  geom_sf(data=coaststates,fill='gray80')+
+  geom_sf(data=overlap_quant80,aes(fill=factor(num_spp)),color=NA)+
+  scale_fill_viridis_d(option = "C")+
+  coord_sf(datum=NA)+
+  facet_wrap(~depth_cat,nrow=1)+
+  xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+  labs(fill="Num Species",title="Number of Species at 80% quantile abundance or higher")
+overlap_quant80_map
+
+ggsave(here('plots','species overlap 80 percent quantile.png'),overlap_quant80_map,h=6,w=8,bg='white')
 ```
 
