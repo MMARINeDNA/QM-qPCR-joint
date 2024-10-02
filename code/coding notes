@@ -32,29 +32,33 @@ Trying to swap to the Dirichlet multinomial to account for overdispersion, and r
 To do this, edited the code in qm_qpcr_joint-DM. Now there are two versions of the Stan model (Dirichlet vs. multinomial)
 Removed model_matrix_samp and other declared data and params that weren't being used anymore in our parameterization
 
-09.20.2024 Science Friday
-Discussed Dirichlet multinomial as a group, and agreed to move forward with it for now
-dm_alpha_0 should be bigger. give it a less informative/bigger prior
-Tried modeling ONLY the mocks with the Dirichlet multinomial; field samples have the regular multinomial
+09.25.24
+Managed to get a decent fit if dm_alpha0 is fixed (~1000) and applied to both mocks and samples
+Also removed many MB field samples that had only hake and nothing else in them, because we suspect it was messing with fitting
+This results in reasonable estimates that are in the ballpark of what we expect
 
-...tried adding different alpha_0 for samples and mocks. Didn't really work
+09.26.24
+Ole has been working on a set of model runs with FIXED alphas (from a separate mocks-only model) and no mocks
+One version includes the reduced set of MB samples (the ones with only hake), and one includes the original set of samples
+Both converged, and provide quantitatively similar predictions of log_D
+BUT, the alphas are different
+
+Trying a version with LIKELIHOOD WEIGHTING on the mocks, and adding a separate mean and variance for each species' log_D,
+but no fixed alphas and regular multinomial for field samples
+Seemed to work okay with a fixed dm_alpha0
+Trying with dm_alpha0 as a param - this ran super slowly and unclear whether it was converging
 
 
-09.23.24
-Tried a version with D-M for both mocks and field samples. dm_alpha0_mock fixed at 100 for the mocks
-This converged with dm_alpha0_samp ~1.75, alpha (for QM) smaller than before -0.06-0.04
+9.27.24
+Figures needed:
+Depth integrated spatial smooths
+summarize inshore/offshore of 200m isobath/shelf break
+Depth as a separate model/smooth for each species
 
-Tried again with a fixed dm_alpha0_mock, but a regular multinomial for the field samples
-The field samples fit well, but large alphas and bad fitting mocks still; lots of divergences
+09.30.24
+Made progress with Ole's outputs on defining a consistent spatial smoothing/SDM method
+Folded Ole's fixed-alphas version of the Stan models into this main code
 
-Tried again with just a large prior on dm_alpha0_mock (N(100,10))
-...dm_alpha0_mock still ends up at ~3, and mock fits do not look good
-
-TODO:
-Check the few outliers in the qPCR
-Check stepsize after the warmup is complete
-Compare qPCR samples that match MB vs. non-matched samples and compare overdispersion
-Add depth plots to diagnostics
-Check indexing again for MB samples
-Try not reporting some transformated params
-
+10.01.24
+Continuing to work on SDMs
+Running a version of the joint model with fixed alphas, but species-specific means for log_D

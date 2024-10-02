@@ -57,9 +57,7 @@ stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>%
                            N_bio_rep_RE = N_bio_rep_RE,
                            N_bio_rep_param = N_bio_rep_param,
                            bio_rep_idx =bio_rep_idx,
-                           N_bio_rep_idx = N_bio_rep_idx,
-                           beta_std_curve_0_offset =36))
-
+                           N_bio_rep_idx = N_bio_rep_idx))
 
 # metabarcoding
 formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
@@ -105,6 +103,9 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 m <- here('code','qm_qpcr_joint.stan')
 m_dm <- here('code','qm_qpcr_joint-DM.stan') # Dirichlet multinomial
 
+m_dm_mock <- here('code','qm_mocks-DM.stan') # Dirichlet multinomial for mocks
+m_dm_test <- here('code','deprecated','qm_qpcr_joint-DM_alpha-fix_test.stan')
+
 #IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
 # mc <- cat(stan_model(m)@model_code)
 ```
@@ -114,11 +115,46 @@ m_dm <- here('code','qm_qpcr_joint-DM.stan') # Dirichlet multinomial
 Run Stan
 
 ```{r}
+# n.chains <- 3
+# n.warm <- 500
+# n.samps <- 3000
+# jointMod = stan(file = m ,
+#                 data = stan_data_joint,
+#                 verbose = FALSE,
+#                 chains = n.chains,
+#                 thin = 1,
+#                 warmup = n.warm,
+#                 iter = n.warm+n.samps,
+#                 control = list(adapt_init_buffer = 75,
+#                                   max_treedepth=12,
+#                                   stepsize=0.01,
+#                                   adapt_delta=0.8,
+#                                   metric="diag_e"),
+#                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
+#                                     N_species = stan_data_joint$N_species,
+#                                     Nplates=stan_data_joint$Nplates,
+#                                     N_station_depth=stan_data_joint$N_station_depth,
+#                                     log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
+#                                     # log_D_raw_inits=log_D_inits$log_D_raw_inits),
+#                                     # log_D_log_D_inits$log_D_inits,
+#                 refresh = 10,
+#                 boost_lib = NULL
+#                 # sample_file="tmpU.csv"
+#                 )
+```
+
+## Dirichlet multinomial
+
+First, run the model for the mock communities
+
+```{r}
+# Mocks only
 n.chains <- 3
 n.warm <- 500
-n.samps <- 3000
+n.samps <- 10000
 
-jointMod = stan(file = m ,
+mocksMod = stan(file = m_dm_mock ,
+
                 data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,
@@ -133,45 +169,62 @@ jointMod = stan(file = m ,
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
-                                    N_station_depth=stan_data_joint$N_station_depth,
-                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
-                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits),
-                                    # log_D_log_D_inits$log_D_inits,
-                refresh = 10,
+                                    N_station_depth=stan_data_joint$N_station_depth
+                                    # log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
+                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits,
+                                    # log_D_inits = log_D_inits$log_D_inits
+                                    ),
+                #refresh = 100,
                 boost_lib = NULL
                 # sample_file="tmpU.csv"
                 )
+
+#summary(mocksMod)
+A <- summary(mocksMod,pars="alpha")
+B <- summary(mocksMod,pars="dm_alpha0_mock")
+
+# rstan::traceplot(mocksMod,pars=c("alpha"))
+# rstan::traceplot(mocksMod,pars=c("log_dm_alpha0_mock"))
+
+alpha_fix <- A$summary %>% as.data.frame() %>% dplyr::select(mean) 
+dm_alpha0_mock <- B$summary %>% as.data.frame() %>% dplyr::select(mean)
+
+stan_data_joint <- c(stan_data_joint,
+                     list(alpha_fix=(alpha_fix$mean),
+                                                dm_alpha0_mock=dm_alpha0_mock$mean))
 ```
 
-## Dirichlet multinomial
+Then, run the joint model with fixed alphas drawn from the model above.
 
 ```{r}
 n.chains <- 3
-n.warm <- 500
-n.samps <-500
+n.warm <- 400
+n.samps <-100
 tictoc::tic("Running DM Joint Model:")
-jointMod_dm = stan(file = m_dm,
+# jointMod_dm = stan(file = "qm_qpcr_joint-DM_alpha-fix.stan",
+jointMod_dm = stan(file = m_dm_test,
                 data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 200,
-                                max_treedepth=12,
+                control = list(adapt_init_buffer = 80,
+                                max_treedepth=11,
                                 stepsize=0.05,
-                                adapt_delta=0.85,
+                                adapt_delta=0.80,
                                 metric="diag_e"),
                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
-                                    N_station_depth=stan_data_joint$N_station_depth,
-                                    log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
-                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits),
-                                    # log_D_log_D_inits$log_D_inits,
+                                    N_station_depth=stan_data_joint$N_station_depth
+                                    # log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
+                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits,
+                                    # log_D_inits=log_D_inits$log_D_inits
+                                    ),
                 refresh = 10,
-                boost_lib = NULL
-                # sample_file="tmpU.csv"
+                boost_lib = NULL,
+                sample_file="tmpX.csv"
                 )
 tictoc::toc()
 ```
@@ -180,8 +233,6 @@ tictoc::toc()
 ```{r}
 # save (big file!)
 write_rds(jointMod,here('code','fit1.rds'))
-
-
 write_rds(jointMod_dm,here('code','fit_dm.rds'))
 
 # if reading
@@ -233,7 +284,7 @@ plot_alphas(fit_summ)
 ```
 
 ```{r,fig.width=8,fig.height=7}
-plot_obs_pred_qm(fit_summ,stan_data_joint)
+plot_obs_pred_qm_no_mocks(fit_summ,stan_data_joint)
 ```
 
 ```{r}
@@ -249,6 +300,8 @@ Save the predictions of log copies for use in downstream spatial modeling and pl
 reads_fitted <- fit_summ %>% 
   filter(grepl('log_D',variable),
          !grepl('log_D_raw',variable),
+         !grepl('log_D_mu',variable),
+         !grepl('log_D_sp',variable),
          !grepl('log_D_station_depth',variable),
          !grepl('log_D_sigma',variable)) %>%
   # extract a replicate number from the variable names using regex
@@ -360,7 +413,7 @@ diagnose_sampler %>%
   ggplot(aes(iteration, treedepth__, color = chain)) + 
   geom_line() + 
   # horizontal line at the value we set our max treedepth
-  geom_hline(aes(yintercept = maxtd), color = 'red')
+  geom_hline(aes(yintercept = maxtd), color = 'blue')
 ```
 
 ```{r}
