@@ -19,6 +19,7 @@ editor: visual
 library(tidyverse)
 library(rstan)
 library(here)
+
 ```
 
 
@@ -60,7 +61,8 @@ stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>%
                            N_bio_rep_idx = N_bio_rep_idx))
 
 # metabarcoding
-formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
+formatted_metabarcoding_data <- format_metabarcoding_data(input_metabarcoding_data=mfu, 
+                                                          input_mock_comm_data=mock,
                                                      Level_1_treatment_envir <- "Sample",
                                                      Level_2_treatment_envir <- "tech",
                                                      Level_3_treatment_envir <- NA,
@@ -68,6 +70,7 @@ formatted_metabarcoding_data <- format_metabarcoding_data(mfu, mock,
                                                      Level_2_treatment_mock <- "Rep",
                                                      Level_3_treatment_mock <- NA)
 
+# linking with qPCR is now done within this function.
 stan_metabarcoding_data <-  makeDesign(obs= formatted_metabarcoding_data,
                                        qPCR_tube_obs = formatted_qPCR_data$tube_dat,
                                   N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
@@ -79,15 +82,15 @@ log_D_inits <- makeQM_inits(sample_data =stan_metabarcoding_data$sample_data,
                          sp_list = formatted_metabarcoding_data$sp_list,
                          qPCR_ref_sp = link_species )
 
-# linking data
-qPCR_mb_link <- prepare_stan_qPCR_mb_join(input_metabarcoding_data=mfu,
-                                          unk_formatted = formatted_qPCR_data$tube_dat,
-                                          link_species = "Merluccius productus")
+
+
+# get the index of the right species
+qpcr_mb_link_sp_idx <- formatted_metabarcoding_data$sp_list$species_idx[formatted_metabarcoding_data$sp_list$species == link_species]
 
 # join the three lists
 stan_data_joint <- c(stan_qPCR_data,
                      stan_metabarcoding_data,
-                     qPCR_mb_link)
+                     list(qpcr_mb_link_sp_idx=qpcr_mb_link_sp_idx))
 # Check to make sure the order is correct for two of the design matrices that 
 # map to observation and the tubes.  Very important.
 identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))

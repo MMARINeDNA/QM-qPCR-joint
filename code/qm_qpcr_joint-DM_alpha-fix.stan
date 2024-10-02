@@ -76,8 +76,8 @@ data {
   // END DATA FOR METABARCODING
   
   // DATA FOR LINKING QM AND QPCR
-  int N_mb_link; //How many qpCR samples have a match in a MB sample
-  array[N_mb_link] int mb_link_idx; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
+  //int N_mb_link; //How many qpCR samples have a match in a MB sample
+  //array[N_mb_link] int mb_link_idx; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
   int mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
   array[N_obs_mb_samp] int tube_link_idx; //index linking observations to unique biological samples
   real log_D_mu; //prior on mean for log_D_raw, where log_D = log_D_mu + log_D_raw*log_D_scale

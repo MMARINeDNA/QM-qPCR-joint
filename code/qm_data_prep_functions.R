@@ -73,9 +73,14 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
     unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F) %>% 
     ungroup()
   
-  station_list <- data.frame(
-    station = Observation$level1 %>% unique(),
-    station_idx = 1:length(unique(Observation$level1)))
+  # fuck_you_list <- data.frame(
+  #   fuck_you = Observation$level1 %>% unique(),
+  #   fuck_you_idx = 1:length(unique(Observation$level1)))
+  
+  # station_list <- data.frame(
+  #   station = Observation$level1 %>% unique(),
+  #   station_idx = 1:length(unique(Observation$level1)))
+  # 
   
   
   #list object containing named elements Observation, Mock, and Npcr
@@ -86,7 +91,8 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
     Mock = Mock,
     N_pcr_mock = 43, 
     NSpecies = nrow(sp_list),
-    station_list = station_list,
+    # fuck_you_list = fuck_you_list,
+    # station_list = station_list,
     sp_list = sp_list
   ))
 }
@@ -230,27 +236,19 @@ prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,
                                       unk_formatted,
                                       link_species="Merluccius productus"){
   
-  mb_link_1 <- input_metabarcoding_data %>% 
-    mutate(mb_link=match(Sample,unique(Sample))) %>% 
-    distinct(Sample,.keep_all = T)
-  
   mb_link_2 <- unk_formatted %>% 
     distinct(tubeID,tube_idx,station_depth_idx,station_idx) %>%
     #distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>%
-    left_join(mb_link_1,by=join_by(tubeID==Sample)) %>% 
-    filter(!is.na(mb_link)) %>%
-    arrange(tube_idx) 
-  
-  # get the index of the right species
-  qpcr_mb_link_sp_idx <- match(link_species,sort(unique(input_metabarcoding_data$species)))
+    left_join(.,input_metabarcoding_data,by=join_by(tubeID==S)) %>% 
+    filter(!is.na(sp_1)) 
   
   # return just the link vector
   return(list(
     #datout = mb_link_2,
-    N_mb_link = nrow(mb_link_2), # length of the linking vector
-    mb_link_sp_idx = qpcr_mb_link_sp_idx,
-    tube_link_idx = mb_link_2$tube_idx,
-    mb_link_idx = mb_link_2$mb_link))
+    # N_mb_link = nrow(mb_link_2), # length of the linking vector
+    # mb_link_sp_idx = qpcr_mb_link_sp_idx,
+    tube_link_idx = mb_link_2$tube_idx))
+    #mb_link_idx = mb_link_2$mb_link))
     # log_D_mu = 0,
     # log_D_scale = 5))
 }
@@ -398,6 +396,16 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     p_samp_all <- p_samp_all %>%  filter(S %in% tube_dat$tubeID)
     N_pcr_samp <- rep(N_pcr_cycles, nrow(p_samp_all))
 
+    
+    # make link to qPCR data here.
+    p_samp_all <- qPCR_tube_obs %>% 
+      distinct(tubeID,tube_idx,station_depth_idx,station_idx) %>%
+      #distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>%
+      left_join(.,p_samp_all,by=join_by(tubeID==S)) %>% 
+      filter(!is.na(sp_1)) 
+    
+    tube_link_idx = p_samp_all$tube_idx
+
     ########################################################################
     #### Create data frames that can be read into Stan model
     ########################################################################
@@ -416,34 +424,34 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
     # species compositions (betas)
     
     NOM <- as.name(colnames(p_samp_all)[1])    
-    p_samp_all$S <- as.factor(p_samp_all$S) 
-    N_S = length(unique(p_samp_all$S))
+    p_samp_all$tubeID <- as.factor(p_samp_all$tubeID) 
+    N_S = length(unique(p_samp_all$tubeID))
     p_samp_all[rep_level_samp] <- as.factor(unlist(p_samp_all[rep_level_samp]))
     if(N_S == 1){
       formula_b <- eval(NOM) ~ 1  
     } else {
-      formula_b <- eval(NOM) ~ 0+S
+      formula_b <- eval(NOM) ~ 0+tubeID
     }
     
     model_frame <- model.frame(formula_b, p_samp_all)
     model_matrix_b_samp <- model.matrix(formula_b, model_frame)
     
     # choose a single representative for each station to make predictions to
-    model_frame <- model.frame(formula_b, p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),])
-    model_matrix_b_samp_small <- model.matrix(formula_b, model_frame)
+    # model_frame <- model.frame(formula_b, p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),])
+    # model_matrix_b_samp_small <- model.matrix(formula_b, model_frame)
     
     # efficiencies (alpha)
     formula_a <- eval(NOM) ~ N_pcr_samp -1
     model_frame <- model.frame(formula_a, p_samp_all)
     model_vector_a_samp <- model.matrix(formula_a, model_frame) %>% as.numeric()
-    N_pcr_samp_small <- cbind(N_pcr_samp, p_samp_all) %>% slice(match(unique(p_samp_all$S), p_samp_all$S)) %>% pull(N_pcr_samp)
+    N_pcr_samp_small <- cbind(N_pcr_samp, p_samp_all) %>% slice(match(unique(p_samp_all$tubeID), p_samp_all$tubeID)) %>% pull(N_pcr_samp)
     formula_b <- eval(NOM) ~ N_pcr_samp_small -1
     
-    model_frame <- model.frame(formula_b, p_samp_all %>% slice(match(unique(p_samp_all$S), p_samp_all$S)))
+    model_frame <- model.frame(formula_b, p_samp_all %>% slice(match(unique(p_samp_all$tubeID), p_samp_all$tubeID)))
     model_vector_a_samp_small <- model.matrix(formula_b, model_frame) %>% as.numeric()
     
     #counters 
-    N_obs_samp_small <- nrow(model_matrix_b_samp_small)
+    # N_obs_samp_small <- nrow(model_matrix_b_samp_small)
     N_obs_samp <- nrow(p_samp_all)
     N_b_samp_col <- ncol(model_matrix_b_samp)
     
@@ -465,9 +473,11 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       # N_obs_mb_samp_small = nrow(p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),]), # Number of unique observed community samples ; this will be Ncreek * Nt * Nbiol * 2 [for upstream/downstream observations]
       
       # Observed data of community matrices
+      sample_data_labeled = p_samp_all ,
       sample_data = p_samp_all %>% dplyr::select(contains("sp")),
       ref_sp_idx = ref_sp_idx$ref_sp_idx,
-      
+      tube_link_idx = tube_link_idx,
+        
       # sample_vector = p_samp_all$S,
       mock_data   = mock %>% dplyr::select(contains("sp")),
       # sp_list = obs$sp_list,

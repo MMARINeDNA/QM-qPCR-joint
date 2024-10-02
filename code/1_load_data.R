@@ -353,7 +353,6 @@ mfu8 <- read.csv(here("data/fish/MURI318_MFU_ASV_table.csv")) %>%
   filter(!is.na(BestTaxon)) %>% 
   separate(Sample_name, into = c("Primer", "Project", "sample", "Dilution", "Rep", "Well"), sep = c("-|_"), remove = F)
 
-      
 mfu <- mfu1 %>% 
   bind_rows(mfu3,mfu4,mfu5,mfu6,mfu7,mfu8) %>% 
   group_by(Primer, Project, sample, Dilution, Rep, BestTaxon) %>% 
