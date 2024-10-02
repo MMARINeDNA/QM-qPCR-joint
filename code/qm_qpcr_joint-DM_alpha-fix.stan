@@ -76,9 +76,7 @@ data {
   // END DATA FOR METABARCODING
   
   // DATA FOR LINKING QM AND QPCR
-  //int N_mb_link; //How many qpCR samples have a match in a MB sample
-  //array[N_mb_link] int mb_link_idx; // index: which qpcr samples (plateSample_idx) does each MB sample correspond to?
-  int mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
+  int qpcr_mb_link_sp_idx; // the index for the species linking QM to qPCR (usually hake)
   array[N_obs_mb_samp] int tube_link_idx; //index linking observations to unique biological samples
   real log_D_mu; //prior on mean for log_D_raw, where log_D = log_D_mu + log_D_raw*log_D_scale
   real log_D_scale; //prior on variance param for log_D_raw, where log_D = log_D_mu + log_D_raw*log_D_scale
@@ -199,10 +197,10 @@ transformed parameters {
   //Link to QM
   for(i in 1:N_species){
     for(j in 1:N_obs_mb_samp){
-      if(i==mb_link_sp_idx){ // if index is equal to link species (hake), fill in qpcr estimate
+      if(i==qpcr_mb_link_sp_idx){ // if index is equal to link species (hake), fill in qpcr estimate
         log_D[j,i] = log_D_station_depth_tube[tube_link_idx[j]];
       }else{ // otherwise, fill from log_D_raw
-        if(i<mb_link_sp_idx){
+        if(i<qpcr_mb_link_sp_idx){
           log_D[j,i] = log_D_mu+log_D_raw[j,i]*log_D_scale;
         }else{
           log_D[j,i] = log_D_mu+log_D_raw[j,(i-1)]*log_D_scale;

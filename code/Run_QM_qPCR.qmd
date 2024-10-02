@@ -107,7 +107,7 @@ m <- here('code','qm_qpcr_joint.stan')
 m_dm <- here('code','qm_qpcr_joint-DM.stan') # Dirichlet multinomial
 
 m_dm_mock <- here('code','qm_mocks-DM.stan') # Dirichlet multinomial for mocks
-m_dm_test <- here('code','deprecated','qm_qpcr_joint-DM_alpha-fix_test.stan')
+m_dm_fix <- here('code','qm_qpcr_joint-DM_alpha-fix.stan')
 
 #IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
 # mc <- cat(stan_model(m)@model_code)
@@ -205,7 +205,7 @@ n.warm <- 400
 n.samps <-100
 tictoc::tic("Running DM Joint Model:")
 # jointMod_dm = stan(file = "qm_qpcr_joint-DM_alpha-fix.stan",
-jointMod_dm = stan(file = m_dm_test,
+jointMod_dm = stan(file = m_dm_fix,
                 data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,
@@ -217,7 +217,8 @@ jointMod_dm = stan(file = m_dm_test,
                                 stepsize=0.05,
                                 adapt_delta=0.80,
                                 metric="diag_e"),
-                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
+                init = stan_init_f1(n.chains,
+                                    N_obs_mb = stan_data_joint$N_obs_mb_samp,
                                     N_species = stan_data_joint$N_species,
                                     Nplates=stan_data_joint$Nplates,
                                     N_station_depth=stan_data_joint$N_station_depth

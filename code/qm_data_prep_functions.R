@@ -230,28 +230,6 @@ format_qPCR_data <- function(qPCR_unknowns,
   return(qPCRdata)
 }
 
-# a last piece is we need a sample identifier across QM and qPCR data
-# We need to link unique qPCR biological samples to unique QM samples
-prepare_stan_qPCR_mb_join <- function(input_metabarcoding_data,
-                                      unk_formatted,
-                                      link_species="Merluccius productus"){
-  
-  mb_link_2 <- unk_formatted %>% 
-    distinct(tubeID,tube_idx,station_depth_idx,station_idx) %>%
-    #distinct(plate_idx,qpcr_sample_idx,.keep_all = T) %>%
-    left_join(.,input_metabarcoding_data,by=join_by(tubeID==S)) %>% 
-    filter(!is.na(sp_1)) 
-  
-  # return just the link vector
-  return(list(
-    #datout = mb_link_2,
-    # N_mb_link = nrow(mb_link_2), # length of the linking vector
-    # mb_link_sp_idx = qpcr_mb_link_sp_idx,
-    tube_link_idx = mb_link_2$tube_idx))
-    #mb_link_idx = mb_link_2$mb_link))
-    # log_D_mu = 0,
-    # log_D_scale = 5))
-}
 
 # make stan data for qPCR part
 prepare_stan_data_qPCR <- function(qPCRdata){
@@ -467,7 +445,7 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
 
     #### Make Stan objects
     stan_data <- list(
-      N_species = ncol(p_samp_all)-2,   # Number of species in data
+      N_species = ncol(p_samp_all %>% dplyr::select(contains("sp"))),   # Number of species in data
       N_obs_mb_samp = nrow(p_samp_all), # Number of observed community samples and tech replicates ; this will be Ncreek * Nt * Nbiol * Ntech * 2 [for upstream/downstream observations]
       N_obs_mock = nrow(p_mock_all), # Number of observed mock samples, including tech replicates
       # N_obs_mb_samp_small = nrow(p_samp_all[match(unique(p_samp_all$S), p_samp_all$S),]), # Number of unique observed community samples ; this will be Ncreek * Nt * Nbiol * 2 [for upstream/downstream observations]
@@ -505,7 +483,9 @@ makeDesign <- function(obs, #obs is a named list with elements Observation, Mock
       # Priors
       alpha_prior = c(0,0.01),  # normal prior
       # beta_prior = c(0,5),    # normal prior
-      tau_prior = c(10,1000)   # gamma prior on eta_mock = ~0.01
+      tau_prior = c(10,1000),   # gamma prior on eta_mock = ~0.01
+      log_D_mu = c(0),
+      log_D_scale = c(5)
     )
     return(stan_data)
 }
