@@ -1,0 +1,953 @@
+Sample_name,BestTaxon,Class,nReads
+MV1-CPS-mock2-even-d1-1_S47,Anoplopoma fimbria,Actinopteri,7
+MV1-CPS-mock2-even-d1-1_S47,Citharichthys sordidus,Actinopteri,20473
+MV1-CPS-mock2-even-d1-1_S47,Clupea pallasii,Actinopteri,5288
+MV1-CPS-mock2-even-d1-1_S47,Cottidae,Actinopteri,9660
+MV1-CPS-mock2-even-d1-1_S47,Diaphus theta,Actinopteri,16
+MV1-CPS-mock2-even-d1-1_S47,Engraulis mordax,Actinopteri,16511
+MV1-CPS-mock2-even-d1-1_S47,Eopsetta jordani,Actinopteri,11
+MV1-CPS-mock2-even-d1-1_S47,Hemilepidotus hemilepidotus,Actinopteri,13
+MV1-CPS-mock2-even-d1-1_S47,Hexagrammos decagrammus,Actinopteri,11
+MV1-CPS-mock2-even-d1-1_S47,Hydrolagus colliei,Chondrichthyes,12
+MV1-CPS-mock2-even-d1-1_S47,Icichthys lockingtoni,Actinopteri,19
+MV1-CPS-mock2-even-d1-1_S47,Lampanyctus tenuiformis,Actinopteri,3
+MV1-CPS-mock2-even-d1-1_S47,Lycodapus mandibularis,Actinopteri,13
+MV1-CPS-mock2-even-d1-1_S47,Macrouridae,Actinopteri,10
+MV1-CPS-mock2-even-d1-1_S47,Merluccius productus,Actinopteri,10773
+MV1-CPS-mock2-even-d1-1_S47,Microstomus pacificus,Actinopteri,5311
+MV1-CPS-mock2-even-d1-1_S47,Oncorhynchus keta,Actinopteri,6715
+MV1-CPS-mock2-even-d1-1_S47,Oncorhynchus nerka,Actinopteri,19823
+MV1-CPS-mock2-even-d1-1_S47,Oncorhynchus tshawytscha,Actinopteri,3902
+MV1-CPS-mock2-even-d1-1_S47,Sardinops,Actinopteri,14235
+MV1-CPS-mock2-even-d1-1_S47,Scomber australasicus,Actinopteri,12115
+MV1-CPS-mock2-even-d1-1_S47,Sebastes,Actinopteri,28
+MV1-CPS-mock2-even-d1-1_S47,Somniosus,Chondrichthyes,3
+MV1-CPS-mock2-even-d1-1_S47,Tactostoma macropus,Actinopteri,6883
+MV1-CPS-mock2-even-d1-1_S47,Tarletonbeania crenularis,Actinopteri,9153
+MV1-CPS-mock2-even-d1-1_S47,Thaleichthys pacificus,Actinopteri,5496
+MV1-CPS-mock2-even-d1-1_S47,Thunnus,Actinopteri,358
+MV1-CPS-mock2-even-d1-1_S47,Trachurus,Actinopteri,2603
+MV1-CPS-mock2-even-d1-1_S47,Xystreurys liolepis,Actinopteri,5
+MV1-CPS-mock2-even-d1-2_S48,Bathyraja trachura,Chondrichthyes,4
+MV1-CPS-mock2-even-d1-2_S48,Caulolatilus princeps,Actinopteri,3
+MV1-CPS-mock2-even-d1-2_S48,Citharichthys sordidus,Actinopteri,11454
+MV1-CPS-mock2-even-d1-2_S48,Clupea pallasii,Actinopteri,3153
+MV1-CPS-mock2-even-d1-2_S48,Cottidae,Actinopteri,6286
+MV1-CPS-mock2-even-d1-2_S48,Diaphus theta,Actinopteri,5
+MV1-CPS-mock2-even-d1-2_S48,Engraulis mordax,Actinopteri,9935
+MV1-CPS-mock2-even-d1-2_S48,Hemilepidotus hemilepidotus,Actinopteri,9
+MV1-CPS-mock2-even-d1-2_S48,Hydrolagus colliei,Chondrichthyes,12
+MV1-CPS-mock2-even-d1-2_S48,Icichthys lockingtoni,Actinopteri,7
+MV1-CPS-mock2-even-d1-2_S48,Lycodapus mandibularis,Actinopteri,16
+MV1-CPS-mock2-even-d1-2_S48,Merluccius productus,Actinopteri,6663
+MV1-CPS-mock2-even-d1-2_S48,Microstomus pacificus,Actinopteri,3035
+MV1-CPS-mock2-even-d1-2_S48,Oncorhynchus keta,Actinopteri,3824
+MV1-CPS-mock2-even-d1-2_S48,Oncorhynchus nerka,Actinopteri,10937
+MV1-CPS-mock2-even-d1-2_S48,Oncorhynchus tshawytscha,Actinopteri,2125
+MV1-CPS-mock2-even-d1-2_S48,Sardinops,Actinopteri,8269
+MV1-CPS-mock2-even-d1-2_S48,Scomber australasicus,Actinopteri,7087
+MV1-CPS-mock2-even-d1-2_S48,Scorpaena guttata,Actinopteri,3
+MV1-CPS-mock2-even-d1-2_S48,Sebastes,Actinopteri,15
+MV1-CPS-mock2-even-d1-2_S48,Stenobrachius leucopsarus,Actinopteri,3
+MV1-CPS-mock2-even-d1-2_S48,Tactostoma macropus,Actinopteri,4113
+MV1-CPS-mock2-even-d1-2_S48,Tarletonbeania crenularis,Actinopteri,5366
+MV1-CPS-mock2-even-d1-2_S48,Thaleichthys pacificus,Actinopteri,3407
+MV1-CPS-mock2-even-d1-2_S48,Thunnus,Actinopteri,284
+MV1-CPS-mock2-even-d1-2_S48,Trachurus,Actinopteri,1565
+MV1-CPS-mock2-even-d1-2_S48,NA,NA,2
+MV1-CPS-mock2-even-d1-3_S49,Alosa,Actinopteri,3
+MV1-CPS-mock2-even-d1-3_S49,Bathyraja trachura,Chondrichthyes,3
+MV1-CPS-mock2-even-d1-3_S49,Citharichthys sordidus,Actinopteri,10443
+MV1-CPS-mock2-even-d1-3_S49,Clupea pallasii,Actinopteri,2848
+MV1-CPS-mock2-even-d1-3_S49,Cottidae,Actinopteri,5691
+MV1-CPS-mock2-even-d1-3_S49,Diaphus theta,Actinopteri,16
+MV1-CPS-mock2-even-d1-3_S49,Engraulis mordax,Actinopteri,8700
+MV1-CPS-mock2-even-d1-3_S49,Hemilepidotus hemilepidotus,Actinopteri,15
+MV1-CPS-mock2-even-d1-3_S49,Hydrolagus colliei,Chondrichthyes,5
+MV1-CPS-mock2-even-d1-3_S49,Icichthys lockingtoni,Actinopteri,6
+MV1-CPS-mock2-even-d1-3_S49,Lycodapus mandibularis,Actinopteri,12
+MV1-CPS-mock2-even-d1-3_S49,Merluccius productus,Actinopteri,5866
+MV1-CPS-mock2-even-d1-3_S49,Microstomus pacificus,Actinopteri,3090
+MV1-CPS-mock2-even-d1-3_S49,Oncorhynchus keta,Actinopteri,3403
+MV1-CPS-mock2-even-d1-3_S49,Oncorhynchus nerka,Actinopteri,9088
+MV1-CPS-mock2-even-d1-3_S49,Oncorhynchus tshawytscha,Actinopteri,1924
+MV1-CPS-mock2-even-d1-3_S49,Ophiodon elongatus,Actinopteri,6
+MV1-CPS-mock2-even-d1-3_S49,Sardinops,Actinopteri,7373
+MV1-CPS-mock2-even-d1-3_S49,Scomber australasicus,Actinopteri,6278
+MV1-CPS-mock2-even-d1-3_S49,Scorpaena guttata,Actinopteri,6
+MV1-CPS-mock2-even-d1-3_S49,Sebastes,Actinopteri,7
+MV1-CPS-mock2-even-d1-3_S49,Tactostoma macropus,Actinopteri,3545
+MV1-CPS-mock2-even-d1-3_S49,Tarletonbeania crenularis,Actinopteri,5058
+MV1-CPS-mock2-even-d1-3_S49,Thaleichthys pacificus,Actinopteri,3379
+MV1-CPS-mock2-even-d1-3_S49,Thunnus,Actinopteri,234
+MV1-CPS-mock2-even-d1-3_S49,Trachurus,Actinopteri,1503
+MV1-CPS-mock2-even-d1-3_S49,Xystreurys liolepis,Actinopteri,12
+MV1-CPS-mock2-even-d1-3_S49,NA,NA,7
+MV1-CPS-mock2-skew-d1-1_S55,Citharichthys sordidus,Actinopteri,25899
+MV1-CPS-mock2-skew-d1-1_S55,Clupea pallasii,Actinopteri,1317
+MV1-CPS-mock2-skew-d1-1_S55,Cottidae,Actinopteri,29414
+MV1-CPS-mock2-skew-d1-1_S55,Engraulis mordax,Actinopteri,21675
+MV1-CPS-mock2-skew-d1-1_S55,Eopsetta jordani,Actinopteri,8
+MV1-CPS-mock2-skew-d1-1_S55,Hydrolagus colliei,Chondrichthyes,66
+MV1-CPS-mock2-skew-d1-1_S55,Icichthys lockingtoni,Actinopteri,33
+MV1-CPS-mock2-skew-d1-1_S55,Lepidopsetta,Actinopteri,6
+MV1-CPS-mock2-skew-d1-1_S55,Lycodapus mandibularis,Actinopteri,49
+MV1-CPS-mock2-skew-d1-1_S55,Macrouridae,Actinopteri,7
+MV1-CPS-mock2-skew-d1-1_S55,Merluccius productus,Actinopteri,6307
+MV1-CPS-mock2-skew-d1-1_S55,Microstomus pacificus,Actinopteri,23047
+MV1-CPS-mock2-skew-d1-1_S55,Oncorhynchus keta,Actinopteri,12776
+MV1-CPS-mock2-skew-d1-1_S55,Oncorhynchus nerka,Actinopteri,37379
+MV1-CPS-mock2-skew-d1-1_S55,Oncorhynchus tshawytscha,Actinopteri,2102
+MV1-CPS-mock2-skew-d1-1_S55,Ophiodon elongatus,Actinopteri,12
+MV1-CPS-mock2-skew-d1-1_S55,Pholis ornata,Actinopteri,7
+MV1-CPS-mock2-skew-d1-1_S55,Sardinops,Actinopteri,3989
+MV1-CPS-mock2-skew-d1-1_S55,Scomber australasicus,Actinopteri,5733
+MV1-CPS-mock2-skew-d1-1_S55,Scorpaena guttata,Actinopteri,3
+MV1-CPS-mock2-skew-d1-1_S55,Sebastes,Actinopteri,56
+MV1-CPS-mock2-skew-d1-1_S55,Stenobrachius leucopsarus,Actinopteri,2
+MV1-CPS-mock2-skew-d1-1_S55,Tactostoma macropus,Actinopteri,16570
+MV1-CPS-mock2-skew-d1-1_S55,Tarletonbeania crenularis,Actinopteri,15643
+MV1-CPS-mock2-skew-d1-1_S55,Thaleichthys pacificus,Actinopteri,625
+MV1-CPS-mock2-skew-d1-1_S55,Thunnus,Actinopteri,170
+MV1-CPS-mock2-skew-d1-1_S55,Trachurus,Actinopteri,641
+MV1-CPS-mock2-skew-d1-1_S55,Xystreurys liolepis,Actinopteri,8
+MV1-CPS-mock2-skew-d1-1_S55,NA,NA,3
+MV1-CPS-mock2-skew-d1-2_S56,Citharichthys sordidus,Actinopteri,7681
+MV1-CPS-mock2-skew-d1-2_S56,Clupea pallasii,Actinopteri,364
+MV1-CPS-mock2-skew-d1-2_S56,Cottidae,Actinopteri,7872
+MV1-CPS-mock2-skew-d1-2_S56,Diaphus theta,Actinopteri,4
+MV1-CPS-mock2-skew-d1-2_S56,Engraulis mordax,Actinopteri,5872
+MV1-CPS-mock2-skew-d1-2_S56,Hydrolagus colliei,Chondrichthyes,12
+MV1-CPS-mock2-skew-d1-2_S56,Icichthys lockingtoni,Actinopteri,11
+MV1-CPS-mock2-skew-d1-2_S56,Lycodapus mandibularis,Actinopteri,15
+MV1-CPS-mock2-skew-d1-2_S56,Merluccius productus,Actinopteri,1499
+MV1-CPS-mock2-skew-d1-2_S56,Microstomus pacificus,Actinopteri,6251
+MV1-CPS-mock2-skew-d1-2_S56,Oncorhynchus keta,Actinopteri,3806
+MV1-CPS-mock2-skew-d1-2_S56,Oncorhynchus nerka,Actinopteri,10900
+MV1-CPS-mock2-skew-d1-2_S56,Oncorhynchus tshawytscha,Actinopteri,587
+MV1-CPS-mock2-skew-d1-2_S56,Sardinops,Actinopteri,1127
+MV1-CPS-mock2-skew-d1-2_S56,Scomber australasicus,Actinopteri,1472
+MV1-CPS-mock2-skew-d1-2_S56,Sebastes,Actinopteri,20
+MV1-CPS-mock2-skew-d1-2_S56,Tactostoma macropus,Actinopteri,4870
+MV1-CPS-mock2-skew-d1-2_S56,Tarletonbeania crenularis,Actinopteri,4091
+MV1-CPS-mock2-skew-d1-2_S56,Thaleichthys pacificus,Actinopteri,188
+MV1-CPS-mock2-skew-d1-2_S56,Thunnus,Actinopteri,43
+MV1-CPS-mock2-skew-d1-2_S56,Trachurus,Actinopteri,190
+MV1-CPS-mock2-skew-d1-3_S57,Caulolatilus princeps,Actinopteri,2
+MV1-CPS-mock2-skew-d1-3_S57,Citharichthys sordidus,Actinopteri,9842
+MV1-CPS-mock2-skew-d1-3_S57,Clupea pallasii,Actinopteri,527
+MV1-CPS-mock2-skew-d1-3_S57,Cottidae,Actinopteri,10784
+MV1-CPS-mock2-skew-d1-3_S57,Diaphus theta,Actinopteri,3
+MV1-CPS-mock2-skew-d1-3_S57,Engraulis mordax,Actinopteri,7411
+MV1-CPS-mock2-skew-d1-3_S57,Hexagrammos decagrammus,Actinopteri,5
+MV1-CPS-mock2-skew-d1-3_S57,Hydrolagus colliei,Chondrichthyes,17
+MV1-CPS-mock2-skew-d1-3_S57,Icichthys lockingtoni,Actinopteri,17
+MV1-CPS-mock2-skew-d1-3_S57,Lycodapus mandibularis,Actinopteri,29
+MV1-CPS-mock2-skew-d1-3_S57,Merluccius productus,Actinopteri,2143
+MV1-CPS-mock2-skew-d1-3_S57,Microstomus pacificus,Actinopteri,8646
+MV1-CPS-mock2-skew-d1-3_S57,Oncorhynchus keta,Actinopteri,4826
+MV1-CPS-mock2-skew-d1-3_S57,Oncorhynchus nerka,Actinopteri,13383
+MV1-CPS-mock2-skew-d1-3_S57,Oncorhynchus tshawytscha,Actinopteri,730
+MV1-CPS-mock2-skew-d1-3_S57,Sardinops,Actinopteri,1467
+MV1-CPS-mock2-skew-d1-3_S57,Scomber australasicus,Actinopteri,2251
+MV1-CPS-mock2-skew-d1-3_S57,Sebastes,Actinopteri,14
+MV1-CPS-mock2-skew-d1-3_S57,Tactostoma macropus,Actinopteri,6347
+MV1-CPS-mock2-skew-d1-3_S57,Tarletonbeania crenularis,Actinopteri,5593
+MV1-CPS-mock2-skew-d1-3_S57,Thaleichthys pacificus,Actinopteri,230
+MV1-CPS-mock2-skew-d1-3_S57,Thunnus,Actinopteri,63
+MV1-CPS-mock2-skew-d1-3_S57,Trachurus,Actinopteri,243
+MV1-CPS-mock2-skew-d1-3_S57,Xystreurys liolepis,Actinopteri,5
+MV1-CPS-mock2-skew-d1-3_S57,NA,NA,3
+MV1-CPS-mock3-even-d1-1_S50,Alosa,Actinopteri,2803
+MV1-CPS-mock3-even-d1-1_S50,Anoplopoma fimbria,Actinopteri,1008
+MV1-CPS-mock3-even-d1-1_S50,Bathyraja,Chondrichthyes,4
+MV1-CPS-mock3-even-d1-1_S50,Blepsias cirrhosus,Actinopteri,78
+MV1-CPS-mock3-even-d1-1_S50,Citharichthys sordidus,Actinopteri,5
+MV1-CPS-mock3-even-d1-1_S50,Citharichthys stigmaeus,Actinopteri,9776
+MV1-CPS-mock3-even-d1-1_S50,Engraulis mordax,Actinopteri,15852
+MV1-CPS-mock3-even-d1-1_S50,Gadus,Actinopteri,153
+MV1-CPS-mock3-even-d1-1_S50,Macrouridae,Actinopteri,4
+MV1-CPS-mock3-even-d1-1_S50,Merluccius productus,Actinopteri,11166
+MV1-CPS-mock3-even-d1-1_S50,Oncorhynchus,Actinopteri,4483
+MV1-CPS-mock3-even-d1-1_S50,Oncorhynchus kisutch,Actinopteri,5160
+MV1-CPS-mock3-even-d1-1_S50,Oncorhynchus tshawytscha,Actinopteri,2645
+MV1-CPS-mock3-even-d1-1_S50,Ophiodon elongatus,Actinopteri,5929
+MV1-CPS-mock3-even-d1-1_S50,Phanerodon vacca,Actinopteri,4
+MV1-CPS-mock3-even-d1-1_S50,Pholis laeta,Actinopteri,86
+MV1-CPS-mock3-even-d1-1_S50,Radulinus boleoides,Actinopteri,39
+MV1-CPS-mock3-even-d1-1_S50,Sardinops,Actinopteri,12309
+MV1-CPS-mock3-even-d1-1_S50,Scomber australasicus,Actinopteri,10910
+MV1-CPS-mock3-even-d1-1_S50,Sebastes entomelas,Actinopteri,6491
+MV1-CPS-mock3-even-d1-1_S50,Stenobrachius leucopsarus,Actinopteri,47070
+MV1-CPS-mock3-even-d1-1_S50,Syngnathus leptorhynchus,Actinopteri,820
+MV1-CPS-mock3-even-d1-1_S50,Trachurus,Actinopteri,2476
+MV1-CPS-mock3-even-d1-2_S51,Alosa,Actinopteri,2816
+MV1-CPS-mock3-even-d1-2_S51,Anoplopoma fimbria,Actinopteri,1047
+MV1-CPS-mock3-even-d1-2_S51,Atheresthes,Actinopteri,4
+MV1-CPS-mock3-even-d1-2_S51,Blepsias cirrhosus,Actinopteri,122
+MV1-CPS-mock3-even-d1-2_S51,Citharichthys sordidus,Actinopteri,11
+MV1-CPS-mock3-even-d1-2_S51,Citharichthys stigmaeus,Actinopteri,9229
+MV1-CPS-mock3-even-d1-2_S51,Engraulis mordax,Actinopteri,14647
+MV1-CPS-mock3-even-d1-2_S51,Gadus,Actinopteri,209
+MV1-CPS-mock3-even-d1-2_S51,Merluccius productus,Actinopteri,10946
+MV1-CPS-mock3-even-d1-2_S51,Oncorhynchus,Actinopteri,4328
+MV1-CPS-mock3-even-d1-2_S51,Oncorhynchus kisutch,Actinopteri,4774
+MV1-CPS-mock3-even-d1-2_S51,Oncorhynchus tshawytscha,Actinopteri,2426
+MV1-CPS-mock3-even-d1-2_S51,Ophiodon elongatus,Actinopteri,5702
+MV1-CPS-mock3-even-d1-2_S51,Pholis laeta,Actinopteri,83
+MV1-CPS-mock3-even-d1-2_S51,Radulinus boleoides,Actinopteri,39
+MV1-CPS-mock3-even-d1-2_S51,Sardinops,Actinopteri,11540
+MV1-CPS-mock3-even-d1-2_S51,Scomber australasicus,Actinopteri,10070
+MV1-CPS-mock3-even-d1-2_S51,Scorpaena guttata,Actinopteri,3
+MV1-CPS-mock3-even-d1-2_S51,Sebastes entomelas,Actinopteri,6230
+MV1-CPS-mock3-even-d1-2_S51,Sebastidae,Actinopteri,12
+MV1-CPS-mock3-even-d1-2_S51,Somniosus,Chondrichthyes,4
+MV1-CPS-mock3-even-d1-2_S51,Stenobrachius leucopsarus,Actinopteri,41551
+MV1-CPS-mock3-even-d1-2_S51,Syngnathus leptorhynchus,Actinopteri,933
+MV1-CPS-mock3-even-d1-2_S51,Trachurus,Actinopteri,2147
+MV1-CPS-mock3-even-d1-3_S52,Alosa,Actinopteri,2146
+MV1-CPS-mock3-even-d1-3_S52,Anoplopoma fimbria,Actinopteri,709
+MV1-CPS-mock3-even-d1-3_S52,Blepsias cirrhosus,Actinopteri,77
+MV1-CPS-mock3-even-d1-3_S52,Citharichthys sordidus,Actinopteri,7
+MV1-CPS-mock3-even-d1-3_S52,Citharichthys stigmaeus,Actinopteri,6795
+MV1-CPS-mock3-even-d1-3_S52,Engraulis mordax,Actinopteri,10719
+MV1-CPS-mock3-even-d1-3_S52,Gadus,Actinopteri,84
+MV1-CPS-mock3-even-d1-3_S52,Merluccius productus,Actinopteri,7786
+MV1-CPS-mock3-even-d1-3_S52,Microstomus pacificus,Actinopteri,4
+MV1-CPS-mock3-even-d1-3_S52,Oncorhynchus,Actinopteri,3290
+MV1-CPS-mock3-even-d1-3_S52,Oncorhynchus kisutch,Actinopteri,3504
+MV1-CPS-mock3-even-d1-3_S52,Oncorhynchus tshawytscha,Actinopteri,1973
+MV1-CPS-mock3-even-d1-3_S52,Ophiodon elongatus,Actinopteri,4159
+MV1-CPS-mock3-even-d1-3_S52,Pholis laeta,Actinopteri,54
+MV1-CPS-mock3-even-d1-3_S52,Radulinus boleoides,Actinopteri,26
+MV1-CPS-mock3-even-d1-3_S52,Sardinops,Actinopteri,8413
+MV1-CPS-mock3-even-d1-3_S52,Scomber australasicus,Actinopteri,7631
+MV1-CPS-mock3-even-d1-3_S52,Scorpaena guttata,Actinopteri,2
+MV1-CPS-mock3-even-d1-3_S52,Sebastes entomelas,Actinopteri,4312
+MV1-CPS-mock3-even-d1-3_S52,Somniosus,Chondrichthyes,6
+MV1-CPS-mock3-even-d1-3_S52,Stenobrachius leucopsarus,Actinopteri,28750
+MV1-CPS-mock3-even-d1-3_S52,Syngnathus leptorhynchus,Actinopteri,613
+MV1-CPS-mock3-even-d1-3_S52,Trachurus,Actinopteri,1631
+MV1-CPS-mock3-even-d1-3_S52,Xystreurys liolepis,Actinopteri,2
+MV1-CPS-mock3-skew-d1-1_S58,Alosa,Actinopteri,2601
+MV1-CPS-mock3-skew-d1-1_S58,Anoplopoma fimbria,Actinopteri,1191
+MV1-CPS-mock3-skew-d1-1_S58,Bathyraja,Chondrichthyes,4
+MV1-CPS-mock3-skew-d1-1_S58,Blepsias cirrhosus,Actinopteri,80
+MV1-CPS-mock3-skew-d1-1_S58,Citharichthys,Actinopteri,14
+MV1-CPS-mock3-skew-d1-1_S58,Citharichthys sordidus,Actinopteri,21
+MV1-CPS-mock3-skew-d1-1_S58,Citharichthys stigmaeus,Actinopteri,12906
+MV1-CPS-mock3-skew-d1-1_S58,Engraulis mordax,Actinopteri,12176
+MV1-CPS-mock3-skew-d1-1_S58,Gadus,Actinopteri,139
+MV1-CPS-mock3-skew-d1-1_S58,Merluccius productus,Actinopteri,4222
+MV1-CPS-mock3-skew-d1-1_S58,Oncorhynchus,Actinopteri,2248
+MV1-CPS-mock3-skew-d1-1_S58,Oncorhynchus kisutch,Actinopteri,10727
+MV1-CPS-mock3-skew-d1-1_S58,Oncorhynchus tshawytscha,Actinopteri,744
+MV1-CPS-mock3-skew-d1-1_S58,Ophiodon elongatus,Actinopteri,17100
+MV1-CPS-mock3-skew-d1-1_S58,Pholis laeta,Actinopteri,83
+MV1-CPS-mock3-skew-d1-1_S58,Radulinus boleoides,Actinopteri,33
+MV1-CPS-mock3-skew-d1-1_S58,Sardinops,Actinopteri,1300
+MV1-CPS-mock3-skew-d1-1_S58,Scomber australasicus,Actinopteri,1176
+MV1-CPS-mock3-skew-d1-1_S58,Sebastes entomelas,Actinopteri,13399
+MV1-CPS-mock3-skew-d1-1_S58,Stenobrachius leucopsarus,Actinopteri,32268
+MV1-CPS-mock3-skew-d1-1_S58,Syngnathus leptorhynchus,Actinopteri,698
+MV1-CPS-mock3-skew-d1-1_S58,Trachurus,Actinopteri,129
+MV1-CPS-mock3-skew-d1-1_S58,NA,NA,5
+MV1-CPS-mock3-skew-d1-2_S59,Alosa,Actinopteri,1546
+MV1-CPS-mock3-skew-d1-2_S59,Anoplopoma fimbria,Actinopteri,749
+MV1-CPS-mock3-skew-d1-2_S59,Blepsias cirrhosus,Actinopteri,59
+MV1-CPS-mock3-skew-d1-2_S59,Citharichthys sordidus,Actinopteri,7
+MV1-CPS-mock3-skew-d1-2_S59,Citharichthys stigmaeus,Actinopteri,8077
+MV1-CPS-mock3-skew-d1-2_S59,Engraulis mordax,Actinopteri,7016
+MV1-CPS-mock3-skew-d1-2_S59,Gadus,Actinopteri,74
+MV1-CPS-mock3-skew-d1-2_S59,Merluccius productus,Actinopteri,2437
+MV1-CPS-mock3-skew-d1-2_S59,Oncorhynchus,Actinopteri,1334
+MV1-CPS-mock3-skew-d1-2_S59,Oncorhynchus kisutch,Actinopteri,6575
+MV1-CPS-mock3-skew-d1-2_S59,Oncorhynchus tshawytscha,Actinopteri,428
+MV1-CPS-mock3-skew-d1-2_S59,Ophiodon elongatus,Actinopteri,10271
+MV1-CPS-mock3-skew-d1-2_S59,Pholis laeta,Actinopteri,54
+MV1-CPS-mock3-skew-d1-2_S59,Radulinus boleoides,Actinopteri,20
+MV1-CPS-mock3-skew-d1-2_S59,Sardinops,Actinopteri,776
+MV1-CPS-mock3-skew-d1-2_S59,Scomber australasicus,Actinopteri,826
+MV1-CPS-mock3-skew-d1-2_S59,Sebastes entomelas,Actinopteri,8116
+MV1-CPS-mock3-skew-d1-2_S59,Stenobrachius leucopsarus,Actinopteri,18185
+MV1-CPS-mock3-skew-d1-2_S59,Syngnathus leptorhynchus,Actinopteri,418
+MV1-CPS-mock3-skew-d1-2_S59,Trachurus,Actinopteri,82
+MV1-CPS-mock3-skew-d1-3_S60,Alosa,Actinopteri,2117
+MV1-CPS-mock3-skew-d1-3_S60,Anoplopoma fimbria,Actinopteri,1049
+MV1-CPS-mock3-skew-d1-3_S60,Blepsias cirrhosus,Actinopteri,53
+MV1-CPS-mock3-skew-d1-3_S60,Citharichthys sordidus,Actinopteri,11
+MV1-CPS-mock3-skew-d1-3_S60,Citharichthys stigmaeus,Actinopteri,10146
+MV1-CPS-mock3-skew-d1-3_S60,Engraulis mordax,Actinopteri,9651
+MV1-CPS-mock3-skew-d1-3_S60,Gadus,Actinopteri,101
+MV1-CPS-mock3-skew-d1-3_S60,Merluccius productus,Actinopteri,3331
+MV1-CPS-mock3-skew-d1-3_S60,Microstomus pacificus,Actinopteri,4
+MV1-CPS-mock3-skew-d1-3_S60,Oncorhynchus,Actinopteri,1762
+MV1-CPS-mock3-skew-d1-3_S60,Oncorhynchus kisutch,Actinopteri,8570
+MV1-CPS-mock3-skew-d1-3_S60,Oncorhynchus tshawytscha,Actinopteri,577
+MV1-CPS-mock3-skew-d1-3_S60,Ophiodon elongatus,Actinopteri,13227
+MV1-CPS-mock3-skew-d1-3_S60,Pholis laeta,Actinopteri,58
+MV1-CPS-mock3-skew-d1-3_S60,Radulinus boleoides,Actinopteri,22
+MV1-CPS-mock3-skew-d1-3_S60,Sardinops,Actinopteri,999
+MV1-CPS-mock3-skew-d1-3_S60,Scomber australasicus,Actinopteri,974
+MV1-CPS-mock3-skew-d1-3_S60,Sebastes entomelas,Actinopteri,10235
+MV1-CPS-mock3-skew-d1-3_S60,Stenobrachius leucopsarus,Actinopteri,22081
+MV1-CPS-mock3-skew-d1-3_S60,Syngnathus leptorhynchus,Actinopteri,534
+MV1-CPS-mock3-skew-d1-3_S60,Trachurus,Actinopteri,91
+MV1-CPS-mock4-even-d1-1_S121,Artedius fenestralis,Actinopteri,8520
+MV1-CPS-mock4-even-d1-1_S121,Artedius harringtoni,Actinopteri,9989
+MV1-CPS-mock4-even-d1-1_S121,Chitonotus pugetensis,Actinopteri,8340
+MV1-CPS-mock4-even-d1-1_S121,Clupea pallasii,Actinopteri,595
+MV1-CPS-mock4-even-d1-1_S121,Cottidae,Actinopteri,1856
+MV1-CPS-mock4-even-d1-1_S121,Cymatogaster aggregata,Actinopteri,6775
+MV1-CPS-mock4-even-d1-1_S121,Delphinidae,Mammalia,110
+MV1-CPS-mock4-even-d1-1_S121,Engraulis mordax,Actinopteri,5125
+MV1-CPS-mock4-even-d1-1_S121,Enophrys bison,Actinopteri,839
+MV1-CPS-mock4-even-d1-1_S121,Gadus,Actinopteri,2
+MV1-CPS-mock4-even-d1-1_S121,Gasterosteus aculeatus,Actinopteri,3090
+MV1-CPS-mock4-even-d1-1_S121,Hippoglossina stomata,Actinopteri,2
+MV1-CPS-mock4-even-d1-1_S121,Hydrolagus colliei,Chondrichthyes,250
+MV1-CPS-mock4-even-d1-1_S121,Icelinus,Actinopteri,9
+MV1-CPS-mock4-even-d1-1_S121,Icelinus borealis,Actinopteri,4
+MV1-CPS-mock4-even-d1-1_S121,Leptocottus armatus,Actinopteri,2355
+MV1-CPS-mock4-even-d1-1_S121,Liparis,Actinopteri,13
+MV1-CPS-mock4-even-d1-1_S121,Liparis pulchellus,Actinopteri,78
+MV1-CPS-mock4-even-d1-1_S121,Lumpenus sagitta,Actinopteri,1587
+MV1-CPS-mock4-even-d1-1_S121,Merluccius productus,Actinopteri,3065
+MV1-CPS-mock4-even-d1-1_S121,Myoxocephalus,Actinopteri,144
+MV1-CPS-mock4-even-d1-1_S121,Nautichthys oculofasciatus,Actinopteri,3168
+MV1-CPS-mock4-even-d1-1_S121,Oncorhynchus,Actinopteri,1667
+MV1-CPS-mock4-even-d1-1_S121,Oncorhynchus keta,Actinopteri,2806
+MV1-CPS-mock4-even-d1-1_S121,Oncorhynchus kisutch,Actinopteri,2280
+MV1-CPS-mock4-even-d1-1_S121,Oncorhynchus mykiss,Actinopteri,1139
+MV1-CPS-mock4-even-d1-1_S121,Oncorhynchus nerka,Actinopteri,7018
+MV1-CPS-mock4-even-d1-1_S121,Oncorhynchus tshawytscha,Actinopteri,1143
+MV1-CPS-mock4-even-d1-1_S121,Oxylebius pictus,Actinopteri,11
+MV1-CPS-mock4-even-d1-1_S121,Peprilus,Actinopteri,4
+MV1-CPS-mock4-even-d1-1_S121,Pholis laeta,Actinopteri,7031
+MV1-CPS-mock4-even-d1-1_S121,Pleuronectidae,Actinopteri,29
+MV1-CPS-mock4-even-d1-1_S121,Sardinops,Actinopteri,6728
+MV1-CPS-mock4-even-d1-1_S121,Sebastes,Actinopteri,44
+MV1-CPS-mock4-even-d1-1_S121,Stenella coeruleoalba,Mammalia,19
+MV1-CPS-mock4-even-d1-1_S121,Stichaeidae,Actinopteri,184
+MV1-CPS-mock4-even-d1-1_S121,Thaleichthys pacificus,Actinopteri,105
+MV1-CPS-mock4-even-d1-1_S121,Trachurus,Actinopteri,686
+MV1-CPS-mock4-even-d1-1_S121,Tursiops truncatus,Mammalia,3895
+MV1-CPS-mock4-even-d1-1_S121,Zalophus,Mammalia,4318
+MV1-CPS-mock4-even-d1-1_S121,NA,NA,1342
+MV1-CPS-mock4-even-d1-2_S122,Artedius fenestralis,Actinopteri,11096
+MV1-CPS-mock4-even-d1-2_S122,Artedius harringtoni,Actinopteri,13077
+MV1-CPS-mock4-even-d1-2_S122,Chitonotus pugetensis,Actinopteri,11355
+MV1-CPS-mock4-even-d1-2_S122,Clupea pallasii,Actinopteri,797
+MV1-CPS-mock4-even-d1-2_S122,Cottidae,Actinopteri,2622
+MV1-CPS-mock4-even-d1-2_S122,Cymatogaster aggregata,Actinopteri,9030
+MV1-CPS-mock4-even-d1-2_S122,Delphinidae,Mammalia,186
+MV1-CPS-mock4-even-d1-2_S122,Engraulis mordax,Actinopteri,6882
+MV1-CPS-mock4-even-d1-2_S122,Enophrys bison,Actinopteri,1046
+MV1-CPS-mock4-even-d1-2_S122,Gadus,Actinopteri,5
+MV1-CPS-mock4-even-d1-2_S122,Gasterosteus aculeatus,Actinopteri,4266
+MV1-CPS-mock4-even-d1-2_S122,Hydrolagus colliei,Chondrichthyes,387
+MV1-CPS-mock4-even-d1-2_S122,Leptocottus armatus,Actinopteri,3019
+MV1-CPS-mock4-even-d1-2_S122,Liparis,Actinopteri,9
+MV1-CPS-mock4-even-d1-2_S122,Liparis pulchellus,Actinopteri,76
+MV1-CPS-mock4-even-d1-2_S122,Lumpenus sagitta,Actinopteri,2291
+MV1-CPS-mock4-even-d1-2_S122,Macrouridae,Actinopteri,5
+MV1-CPS-mock4-even-d1-2_S122,Merluccius productus,Actinopteri,4216
+MV1-CPS-mock4-even-d1-2_S122,Myoxocephalus,Actinopteri,168
+MV1-CPS-mock4-even-d1-2_S122,Nautichthys oculofasciatus,Actinopteri,4214
+MV1-CPS-mock4-even-d1-2_S122,Oncorhynchus,Actinopteri,2300
+MV1-CPS-mock4-even-d1-2_S122,Oncorhynchus keta,Actinopteri,3704
+MV1-CPS-mock4-even-d1-2_S122,Oncorhynchus kisutch,Actinopteri,3149
+MV1-CPS-mock4-even-d1-2_S122,Oncorhynchus mykiss,Actinopteri,1659
+MV1-CPS-mock4-even-d1-2_S122,Oncorhynchus nerka,Actinopteri,9865
+MV1-CPS-mock4-even-d1-2_S122,Oncorhynchus tshawytscha,Actinopteri,1494
+MV1-CPS-mock4-even-d1-2_S122,Oxylebius pictus,Actinopteri,21
+MV1-CPS-mock4-even-d1-2_S122,Pholis laeta,Actinopteri,9848
+MV1-CPS-mock4-even-d1-2_S122,Pleuronectidae,Actinopteri,30
+MV1-CPS-mock4-even-d1-2_S122,Rhamphocottus richardsonii,Actinopteri,6
+MV1-CPS-mock4-even-d1-2_S122,Sardinops,Actinopteri,9427
+MV1-CPS-mock4-even-d1-2_S122,Sebastes,Actinopteri,67
+MV1-CPS-mock4-even-d1-2_S122,Stenella coeruleoalba,Mammalia,34
+MV1-CPS-mock4-even-d1-2_S122,Stichaeidae,Actinopteri,254
+MV1-CPS-mock4-even-d1-2_S122,Thaleichthys pacificus,Actinopteri,102
+MV1-CPS-mock4-even-d1-2_S122,Trachurus,Actinopteri,860
+MV1-CPS-mock4-even-d1-2_S122,Tursiops truncatus,Mammalia,5418
+MV1-CPS-mock4-even-d1-2_S122,Xystreurys liolepis,Actinopteri,3
+MV1-CPS-mock4-even-d1-2_S122,Zalophus,Mammalia,5662
+MV1-CPS-mock4-even-d1-2_S122,NA,NA,1618
+MV1-CPS-mock4-even-d1-3_S123,Apristurus brunneus,Chondrichthyes,2
+MV1-CPS-mock4-even-d1-3_S123,Artedius fenestralis,Actinopteri,5684
+MV1-CPS-mock4-even-d1-3_S123,Artedius harringtoni,Actinopteri,6674
+MV1-CPS-mock4-even-d1-3_S123,Atheresthes,Actinopteri,3
+MV1-CPS-mock4-even-d1-3_S123,Chitonotus pugetensis,Actinopteri,5331
+MV1-CPS-mock4-even-d1-3_S123,Citharichthys sordidus,Actinopteri,2
+MV1-CPS-mock4-even-d1-3_S123,Clupea pallasii,Actinopteri,381
+MV1-CPS-mock4-even-d1-3_S123,Cottidae,Actinopteri,1239
+MV1-CPS-mock4-even-d1-3_S123,Cymatogaster aggregata,Actinopteri,4053
+MV1-CPS-mock4-even-d1-3_S123,Delphinidae,Mammalia,38
+MV1-CPS-mock4-even-d1-3_S123,Engraulis mordax,Actinopteri,3493
+MV1-CPS-mock4-even-d1-3_S123,Enophrys bison,Actinopteri,540
+MV1-CPS-mock4-even-d1-3_S123,Gasterosteus aculeatus,Actinopteri,1947
+MV1-CPS-mock4-even-d1-3_S123,Genyonemus lineatus,Actinopteri,4
+MV1-CPS-mock4-even-d1-3_S123,Hydrolagus colliei,Chondrichthyes,204
+MV1-CPS-mock4-even-d1-3_S123,Leptocottus armatus,Actinopteri,1439
+MV1-CPS-mock4-even-d1-3_S123,Liparis,Actinopteri,5
+MV1-CPS-mock4-even-d1-3_S123,Liparis pulchellus,Actinopteri,49
+MV1-CPS-mock4-even-d1-3_S123,Lumpenus sagitta,Actinopteri,1028
+MV1-CPS-mock4-even-d1-3_S123,Merluccius productus,Actinopteri,1947
+MV1-CPS-mock4-even-d1-3_S123,Myoxocephalus,Actinopteri,63
+MV1-CPS-mock4-even-d1-3_S123,Nautichthys oculofasciatus,Actinopteri,2202
+MV1-CPS-mock4-even-d1-3_S123,Oncorhynchus,Actinopteri,1053
+MV1-CPS-mock4-even-d1-3_S123,Oncorhynchus keta,Actinopteri,1976
+MV1-CPS-mock4-even-d1-3_S123,Oncorhynchus kisutch,Actinopteri,1546
+MV1-CPS-mock4-even-d1-3_S123,Oncorhynchus mykiss,Actinopteri,715
+MV1-CPS-mock4-even-d1-3_S123,Oncorhynchus nerka,Actinopteri,4740
+MV1-CPS-mock4-even-d1-3_S123,Oncorhynchus tshawytscha,Actinopteri,699
+MV1-CPS-mock4-even-d1-3_S123,Oxylebius pictus,Actinopteri,3
+MV1-CPS-mock4-even-d1-3_S123,Pholis laeta,Actinopteri,4711
+MV1-CPS-mock4-even-d1-3_S123,Pleuronectidae,Actinopteri,13
+MV1-CPS-mock4-even-d1-3_S123,Sardinops,Actinopteri,4150
+MV1-CPS-mock4-even-d1-3_S123,Sebastes,Actinopteri,31
+MV1-CPS-mock4-even-d1-3_S123,Stenella coeruleoalba,Mammalia,12
+MV1-CPS-mock4-even-d1-3_S123,Stichaeidae,Actinopteri,159
+MV1-CPS-mock4-even-d1-3_S123,Thaleichthys pacificus,Actinopteri,67
+MV1-CPS-mock4-even-d1-3_S123,Trachurus,Actinopteri,412
+MV1-CPS-mock4-even-d1-3_S123,Tursiops truncatus,Mammalia,2487
+MV1-CPS-mock4-even-d1-3_S123,Zalophus,Mammalia,2741
+MV1-CPS-mock4-even-d1-3_S123,NA,NA,693
+MV1-CPS-mock4-skew-d1-1_S124,Artedius fenestralis,Actinopteri,10131
+MV1-CPS-mock4-skew-d1-1_S124,Artedius harringtoni,Actinopteri,25675
+MV1-CPS-mock4-skew-d1-1_S124,Chitonotus pugetensis,Actinopteri,12439
+MV1-CPS-mock4-skew-d1-1_S124,Citharichthys sordidus,Actinopteri,6
+MV1-CPS-mock4-skew-d1-1_S124,Clupea pallasii,Actinopteri,251
+MV1-CPS-mock4-skew-d1-1_S124,Cottidae,Actinopteri,2305
+MV1-CPS-mock4-skew-d1-1_S124,Cymatogaster aggregata,Actinopteri,3613
+MV1-CPS-mock4-skew-d1-1_S124,Delphinidae,Mammalia,638
+MV1-CPS-mock4-skew-d1-1_S124,Engraulis mordax,Actinopteri,2443
+MV1-CPS-mock4-skew-d1-1_S124,Enophrys bison,Actinopteri,1855
+MV1-CPS-mock4-skew-d1-1_S124,Gadus,Actinopteri,3
+MV1-CPS-mock4-skew-d1-1_S124,Gasterosteus aculeatus,Actinopteri,4229
+MV1-CPS-mock4-skew-d1-1_S124,Hexagrammos,Actinopteri,18
+MV1-CPS-mock4-skew-d1-1_S124,Hydrolagus colliei,Chondrichthyes,70
+MV1-CPS-mock4-skew-d1-1_S124,Icelinus,Actinopteri,7
+MV1-CPS-mock4-skew-d1-1_S124,Lagenorhynchus obliquidens,Mammalia,5
+MV1-CPS-mock4-skew-d1-1_S124,Leptocottus armatus,Actinopteri,1685
+MV1-CPS-mock4-skew-d1-1_S124,Liparis,Actinopteri,7
+MV1-CPS-mock4-skew-d1-1_S124,Liparis pulchellus,Actinopteri,126
+MV1-CPS-mock4-skew-d1-1_S124,Lumpenus sagitta,Actinopteri,6662
+MV1-CPS-mock4-skew-d1-1_S124,Merluccius productus,Actinopteri,751
+MV1-CPS-mock4-skew-d1-1_S124,Myoxocephalus,Actinopteri,209
+MV1-CPS-mock4-skew-d1-1_S124,Nautichthys oculofasciatus,Actinopteri,5466
+MV1-CPS-mock4-skew-d1-1_S124,Oncorhynchus,Actinopteri,1517
+MV1-CPS-mock4-skew-d1-1_S124,Oncorhynchus keta,Actinopteri,2645
+MV1-CPS-mock4-skew-d1-1_S124,Oncorhynchus kisutch,Actinopteri,3822
+MV1-CPS-mock4-skew-d1-1_S124,Oncorhynchus mykiss,Actinopteri,1053
+MV1-CPS-mock4-skew-d1-1_S124,Oncorhynchus nerka,Actinopteri,5515
+MV1-CPS-mock4-skew-d1-1_S124,Oncorhynchus tshawytscha,Actinopteri,532
+MV1-CPS-mock4-skew-d1-1_S124,Oxylebius pictus,Actinopteri,18
+MV1-CPS-mock4-skew-d1-1_S124,Pholis laeta,Actinopteri,1685
+MV1-CPS-mock4-skew-d1-1_S124,Pleuronectidae,Actinopteri,25
+MV1-CPS-mock4-skew-d1-1_S124,Rhamphocottus richardsonii,Actinopteri,8
+MV1-CPS-mock4-skew-d1-1_S124,Sardinops,Actinopteri,760
+MV1-CPS-mock4-skew-d1-1_S124,Sebastes,Actinopteri,43
+MV1-CPS-mock4-skew-d1-1_S124,Stenella coeruleoalba,Mammalia,114
+MV1-CPS-mock4-skew-d1-1_S124,Stichaeidae,Actinopteri,248
+MV1-CPS-mock4-skew-d1-1_S124,Thaleichthys pacificus,Actinopteri,55
+MV1-CPS-mock4-skew-d1-1_S124,Trachurus,Actinopteri,18
+MV1-CPS-mock4-skew-d1-1_S124,Tursiops truncatus,Mammalia,19110
+MV1-CPS-mock4-skew-d1-1_S124,Zalophus,Mammalia,16923
+MV1-CPS-mock4-skew-d1-1_S124,NA,NA,5268
+MV1-CPS-mock4-skew-d1-2_S125,Artedius fenestralis,Actinopteri,11317
+MV1-CPS-mock4-skew-d1-2_S125,Artedius harringtoni,Actinopteri,25573
+MV1-CPS-mock4-skew-d1-2_S125,Chitonotus pugetensis,Actinopteri,13965
+MV1-CPS-mock4-skew-d1-2_S125,Citharichthys sordidus,Actinopteri,5
+MV1-CPS-mock4-skew-d1-2_S125,Clupea pallasii,Actinopteri,244
+MV1-CPS-mock4-skew-d1-2_S125,Cottidae,Actinopteri,2625
+MV1-CPS-mock4-skew-d1-2_S125,Cymatogaster aggregata,Actinopteri,3477
+MV1-CPS-mock4-skew-d1-2_S125,Delphinidae,Mammalia,564
+MV1-CPS-mock4-skew-d1-2_S125,Engraulis mordax,Actinopteri,2544
+MV1-CPS-mock4-skew-d1-2_S125,Enophrys bison,Actinopteri,1976
+MV1-CPS-mock4-skew-d1-2_S125,Gadus,Actinopteri,4
+MV1-CPS-mock4-skew-d1-2_S125,Gasterosteus aculeatus,Actinopteri,4710
+MV1-CPS-mock4-skew-d1-2_S125,Hemilepidotus hemilepidotus,Actinopteri,3
+MV1-CPS-mock4-skew-d1-2_S125,Hexagrammos,Actinopteri,8
+MV1-CPS-mock4-skew-d1-2_S125,Hydrolagus colliei,Chondrichthyes,59
+MV1-CPS-mock4-skew-d1-2_S125,Icelinus,Actinopteri,11
+MV1-CPS-mock4-skew-d1-2_S125,Lagenorhynchus obliquidens,Mammalia,11
+MV1-CPS-mock4-skew-d1-2_S125,Leptocottus armatus,Actinopteri,1746
+MV1-CPS-mock4-skew-d1-2_S125,Liparis,Actinopteri,24
+MV1-CPS-mock4-skew-d1-2_S125,Liparis pulchellus,Actinopteri,114
+MV1-CPS-mock4-skew-d1-2_S125,Lumpenus sagitta,Actinopteri,6765
+MV1-CPS-mock4-skew-d1-2_S125,Merluccius productus,Actinopteri,815
+MV1-CPS-mock4-skew-d1-2_S125,Myoxocephalus,Actinopteri,269
+MV1-CPS-mock4-skew-d1-2_S125,Nautichthys oculofasciatus,Actinopteri,5966
+MV1-CPS-mock4-skew-d1-2_S125,Oncorhynchus,Actinopteri,1514
+MV1-CPS-mock4-skew-d1-2_S125,Oncorhynchus keta,Actinopteri,2705
+MV1-CPS-mock4-skew-d1-2_S125,Oncorhynchus kisutch,Actinopteri,4416
+MV1-CPS-mock4-skew-d1-2_S125,Oncorhynchus mykiss,Actinopteri,1137
+MV1-CPS-mock4-skew-d1-2_S125,Oncorhynchus nerka,Actinopteri,5907
+MV1-CPS-mock4-skew-d1-2_S125,Oncorhynchus tshawytscha,Actinopteri,541
+MV1-CPS-mock4-skew-d1-2_S125,Oxylebius pictus,Actinopteri,28
+MV1-CPS-mock4-skew-d1-2_S125,Pholis laeta,Actinopteri,1614
+MV1-CPS-mock4-skew-d1-2_S125,Pleuronectidae,Actinopteri,30
+MV1-CPS-mock4-skew-d1-2_S125,Sardinops,Actinopteri,858
+MV1-CPS-mock4-skew-d1-2_S125,Sebastes,Actinopteri,33
+MV1-CPS-mock4-skew-d1-2_S125,Stenella coeruleoalba,Mammalia,110
+MV1-CPS-mock4-skew-d1-2_S125,Stichaeidae,Actinopteri,249
+MV1-CPS-mock4-skew-d1-2_S125,Thaleichthys pacificus,Actinopteri,56
+MV1-CPS-mock4-skew-d1-2_S125,Trachurus,Actinopteri,33
+MV1-CPS-mock4-skew-d1-2_S125,Tursiops truncatus,Mammalia,20139
+MV1-CPS-mock4-skew-d1-2_S125,Zalophus,Mammalia,18128
+MV1-CPS-mock4-skew-d1-2_S125,NA,NA,5635
+MV1-CPS-mock4-skew-d1-3_S126,Artedius fenestralis,Actinopteri,29176
+MV1-CPS-mock4-skew-d1-3_S126,Artedius harringtoni,Actinopteri,65751
+MV1-CPS-mock4-skew-d1-3_S126,Atheresthes,Actinopteri,11
+MV1-CPS-mock4-skew-d1-3_S126,Brosmophycis marginata,Actinopteri,4
+MV1-CPS-mock4-skew-d1-3_S126,Chitonotus pugetensis,Actinopteri,35270
+MV1-CPS-mock4-skew-d1-3_S126,Citharichthys sordidus,Actinopteri,4
+MV1-CPS-mock4-skew-d1-3_S126,Clupea pallasii,Actinopteri,731
+MV1-CPS-mock4-skew-d1-3_S126,Cottidae,Actinopteri,7358
+MV1-CPS-mock4-skew-d1-3_S126,Cymatogaster aggregata,Actinopteri,9912
+MV1-CPS-mock4-skew-d1-3_S126,Delphinidae,Mammalia,1606
+MV1-CPS-mock4-skew-d1-3_S126,Embiotoca lateralis,Actinopteri,15
+MV1-CPS-mock4-skew-d1-3_S126,Engraulis mordax,Actinopteri,6908
+MV1-CPS-mock4-skew-d1-3_S126,Enophrys bison,Actinopteri,5284
+MV1-CPS-mock4-skew-d1-3_S126,Gadus,Actinopteri,3
+MV1-CPS-mock4-skew-d1-3_S126,Gasterosteus aculeatus,Actinopteri,12820
+MV1-CPS-mock4-skew-d1-3_S126,Hemilepidotus hemilepidotus,Actinopteri,15
+MV1-CPS-mock4-skew-d1-3_S126,Hexagrammos,Actinopteri,34
+MV1-CPS-mock4-skew-d1-3_S126,Hydrolagus colliei,Chondrichthyes,218
+MV1-CPS-mock4-skew-d1-3_S126,Icelinus,Actinopteri,19
+MV1-CPS-mock4-skew-d1-3_S126,Lagenorhynchus obliquidens,Mammalia,30
+MV1-CPS-mock4-skew-d1-3_S126,Leptocottus armatus,Actinopteri,4610
+MV1-CPS-mock4-skew-d1-3_S126,Liparis,Actinopteri,45
+MV1-CPS-mock4-skew-d1-3_S126,Liparis pulchellus,Actinopteri,337
+MV1-CPS-mock4-skew-d1-3_S126,Lumpenus sagitta,Actinopteri,18355
+MV1-CPS-mock4-skew-d1-3_S126,Malacocottus,Actinopteri,6
+MV1-CPS-mock4-skew-d1-3_S126,Merluccius productus,Actinopteri,2225
+MV1-CPS-mock4-skew-d1-3_S126,Myoxocephalus,Actinopteri,603
+MV1-CPS-mock4-skew-d1-3_S126,Nautichthys oculofasciatus,Actinopteri,16870
+MV1-CPS-mock4-skew-d1-3_S126,Oncorhynchus,Actinopteri,4512
+MV1-CPS-mock4-skew-d1-3_S126,Oncorhynchus keta,Actinopteri,7284
+MV1-CPS-mock4-skew-d1-3_S126,Oncorhynchus kisutch,Actinopteri,11251
+MV1-CPS-mock4-skew-d1-3_S126,Oncorhynchus mykiss,Actinopteri,2790
+MV1-CPS-mock4-skew-d1-3_S126,Oncorhynchus nerka,Actinopteri,16058
+MV1-CPS-mock4-skew-d1-3_S126,Oncorhynchus tshawytscha,Actinopteri,1450
+MV1-CPS-mock4-skew-d1-3_S126,Oxylebius pictus,Actinopteri,35
+MV1-CPS-mock4-skew-d1-3_S126,Pholis laeta,Actinopteri,4649
+MV1-CPS-mock4-skew-d1-3_S126,Pleuronectidae,Actinopteri,105
+MV1-CPS-mock4-skew-d1-3_S126,Rhamphocottus richardsonii,Actinopteri,6
+MV1-CPS-mock4-skew-d1-3_S126,Sardinops,Actinopteri,2303
+MV1-CPS-mock4-skew-d1-3_S126,Sebastes,Actinopteri,111
+MV1-CPS-mock4-skew-d1-3_S126,Stenella coeruleoalba,Mammalia,272
+MV1-CPS-mock4-skew-d1-3_S126,Stichaeidae,Actinopteri,625
+MV1-CPS-mock4-skew-d1-3_S126,Thaleichthys pacificus,Actinopteri,165
+MV1-CPS-mock4-skew-d1-3_S126,Trachurus,Actinopteri,50
+MV1-CPS-mock4-skew-d1-3_S126,Tursiops truncatus,Mammalia,55331
+MV1-CPS-mock4-skew-d1-3_S126,Zalophus,Mammalia,50094
+MV1-CPS-mock4-skew-d1-3_S126,NA,NA,17305
+MV1-NTC-d1-2_S53,Gallus,Aves,16295
+MV1-OCNMS-2022-1-d100-1_S63,Oncorhynchus kisutch,Actinopteri,763
+MV1-OCNMS-2022-1-d100-1_S63,Oncorhynchus tshawytscha,Actinopteri,40023
+MV1-OCNMS-2022-1-d100-1_S63,NA,NA,15
+MV1-OCNMS-2022-10-d10-1_S72,Allosmerus elongatus,Actinopteri,537
+MV1-OCNMS-2022-10-d10-1_S72,Artedius fenestralis,Actinopteri,925
+MV1-OCNMS-2022-10-d10-1_S72,Artedius harringtoni,Actinopteri,740
+MV1-OCNMS-2022-10-d10-1_S72,Ascelichthys rhodorus,Actinopteri,670
+MV1-OCNMS-2022-10-d10-1_S72,Bos taurus,Mammalia,327
+MV1-OCNMS-2022-10-d10-1_S72,Clupea pallasii,Actinopteri,359
+MV1-OCNMS-2022-10-d10-1_S72,Enhydra lutris,Mammalia,139
+MV1-OCNMS-2022-10-d10-1_S72,Enophrys bison,Actinopteri,122
+MV1-OCNMS-2022-10-d10-1_S72,Hemilepidotus,Actinopteri,1852
+MV1-OCNMS-2022-10-d10-1_S72,Hemilepidotus hemilepidotus,Actinopteri,1950
+MV1-OCNMS-2022-10-d10-1_S72,Hexagrammos decagrammus,Actinopteri,7175
+MV1-OCNMS-2022-10-d10-1_S72,Homo sapiens,Mammalia,4536
+MV1-OCNMS-2022-10-d10-1_S72,Liparis florae,Actinopteri,268
+MV1-OCNMS-2022-10-d10-1_S72,Oncorhynchus kisutch,Actinopteri,766
+MV1-OCNMS-2022-10-d10-1_S72,Oncorhynchus tshawytscha,Actinopteri,85913
+MV1-OCNMS-2022-10-d10-1_S72,Ophiodon elongatus,Actinopteri,1025
+MV1-OCNMS-2022-10-d10-1_S72,Phalacrocorax pelagicus,Aves,37
+MV1-OCNMS-2022-10-d10-1_S72,Phoca,Mammalia,1610
+MV1-OCNMS-2022-10-d10-1_S72,Phytichthys chirus,Actinopteri,437
+MV1-OCNMS-2022-10-d10-1_S72,Scorpaenichthys marmoratus,Actinopteri,1028
+MV1-OCNMS-2022-10-d10-1_S72,Sebastes,Actinopteri,2899
+MV1-OCNMS-2022-10-d10-1_S72,Sebastes mystinus,Actinopteri,191
+MV1-OCNMS-2022-10-d10-1_S72,Sebastes paucispinis,Actinopteri,674
+MV1-OCNMS-2022-10-d10-1_S72,Spirinchus starksi,Actinopteri,191
+MV1-OCNMS-2022-10-d10-1_S72,Xiphister,Actinopteri,414
+MV1-OCNMS-2022-10-d10-1_S72,NA,NA,556
+MV1-OCNMS-2022-11-d10-1_S73,Allosmerus elongatus,Actinopteri,64
+MV1-OCNMS-2022-11-d10-1_S73,Clinocottus globiceps,Actinopteri,44
+MV1-OCNMS-2022-11-d10-1_S73,Clupea pallasii,Actinopteri,48
+MV1-OCNMS-2022-11-d10-1_S73,Embiotoca lateralis,Actinopteri,23
+MV1-OCNMS-2022-11-d10-1_S73,Hemilepidotus,Actinopteri,224
+MV1-OCNMS-2022-11-d10-1_S73,Hexagrammos decagrammus,Actinopteri,460
+MV1-OCNMS-2022-11-d10-1_S73,Homo sapiens,Mammalia,292
+MV1-OCNMS-2022-11-d10-1_S73,Liparis florae,Actinopteri,40
+MV1-OCNMS-2022-11-d10-1_S73,Liparis mucosus,Actinopteri,40
+MV1-OCNMS-2022-11-d10-1_S73,Oncorhynchus kisutch,Actinopteri,233
+MV1-OCNMS-2022-11-d10-1_S73,Oncorhynchus tshawytscha,Actinopteri,19785
+MV1-OCNMS-2022-11-d10-1_S73,Ophiodon elongatus,Actinopteri,135
+MV1-OCNMS-2022-11-d10-1_S73,Phoca,Mammalia,206
+MV1-OCNMS-2022-11-d10-1_S73,Scorpaenichthys marmoratus,Actinopteri,68
+MV1-OCNMS-2022-11-d10-1_S73,Sebastes,Actinopteri,848
+MV1-OCNMS-2022-11-d10-1_S73,Sebastes mystinus,Actinopteri,103
+MV1-OCNMS-2022-11-d10-1_S73,NA,NA,231
+MV1-OCNMS-2022-12-d10-1_S74,Artedius harringtoni,Actinopteri,942
+MV1-OCNMS-2022-12-d10-1_S74,Hemilepidotus hemilepidotus,Actinopteri,1627
+MV1-OCNMS-2022-12-d10-1_S74,Hexagrammos decagrammus,Actinopteri,2318
+MV1-OCNMS-2022-12-d10-1_S74,Oncorhynchus tshawytscha,Actinopteri,34501
+MV1-OCNMS-2022-12-d10-1_S74,Spirinchus starksi,Actinopteri,1666
+MV1-OCNMS-2022-12-d10-1_S74,NA,NA,2099
+MV1-OCNMS-2022-13-d1-1_S75,Canis lupus,Mammalia,49
+MV1-OCNMS-2022-13-d1-1_S75,Engraulis mordax,Actinopteri,72
+MV1-OCNMS-2022-13-d1-1_S75,Gadus,Actinopteri,222
+MV1-OCNMS-2022-13-d1-1_S75,Homo sapiens,Mammalia,410
+MV1-OCNMS-2022-13-d1-1_S75,Oncorhynchus kisutch,Actinopteri,765
+MV1-OCNMS-2022-13-d1-1_S75,Oncorhynchus tshawytscha,Actinopteri,74955
+MV1-OCNMS-2022-13-d1-1_S75,Salmo trutta,Actinopteri,80
+MV1-OCNMS-2022-13-d1-1_S75,NA,NA,31
+MV1-OCNMS-2022-14-d10-1_S76,Artedius harringtoni,Actinopteri,752
+MV1-OCNMS-2022-14-d10-1_S76,Brachyistius frenatus,Actinopteri,94
+MV1-OCNMS-2022-14-d10-1_S76,Citharichthys stigmaeus,Actinopteri,117
+MV1-OCNMS-2022-14-d10-1_S76,Clupea,Actinopteri,107
+MV1-OCNMS-2022-14-d10-1_S76,Clupea pallasii,Actinopteri,23760
+MV1-OCNMS-2022-14-d10-1_S76,Embiotoca lateralis,Actinopteri,228
+MV1-OCNMS-2022-14-d10-1_S76,Hexagrammos decagrammus,Actinopteri,644
+MV1-OCNMS-2022-14-d10-1_S76,Homo sapiens,Mammalia,2992
+MV1-OCNMS-2022-14-d10-1_S76,Hydrolagus colliei,Chondrichthyes,20
+MV1-OCNMS-2022-14-d10-1_S76,Liparis fucensis,Actinopteri,99
+MV1-OCNMS-2022-14-d10-1_S76,Oncorhynchus kisutch,Actinopteri,269
+MV1-OCNMS-2022-14-d10-1_S76,Oncorhynchus tshawytscha,Actinopteri,52532
+MV1-OCNMS-2022-14-d10-1_S76,Scorpaenichthys marmoratus,Actinopteri,563
+MV1-OCNMS-2022-14-d10-1_S76,Sebastes,Actinopteri,786
+MV1-OCNMS-2022-14-d10-1_S76,Squalus,Chondrichthyes,7
+MV1-OCNMS-2022-14-d10-1_S76,Synchirus gilli,Actinopteri,238
+MV1-OCNMS-2022-14-d10-1_S76,Xiphister,Actinopteri,117
+MV1-OCNMS-2022-14-d10-1_S76,NA,NA,259
+MV1-OCNMS-2022-15-d10-1_S77,Ammodytidae,Actinopteri,99
+MV1-OCNMS-2022-15-d10-1_S77,Anoplarchus,Actinopteri,301
+MV1-OCNMS-2022-15-d10-1_S77,Apodichthys flavidus,Actinopteri,193
+MV1-OCNMS-2022-15-d10-1_S77,Artedius harringtoni,Actinopteri,1230
+MV1-OCNMS-2022-15-d10-1_S77,Clupea,Actinopteri,93
+MV1-OCNMS-2022-15-d10-1_S77,Clupea pallasii,Actinopteri,20401
+MV1-OCNMS-2022-15-d10-1_S77,Embiotoca lateralis,Actinopteri,150
+MV1-OCNMS-2022-15-d10-1_S77,Gobiesox maeandricus,Actinopteri,35
+MV1-OCNMS-2022-15-d10-1_S77,Hexagrammos decagrammus,Actinopteri,1460
+MV1-OCNMS-2022-15-d10-1_S77,Homo sapiens,Mammalia,1357
+MV1-OCNMS-2022-15-d10-1_S77,Hydrolagus colliei,Chondrichthyes,33
+MV1-OCNMS-2022-15-d10-1_S77,Liparis florae,Actinopteri,9
+MV1-OCNMS-2022-15-d10-1_S77,Liparis mucosus,Actinopteri,209
+MV1-OCNMS-2022-15-d10-1_S77,Oncorhynchus kisutch,Actinopteri,248
+MV1-OCNMS-2022-15-d10-1_S77,Oncorhynchus tshawytscha,Actinopteri,42934
+MV1-OCNMS-2022-15-d10-1_S77,Phytichthys chirus,Actinopteri,195
+MV1-OCNMS-2022-15-d10-1_S77,Scorpaenichthys marmoratus,Actinopteri,575
+MV1-OCNMS-2022-15-d10-1_S77,Sebastes,Actinopteri,134
+MV1-OCNMS-2022-15-d10-1_S77,Synchirus gilli,Actinopteri,312
+MV1-OCNMS-2022-15-d10-1_S77,Xiphister,Actinopteri,268
+MV1-OCNMS-2022-15-d10-1_S77,NA,NA,357
+MV1-OCNMS-2022-16-d1-1_S78,Anoplarchus,Actinopteri,108
+MV1-OCNMS-2022-16-d1-1_S78,Apodichthys flavidus,Actinopteri,122
+MV1-OCNMS-2022-16-d1-1_S78,Artedius harringtoni,Actinopteri,981
+MV1-OCNMS-2022-16-d1-1_S78,Bos taurus,Mammalia,3771
+MV1-OCNMS-2022-16-d1-1_S78,Canis lupus,Mammalia,65
+MV1-OCNMS-2022-16-d1-1_S78,Clupea,Actinopteri,157
+MV1-OCNMS-2022-16-d1-1_S78,Clupea pallasii,Actinopteri,8503
+MV1-OCNMS-2022-16-d1-1_S78,Clupeidae,Actinopteri,156
+MV1-OCNMS-2022-16-d1-1_S78,Gallus,Aves,62
+MV1-OCNMS-2022-16-d1-1_S78,Hemilepidotus hemilepidotus,Actinopteri,102
+MV1-OCNMS-2022-16-d1-1_S78,Hexagrammos decagrammus,Actinopteri,1716
+MV1-OCNMS-2022-16-d1-1_S78,Homo sapiens,Mammalia,1970
+MV1-OCNMS-2022-16-d1-1_S78,Oncorhynchus kisutch,Actinopteri,208
+MV1-OCNMS-2022-16-d1-1_S78,Oncorhynchus tshawytscha,Actinopteri,26289
+MV1-OCNMS-2022-16-d1-1_S78,Ophiodon elongatus,Actinopteri,111
+MV1-OCNMS-2022-16-d1-1_S78,Scorpaenichthys marmoratus,Actinopteri,232
+MV1-OCNMS-2022-16-d1-1_S78,Sebastes,Actinopteri,781
+MV1-OCNMS-2022-16-d1-1_S78,Synchirus gilli,Actinopteri,329
+MV1-OCNMS-2022-16-d1-1_S78,Xiphister,Actinopteri,216
+MV1-OCNMS-2022-16-d1-1_S78,NA,NA,301
+MV1-OCNMS-2022-17-d10-1_S79,Alepisaurus ferox,Actinopteri,196
+MV1-OCNMS-2022-17-d10-1_S79,Anarrhichthys ocellatus,Actinopteri,480
+MV1-OCNMS-2022-17-d10-1_S79,Apodichthys flavidus,Actinopteri,439
+MV1-OCNMS-2022-17-d10-1_S79,Ascelichthys rhodorus,Actinopteri,486
+MV1-OCNMS-2022-17-d10-1_S79,Citharichthys sordidus,Actinopteri,230
+MV1-OCNMS-2022-17-d10-1_S79,Clupea pallasii,Actinopteri,17161
+MV1-OCNMS-2022-17-d10-1_S79,Homo sapiens,Mammalia,1418
+MV1-OCNMS-2022-17-d10-1_S79,Oncorhynchus kisutch,Actinopteri,959
+MV1-OCNMS-2022-17-d10-1_S79,Oncorhynchus tshawytscha,Actinopteri,99395
+MV1-OCNMS-2022-17-d10-1_S79,Ophiodon elongatus,Actinopteri,462
+MV1-OCNMS-2022-17-d10-1_S79,Phocoena phocoena,Mammalia,1471
+MV1-OCNMS-2022-17-d10-1_S79,Scorpaenichthys marmoratus,Actinopteri,520
+MV1-OCNMS-2022-17-d10-1_S79,NA,NA,1630
+MV1-OCNMS-2022-18-d10-1_S80,Bos taurus,Mammalia,304
+MV1-OCNMS-2022-18-d10-1_S80,Clupea,Actinopteri,742
+MV1-OCNMS-2022-18-d10-1_S80,Clupea pallasii,Actinopteri,17696
+MV1-OCNMS-2022-18-d10-1_S80,Hexagrammos decagrammus,Actinopteri,1411
+MV1-OCNMS-2022-18-d10-1_S80,Homo sapiens,Mammalia,2683
+MV1-OCNMS-2022-18-d10-1_S80,Oncorhynchus,Actinopteri,71
+MV1-OCNMS-2022-18-d10-1_S80,Oncorhynchus kisutch,Actinopteri,828
+MV1-OCNMS-2022-18-d10-1_S80,Oncorhynchus tshawytscha,Actinopteri,100563
+MV1-OCNMS-2022-18-d10-1_S80,Ophiodon elongatus,Actinopteri,395
+MV1-OCNMS-2022-18-d10-1_S80,Scorpaenichthys marmoratus,Actinopteri,713
+MV1-OCNMS-2022-18-d10-1_S80,NA,NA,3074
+MV1-OCNMS-2022-19-d10-1_S81,Ammodytidae,Actinopteri,331
+MV1-OCNMS-2022-19-d10-1_S81,Bos taurus,Mammalia,287
+MV1-OCNMS-2022-19-d10-1_S81,Citharichthys sordidus,Actinopteri,221
+MV1-OCNMS-2022-19-d10-1_S81,Clupea pallasii,Actinopteri,30616
+MV1-OCNMS-2022-19-d10-1_S81,Eumetopias jubatus,Mammalia,409
+MV1-OCNMS-2022-19-d10-1_S81,Homo sapiens,Mammalia,551
+MV1-OCNMS-2022-19-d10-1_S81,Hydrolagus colliei,Chondrichthyes,40
+MV1-OCNMS-2022-19-d10-1_S81,Oncorhynchus kisutch,Actinopteri,1129
+MV1-OCNMS-2022-19-d10-1_S81,Oncorhynchus tshawytscha,Actinopteri,99896
+MV1-OCNMS-2022-19-d10-1_S81,Ophiodon elongatus,Actinopteri,367
+MV1-OCNMS-2022-19-d10-1_S81,Scorpaenichthys marmoratus,Actinopteri,471
+MV1-OCNMS-2022-19-d10-1_S81,Sebastes mystinus,Actinopteri,206
+MV1-OCNMS-2022-19-d10-1_S81,Sebastes nebulosus,Actinopteri,657
+MV1-OCNMS-2022-19-d10-1_S81,NA,NA,1485
+MV1-OCNMS-2022-2-d10-1_S64,Allosmerus elongatus,Actinopteri,442
+MV1-OCNMS-2022-2-d10-1_S64,Anarrhichthys ocellatus,Actinopteri,502
+MV1-OCNMS-2022-2-d10-1_S64,Artedius harringtoni,Actinopteri,3323
+MV1-OCNMS-2022-2-d10-1_S64,Ascelichthys rhodorus,Actinopteri,433
+MV1-OCNMS-2022-2-d10-1_S64,Bos taurus,Mammalia,269
+MV1-OCNMS-2022-2-d10-1_S64,Clupea pallasii,Actinopteri,1634
+MV1-OCNMS-2022-2-d10-1_S64,Embiotoca lateralis,Actinopteri,817
+MV1-OCNMS-2022-2-d10-1_S64,Eschrichtius robustus,Mammalia,373
+MV1-OCNMS-2022-2-d10-1_S64,Hemilepidotus,Actinopteri,2276
+MV1-OCNMS-2022-2-d10-1_S64,Hexagrammos decagrammus,Actinopteri,9622
+MV1-OCNMS-2022-2-d10-1_S64,Homo sapiens,Mammalia,4331
+MV1-OCNMS-2022-2-d10-1_S64,Oncorhynchus,Actinopteri,50
+MV1-OCNMS-2022-2-d10-1_S64,Oncorhynchus kisutch,Actinopteri,1393
+MV1-OCNMS-2022-2-d10-1_S64,Oncorhynchus tshawytscha,Actinopteri,104213
+MV1-OCNMS-2022-2-d10-1_S64,Ophiodon elongatus,Actinopteri,5251
+MV1-OCNMS-2022-2-d10-1_S64,Phoca,Mammalia,1370
+MV1-OCNMS-2022-2-d10-1_S64,Phocidae,Mammalia,341
+MV1-OCNMS-2022-2-d10-1_S64,Salmonidae,Actinopteri,75
+MV1-OCNMS-2022-2-d10-1_S64,Sebastes,Actinopteri,10289
+MV1-OCNMS-2022-2-d10-1_S64,Sebastes mystinus,Actinopteri,463
+MV1-OCNMS-2022-2-d10-1_S64,Sebastes nebulosus,Actinopteri,439
+MV1-OCNMS-2022-2-d10-1_S64,Spirinchus starksi,Actinopteri,1204
+MV1-OCNMS-2022-2-d10-1_S64,NA,NA,72
+MV1-OCNMS-2022-20-d10-1_S82,Apodichthys flavidus,Actinopteri,237
+MV1-OCNMS-2022-20-d10-1_S82,Aulorhynchus flavidus,Actinopteri,324
+MV1-OCNMS-2022-20-d10-1_S82,Bos taurus,Mammalia,98
+MV1-OCNMS-2022-20-d10-1_S82,Brachyistius frenatus,Actinopteri,105
+MV1-OCNMS-2022-20-d10-1_S82,Clupea,Actinopteri,140
+MV1-OCNMS-2022-20-d10-1_S82,Clupea pallasii,Actinopteri,28409
+MV1-OCNMS-2022-20-d10-1_S82,Clupeidae,Actinopteri,324
+MV1-OCNMS-2022-20-d10-1_S82,Embiotoca lateralis,Actinopteri,109
+MV1-OCNMS-2022-20-d10-1_S82,Enophrys bison,Actinopteri,322
+MV1-OCNMS-2022-20-d10-1_S82,Hexagrammos decagrammus,Actinopteri,90
+MV1-OCNMS-2022-20-d10-1_S82,Homo sapiens,Mammalia,646
+MV1-OCNMS-2022-20-d10-1_S82,Hydrolagus colliei,Chondrichthyes,43
+MV1-OCNMS-2022-20-d10-1_S82,Jordania zonope,Actinopteri,131
+MV1-OCNMS-2022-20-d10-1_S82,Oncorhynchus kisutch,Actinopteri,481
+MV1-OCNMS-2022-20-d10-1_S82,Oncorhynchus tshawytscha,Actinopteri,63054
+MV1-OCNMS-2022-20-d10-1_S82,Ophiodon elongatus,Actinopteri,95
+MV1-OCNMS-2022-20-d10-1_S82,Phocoena phocoena,Mammalia,76
+MV1-OCNMS-2022-20-d10-1_S82,Scorpaenichthys marmoratus,Actinopteri,323
+MV1-OCNMS-2022-20-d10-1_S82,Sebastes,Actinopteri,2036
+MV1-OCNMS-2022-20-d10-1_S82,Synchirus gilli,Actinopteri,477
+MV1-OCNMS-2022-20-d10-1_S82,NA,NA,1714
+MV1-OCNMS-2022-21-d10-1_S83,Anarrhichthys ocellatus,Actinopteri,135
+MV1-OCNMS-2022-21-d10-1_S83,Artedius harringtoni,Actinopteri,675
+MV1-OCNMS-2022-21-d10-1_S83,Aulorhynchus flavidus,Actinopteri,118
+MV1-OCNMS-2022-21-d10-1_S83,Clupea,Actinopteri,99
+MV1-OCNMS-2022-21-d10-1_S83,Clupea pallasii,Actinopteri,24013
+MV1-OCNMS-2022-21-d10-1_S83,Clupeidae,Actinopteri,64
+MV1-OCNMS-2022-21-d10-1_S83,Embiotoca lateralis,Actinopteri,59
+MV1-OCNMS-2022-21-d10-1_S83,Gobiesox maeandricus,Actinopteri,60
+MV1-OCNMS-2022-21-d10-1_S83,Hexagrammos,Actinopteri,258
+MV1-OCNMS-2022-21-d10-1_S83,Hexagrammos decagrammus,Actinopteri,1072
+MV1-OCNMS-2022-21-d10-1_S83,Homo sapiens,Mammalia,790
+MV1-OCNMS-2022-21-d10-1_S83,Oncorhynchus kisutch,Actinopteri,235
+MV1-OCNMS-2022-21-d10-1_S83,Oncorhynchus tshawytscha,Actinopteri,37127
+MV1-OCNMS-2022-21-d10-1_S83,Ophiodon elongatus,Actinopteri,167
+MV1-OCNMS-2022-21-d10-1_S83,Scorpaenichthys marmoratus,Actinopteri,139
+MV1-OCNMS-2022-21-d10-1_S83,Sebastes,Actinopteri,146
+MV1-OCNMS-2022-21-d10-1_S83,Synchirus gilli,Actinopteri,313
+MV1-OCNMS-2022-21-d10-1_S83,NA,NA,267
+MV1-OCNMS-2022-22-d10-1_S84,Allosmerus elongatus,Actinopteri,92
+MV1-OCNMS-2022-22-d10-1_S84,Ammodytidae,Actinopteri,103
+MV1-OCNMS-2022-22-d10-1_S84,Anoplarchus,Actinopteri,97
+MV1-OCNMS-2022-22-d10-1_S84,Apodichthys flavidus,Actinopteri,129
+MV1-OCNMS-2022-22-d10-1_S84,Clupea pallasii,Actinopteri,15337
+MV1-OCNMS-2022-22-d10-1_S84,Clupeidae,Actinopteri,80
+MV1-OCNMS-2022-22-d10-1_S84,Hemilepidotus,Actinopteri,151
+MV1-OCNMS-2022-22-d10-1_S84,Hexagrammos decagrammus,Actinopteri,283
+MV1-OCNMS-2022-22-d10-1_S84,Homo sapiens,Mammalia,586
+MV1-OCNMS-2022-22-d10-1_S84,Hydrolagus colliei,Chondrichthyes,4
+MV1-OCNMS-2022-22-d10-1_S84,Jordania zonope,Actinopteri,142
+MV1-OCNMS-2022-22-d10-1_S84,Oncorhynchus kisutch,Actinopteri,140
+MV1-OCNMS-2022-22-d10-1_S84,Oncorhynchus tshawytscha,Actinopteri,27589
+MV1-OCNMS-2022-22-d10-1_S84,Phocoena phocoena,Mammalia,120
+MV1-OCNMS-2022-22-d10-1_S84,Phytichthys chirus,Actinopteri,43
+MV1-OCNMS-2022-22-d10-1_S84,Scorpaenichthys marmoratus,Actinopteri,323
+MV1-OCNMS-2022-22-d10-1_S84,Sebastes,Actinopteri,564
+MV1-OCNMS-2022-22-d10-1_S84,NA,NA,251
+MV1-OCNMS-2022-23-d10-1_S85,Anarrhichthys ocellatus,Actinopteri,366
+MV1-OCNMS-2022-23-d10-1_S85,Artedius harringtoni,Actinopteri,1094
+MV1-OCNMS-2022-23-d10-1_S85,Citharichthys stigmaeus,Actinopteri,169
+MV1-OCNMS-2022-23-d10-1_S85,Clupea pallasii,Actinopteri,2651
+MV1-OCNMS-2022-23-d10-1_S85,Embiotoca lateralis,Actinopteri,79
+MV1-OCNMS-2022-23-d10-1_S85,Gadus morhua,Actinopteri,13
+MV1-OCNMS-2022-23-d10-1_S85,Hemilepidotus,Actinopteri,148
+MV1-OCNMS-2022-23-d10-1_S85,Hexagrammos,Actinopteri,165
+MV1-OCNMS-2022-23-d10-1_S85,Hexagrammos decagrammus,Actinopteri,564
+MV1-OCNMS-2022-23-d10-1_S85,Homo sapiens,Mammalia,71
+MV1-OCNMS-2022-23-d10-1_S85,Oncorhynchus kisutch,Actinopteri,558
+MV1-OCNMS-2022-23-d10-1_S85,Oncorhynchus tshawytscha,Actinopteri,55462
+MV1-OCNMS-2022-23-d10-1_S85,Scorpaenichthys marmoratus,Actinopteri,382
+MV1-OCNMS-2022-23-d10-1_S85,Sebastes,Actinopteri,155
+MV1-OCNMS-2022-23-d10-1_S85,Xiphister,Actinopteri,105
+MV1-OCNMS-2022-23-d10-1_S85,NA,NA,473
+MV1-OCNMS-2022-3-d10-1_S65,Allosmerus elongatus,Actinopteri,322
+MV1-OCNMS-2022-3-d10-1_S65,Artedius harringtoni,Actinopteri,352
+MV1-OCNMS-2022-3-d10-1_S65,Ascelichthys rhodorus,Actinopteri,219
+MV1-OCNMS-2022-3-d10-1_S65,Bos taurus,Mammalia,683
+MV1-OCNMS-2022-3-d10-1_S65,Canis lupus,Mammalia,314
+MV1-OCNMS-2022-3-d10-1_S65,Clupea pallasii,Actinopteri,521
+MV1-OCNMS-2022-3-d10-1_S65,Enhydra lutris,Mammalia,45
+MV1-OCNMS-2022-3-d10-1_S65,Gadus,Actinopteri,178
+MV1-OCNMS-2022-3-d10-1_S65,Hemilepidotus,Actinopteri,267
+MV1-OCNMS-2022-3-d10-1_S65,Hemilepidotus hemilepidotus,Actinopteri,264
+MV1-OCNMS-2022-3-d10-1_S65,Hexagrammos decagrammus,Actinopteri,564
+MV1-OCNMS-2022-3-d10-1_S65,Homo sapiens,Mammalia,1782
+MV1-OCNMS-2022-3-d10-1_S65,Liparis fucensis,Actinopteri,86
+MV1-OCNMS-2022-3-d10-1_S65,Oncorhynchus kisutch,Actinopteri,246
+MV1-OCNMS-2022-3-d10-1_S65,Oncorhynchus tshawytscha,Actinopteri,35293
+MV1-OCNMS-2022-3-d10-1_S65,Ophiodon elongatus,Actinopteri,497
+MV1-OCNMS-2022-3-d10-1_S65,Osmeridae,Actinopteri,119
+MV1-OCNMS-2022-3-d10-1_S65,Phoca,Mammalia,91
+MV1-OCNMS-2022-3-d10-1_S65,Phocoena phocoena,Mammalia,149
+MV1-OCNMS-2022-3-d10-1_S65,Sebastes,Actinopteri,1545
+MV1-OCNMS-2022-3-d10-1_S65,Sebastes mystinus,Actinopteri,863
+MV1-OCNMS-2022-3-d10-1_S65,Sebastes nebulosus,Actinopteri,63
+MV1-OCNMS-2022-3-d10-1_S65,Sebastidae,Actinopteri,88
+MV1-OCNMS-2022-3-d10-1_S65,Xiphister,Actinopteri,148
+MV1-OCNMS-2022-3-d10-1_S65,NA,NA,6
+MV1-OCNMS-2022-4-d1-1_S66,Artedius fenestralis,Actinopteri,371
+MV1-OCNMS-2022-4-d1-1_S66,Artedius harringtoni,Actinopteri,307
+MV1-OCNMS-2022-4-d1-1_S66,Ascelichthys rhodorus,Actinopteri,120
+MV1-OCNMS-2022-4-d1-1_S66,Bos taurus,Mammalia,110
+MV1-OCNMS-2022-4-d1-1_S66,Clupeidae,Actinopteri,46
+MV1-OCNMS-2022-4-d1-1_S66,Hemilepidotus,Actinopteri,877
+MV1-OCNMS-2022-4-d1-1_S66,Hexagrammos decagrammus,Actinopteri,1763
+MV1-OCNMS-2022-4-d1-1_S66,Homo sapiens,Mammalia,3122
+MV1-OCNMS-2022-4-d1-1_S66,Liparis fucensis,Actinopteri,271
+MV1-OCNMS-2022-4-d1-1_S66,Oncorhynchus kisutch,Actinopteri,519
+MV1-OCNMS-2022-4-d1-1_S66,Oncorhynchus tshawytscha,Actinopteri,38203
+MV1-OCNMS-2022-4-d1-1_S66,Ophiodon elongatus,Actinopteri,464
+MV1-OCNMS-2022-4-d1-1_S66,Phoca,Mammalia,134
+MV1-OCNMS-2022-4-d1-1_S66,Phocoena phocoena,Mammalia,157
+MV1-OCNMS-2022-4-d1-1_S66,Pholis ornata,Actinopteri,165
+MV1-OCNMS-2022-4-d1-1_S66,Scorpaenichthys marmoratus,Actinopteri,408
+MV1-OCNMS-2022-4-d1-1_S66,Sebastes,Actinopteri,11129
+MV1-OCNMS-2022-4-d1-1_S66,Sebastes mystinus,Actinopteri,199
+MV1-OCNMS-2022-4-d1-1_S66,Sebastes nebulosus,Actinopteri,188
+MV1-OCNMS-2022-4-d1-1_S66,Sebastes paucispinis,Actinopteri,147
+MV1-OCNMS-2022-4-d1-1_S66,NA,NA,1109
+MV1-OCNMS-2022-5-d10-1_S67,Artedius harringtoni,Actinopteri,25
+MV1-OCNMS-2022-5-d10-1_S67,Cymatogaster aggregata,Actinopteri,4
+MV1-OCNMS-2022-5-d10-1_S67,Gadus,Actinopteri,15
+MV1-OCNMS-2022-5-d10-1_S67,Hexagrammos decagrammus,Actinopteri,12
+MV1-OCNMS-2022-5-d10-1_S67,Homo sapiens,Mammalia,59
+MV1-OCNMS-2022-5-d10-1_S67,Hypomesus,Actinopteri,5
+MV1-OCNMS-2022-5-d10-1_S67,Oncorhynchus tshawytscha,Actinopteri,994
+MV1-OCNMS-2022-5-d10-1_S67,Phoca,Mammalia,2
+MV1-OCNMS-2022-5-d10-1_S67,Sebastes,Actinopteri,379
+MV1-OCNMS-2022-5-d10-1_S67,NA,NA,8
+MV1-OCNMS-2022-6-d1-1_S68,Allosmerus elongatus,Actinopteri,626
+MV1-OCNMS-2022-6-d1-1_S68,Homo sapiens,Mammalia,157
+MV1-OCNMS-2022-6-d1-1_S68,Oncorhynchus kisutch,Actinopteri,657
+MV1-OCNMS-2022-6-d1-1_S68,Oncorhynchus tshawytscha,Actinopteri,22430
+MV1-OCNMS-2022-6-d1-1_S68,Sebastidae,Actinopteri,407
+MV1-OCNMS-2022-6-d1-1_S68,NA,NA,17641
+MV1-OCNMS-2022-7-d10-1_S69,Anarrhichthys ocellatus,Actinopteri,352
+MV1-OCNMS-2022-7-d10-1_S69,Anoplarchus,Actinopteri,114
+MV1-OCNMS-2022-7-d10-1_S69,Artedius fenestralis,Actinopteri,288
+MV1-OCNMS-2022-7-d10-1_S69,Artedius harringtoni,Actinopteri,650
+MV1-OCNMS-2022-7-d10-1_S69,Enhydra lutris,Mammalia,99
+MV1-OCNMS-2022-7-d10-1_S69,Gobiesox maeandricus,Actinopteri,67
+MV1-OCNMS-2022-7-d10-1_S69,Hemilepidotus,Actinopteri,567
+MV1-OCNMS-2022-7-d10-1_S69,Hexagrammos,Actinopteri,53
+MV1-OCNMS-2022-7-d10-1_S69,Hexagrammos decagrammus,Actinopteri,6702
+MV1-OCNMS-2022-7-d10-1_S69,Homo sapiens,Mammalia,2189
+MV1-OCNMS-2022-7-d10-1_S69,Hypomesus,Actinopteri,141
+MV1-OCNMS-2022-7-d10-1_S69,Jordania zonope,Actinopteri,146
+MV1-OCNMS-2022-7-d10-1_S69,Larus,Aves,70
+MV1-OCNMS-2022-7-d10-1_S69,Liparis fucensis,Actinopteri,90
+MV1-OCNMS-2022-7-d10-1_S69,Oncorhynchus kisutch,Actinopteri,388
+MV1-OCNMS-2022-7-d10-1_S69,Oncorhynchus tshawytscha,Actinopteri,57486
+MV1-OCNMS-2022-7-d10-1_S69,Ophiodon elongatus,Actinopteri,2169
+MV1-OCNMS-2022-7-d10-1_S69,Osmerus eperlanus,Actinopteri,67
+MV1-OCNMS-2022-7-d10-1_S69,Phoca,Mammalia,146
+MV1-OCNMS-2022-7-d10-1_S69,Phytichthys chirus,Actinopteri,157
+MV1-OCNMS-2022-7-d10-1_S69,Sebastes,Actinopteri,22427
+MV1-OCNMS-2022-7-d10-1_S69,Sebastes mystinus,Actinopteri,992
+MV1-OCNMS-2022-7-d10-1_S69,Sebastes nebulosus,Actinopteri,1257
+MV1-OCNMS-2022-7-d10-1_S69,Sebastes paucispinis,Actinopteri,162
+MV1-OCNMS-2022-7-d10-1_S69,Spirinchus starksi,Actinopteri,515
+MV1-OCNMS-2022-7-d10-1_S69,Xiphister,Actinopteri,350
+MV1-OCNMS-2022-7-d10-1_S69,NA,NA,815
+MV1-OCNMS-2022-8-d10-1_S70,Allosmerus elongatus,Actinopteri,143
+MV1-OCNMS-2022-8-d10-1_S70,Artedius harringtoni,Actinopteri,1481
+MV1-OCNMS-2022-8-d10-1_S70,Embiotoca lateralis,Actinopteri,145
+MV1-OCNMS-2022-8-d10-1_S70,Hemilepidotus,Actinopteri,496
+MV1-OCNMS-2022-8-d10-1_S70,Hexagrammos decagrammus,Actinopteri,734
+MV1-OCNMS-2022-8-d10-1_S70,Homo sapiens,Mammalia,770
+MV1-OCNMS-2022-8-d10-1_S70,Microgadus proximus,Actinopteri,93
+MV1-OCNMS-2022-8-d10-1_S70,Oncorhynchus kisutch,Actinopteri,491
+MV1-OCNMS-2022-8-d10-1_S70,Oncorhynchus tshawytscha,Actinopteri,44568
+MV1-OCNMS-2022-8-d10-1_S70,Ophiodon elongatus,Actinopteri,164
+MV1-OCNMS-2022-8-d10-1_S70,Phoca,Mammalia,340
+MV1-OCNMS-2022-8-d10-1_S70,Scorpaenichthys marmoratus,Actinopteri,345
+MV1-OCNMS-2022-8-d10-1_S70,Sebastes,Actinopteri,2153
+MV1-OCNMS-2022-8-d10-1_S70,Sebastes mystinus,Actinopteri,319
+MV1-OCNMS-2022-8-d10-1_S70,Spirinchus starksi,Actinopteri,172
+MV1-OCNMS-2022-8-d10-1_S70,Xiphister,Actinopteri,239
+MV1-OCNMS-2022-8-d10-1_S70,NA,NA,276
+MV1-OCNMS-2022-9-d10-1_S71,Allosmerus elongatus,Actinopteri,29
+MV1-OCNMS-2022-9-d10-1_S71,Artedius fenestralis,Actinopteri,21
+MV1-OCNMS-2022-9-d10-1_S71,Ascelichthys rhodorus,Actinopteri,57
+MV1-OCNMS-2022-9-d10-1_S71,Embiotoca lateralis,Actinopteri,13
+MV1-OCNMS-2022-9-d10-1_S71,Enhydra lutris,Mammalia,20
+MV1-OCNMS-2022-9-d10-1_S71,Gobiesox maeandricus,Actinopteri,49
+MV1-OCNMS-2022-9-d10-1_S71,Hemilepidotus,Actinopteri,134
+MV1-OCNMS-2022-9-d10-1_S71,Hemilepidotus hemilepidotus,Actinopteri,35
+MV1-OCNMS-2022-9-d10-1_S71,Hexagrammos,Actinopteri,28
+MV1-OCNMS-2022-9-d10-1_S71,Hexagrammos decagrammus,Actinopteri,1798
+MV1-OCNMS-2022-9-d10-1_S71,Homo sapiens,Mammalia,424
+MV1-OCNMS-2022-9-d10-1_S71,Microgadus proximus,Actinopteri,31
+MV1-OCNMS-2022-9-d10-1_S71,Oncorhynchus kisutch,Actinopteri,77
+MV1-OCNMS-2022-9-d10-1_S71,Oncorhynchus tshawytscha,Actinopteri,9596
+MV1-OCNMS-2022-9-d10-1_S71,Ophiodon elongatus,Actinopteri,109
+MV1-OCNMS-2022-9-d10-1_S71,Phoca,Mammalia,6
+MV1-OCNMS-2022-9-d10-1_S71,Pleuronectidae,Actinopteri,18
+MV1-OCNMS-2022-9-d10-1_S71,Scorpaenichthys marmoratus,Actinopteri,55
+MV1-OCNMS-2022-9-d10-1_S71,Sebastes,Actinopteri,1986
+MV1-OCNMS-2022-9-d10-1_S71,Sebastes mystinus,Actinopteri,85
+MV1-OCNMS-2022-9-d10-1_S71,Sebastes nebulosus,Actinopteri,69
+MV1-OCNMS-2022-9-d10-1_S71,Sebastes paucispinis,Actinopteri,16
+MV1-OCNMS-2022-9-d10-1_S71,Spirinchus starksi,Actinopteri,136
+MV1-OCNMS-2022-9-d10-1_S71,Xiphister,Actinopteri,22
+MV1-OCNMS-2022-9-d10-1_S71,NA,NA,39
+MV1-OCNMS-2022-EB-d1-1_S86,Gadus,Actinopteri,293
+MV1-OCNMS-2022-EB-d1-1_S86,Homo sapiens,Mammalia,2912
+MV1-OCNMS-2022-EB-d1-1_S86,Oncorhynchus,Actinopteri,103
+MV1-OCNMS-2022-EB-d1-1_S86,Oncorhynchus kisutch,Actinopteri,942
+MV1-OCNMS-2022-EB-d1-1_S86,Oncorhynchus tshawytscha,Actinopteri,87670
+MV1-OCNMS-2022-EB-d1-1_S86,NA,NA,43
+MV1-pos-control-d1-1_S62,Homo sapiens,Mammalia,5
+MV1-pos-control-d1-1_S62,Macropus,Mammalia,22
+MV1-pos-control-d1-1_S62,Macropus cf. giganteus TL-2021,Mammalia,26
+MV1-pos-control-d1-1_S62,Macropus fuliginosus,Mammalia,14
+MV1-pos-control-d1-1_S62,Osphranter robustus,Mammalia,15
+MV1-pos-control-d1-1_S62,Osphranter rufus,Mammalia,14525
+MV1-pos-control-d1-1_S62,NA,NA,5
+MV1-pos-control-d1-2_S54,Gallus,Aves,20
+MV1-pos-control-d1-2_S54,Homo sapiens,Mammalia,2
+MV1-pos-control-d1-2_S54,Macropus,Mammalia,55
+MV1-pos-control-d1-2_S54,Macropus cf. giganteus TL-2021,Mammalia,17
+MV1-pos-control-d1-2_S54,Macropus fuliginosus,Mammalia,43
+MV1-pos-control-d1-2_S54,Osphranter robustus,Mammalia,34
+MV1-pos-control-d1-2_S54,Osphranter rufus,Mammalia,31790
+MV1-pos-control-d1-2_S54,NA,NA,23

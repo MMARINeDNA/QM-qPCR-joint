@@ -1,0 +1,27 @@
+﻿Species,Common Name,Class,Proportion from gDNA ,Proportion from mtDNA
+Carcharodon carcharias,Great white shark,Chondrichthyes,0.0756,0.045
+Clupea pallasii,Herring,Actinopterygii,0.0756,0.2736
+Diogenichthys atlanticus,Longfin lanternfish,Actinopterygii,0.0756,0.0845
+Engraulis mordax,Northern anchovy,Actinopterygii,0.0756,0.0853
+Hippoglossus stenolepis,Pacific halibut,Actinopterygii,0.0756,0.031
+Leuroglossus stilbius,California smoothtongue,Actinopterygii,0.0756,0.0916
+Merluccius productus,North Pacific hake,Actinopterygii,0.0756,0.0607
+Oncorhynchus nerka,Sockeye salmon,Actinopterygii,0.0756,0.0493
+Oncorhynchus tshawytscha,Chinook salmon,Actinopterygii,0.0756,0.005
+Sardinops sagax,Pacific sardine,Actinopterygii,0.0756,0.0209
+Thaleichthys pacificus,Eulachon,Actinopterygii,0.0756,0.0793
+Trachurus symmetricus,Pacific jack mackerel,Actinopterygii,0.0756,0.0634
+Balaenoptera acutorostrata,Minke whale,Mammalia,0.0756,0.0094
+Balaenoptera musculus,Blue whale,Mammalia,0.0066,0.0064
+Balaenoptera physalus,Fin whale,Mammalia,0.0066,0.0048
+Delphinus delphis,Common dolphin,Mammalia,0.0066,0.0022
+Globicephala macrorhynchus,Pilot whale,Mammalia,0.0066,0.0126
+Grampus griseus,Risso’s dolphin,Mammalia,0.0066,0.0021
+Megaptera novaeangliae,Humpback whale,Mammalia,0.0066,0.0085
+Mesoplodon densirostris,Blainville's beaked whale,Mammalia,0.0066,0.0067
+Orcinus orca,Killer whale,Mammalia,0.0066,0.0122
+Peponocephala electra,Melon headed whale,Mammalia,0.0066,0.0059
+Phocoena phocoena,Harbor porpoise,Mammalia,0.0066,0.014
+Phocoenoides dalli,Dall's porpoise,Mammalia,0.0066,0.0066
+Physeter catodon,Sperm whale,Mammalia,0.0066,0.0143
+Ziphius cavirostris,Cuvier's beaked whale,Mammalia,0.0066,0.0047
