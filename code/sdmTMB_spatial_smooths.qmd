@@ -19,7 +19,7 @@ editor: visual
 
 The purpose of this script is to take the output of the QM/qPCR joint model and apply simple spatial models to it to make smoothed output maps.
 
-```{r}
+```{r,include=F}
 library(tidyverse)
 library(sf)
 library(sdmTMB)
@@ -29,7 +29,7 @@ library(here)
 library(marmap)
 library(visreg)
 options(dplyr.summarise.inform=FALSE)
-knitr::opts_chunk$set(warning=FALSE,message=FALSE)
+knitr::opts_chunk$set(warning=FALSE,message=FALSE,echo = F,error=F)
 ```
 
 ```{r}
@@ -92,6 +92,31 @@ coaststates <- ne_states(country='United States of America',returnclass = 'sf') 
 
 ## Plot Raw Data
 
+We can plot the raw reads from metabarcoding, the fitted concentrations from the joint model, and their relative difference
+
+### Raw Reads
+
+```{r,fig.width=8,fig.height=12}
+sp_reads_maps <- purrr::map(unique(dat_sf$species),function(sp){
+  df <- dat_sf %>% 
+    filter(species==sp)
+  ggplot()+
+    geom_sf(data=coaststates,fill='gray80')+
+    geom_sf(data=df,aes(size=raw_reads),fill=NA,shape=1)+
+    facet_wrap(~depth_cat,nrow=1)+
+    coord_sf(datum=NA)+
+    # scale_color_viridis()+
+    scale_size_continuous(range=c(1,10))+
+    xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+    labs(title=sp,size="Reads")
+})
+sp_reads_maps <- plot_grid(plotlist=sp_reads_maps,nrow=3)
+ggsave(here('plots','raw_reads_maps.png'),sp_reads_maps,h=12,w=8,bg='white')
+sp_reads_maps
+```
+
+### Estimated Concentration
+
 ```{r,fig.width=8,fig.height=12}
 sp_dat_maps <- purrr::map(unique(dat_sf$species),function(sp){
   df <- dat_sf %>% 
@@ -108,15 +133,49 @@ sp_dat_maps <- purrr::map(unique(dat_sf$species),function(sp){
 })
 sp_maps <- plot_grid(plotlist=sp_dat_maps,nrow=3)
 ggsave(here('plots','log_D_maps.png'),sp_maps,h=12,w=8,bg='white')
+sp_maps
 ```
 
-```{r,fig.height=6,fig.width=8}
+### Relative Difference
+
+One way we can plot the relative difference maps is to put reads and copies on a 0-1 scale and then difference them. For now we just divide by the maximum value (instead of, e.g., z-scoring).
+
+In these maps, blue circles show samples where the raw reads are higher on the relative scale than the model-corrected eDNA concentrations, while the yellow triangles show samples where the model-corrected eDNA concentrations are larger than the raw reads. This figure gives a sense, for each species, how the spatial pattern changes when moving from uncorrected reads into true concentration space.
+
+```{r,fig.width=8,fig.height=12}
+sp_rel_diff_maps <- purrr::map(unique(dat_sf$species),function(sp){
+  df <- dat_sf %>% 
+    filter(species==sp) %>% 
+    mutate(conc_norm=exp(mean)/max(exp(mean)),
+           reads_norm=raw_reads/max(raw_reads),
+           conc_reads_diff=conc_norm-reads_norm) %>% 
+    mutate(conc_greater=conc_reads_diff>0)
+  ggplot()+
+    geom_sf(data=coaststates,fill='gray80')+
+    geom_sf(data=df,aes(size=abs(conc_reads_diff),shape=conc_greater,color=conc_greater),fill=NA)+
+    facet_wrap(~depth_cat,nrow=1)+
+    coord_sf(datum=NA)+
+    # scale_color_viridis()+
+    scale_size_continuous(range=c(1,8))+
+    scale_shape_discrete()+
+    scale_color_manual(values=c("#0D0887FF", "#F0F921FF"))+
+    xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+    labs(title=sp,size="Difference",shape="Rel. Conc. >\n Rel. Reads",color="Rel. Conc. >\n Rel. Reads")
+})
+sp_rel_diff_maps <- plot_grid(plotlist=sp_rel_diff_maps,nrow=3)
+ggsave(here('plots','rel_diff_maps.png'),sp_rel_diff_maps,h=12,w=8,bg='white')
+sp_rel_diff_maps
+```
+
+### Non-spatial Depth Patterns
+
+```{r,fig.height=3,fig.width=8}
 # plot of estimates across depth (non-spatial)
 rawdat_depth_plot <- dat_utm %>% 
   ggplot(aes(mean,fill=factor(species)))+
-  geom_histogram(alpha=0.4,bins=20)+
-  facet_wrap(~depth_cat,scales='free_x')+
-  labs(fill="Species",x="Log Conc.")
+  geom_histogram(alpha=0.6,bins=20)+
+  facet_wrap(~depth_cat,scales='free_x',nrow=1)+
+  labs(fill="Species",x="Log Conc.",title="Log eDNA Concentration by Depth")
 
 rawdat_depth_plot
 
@@ -124,9 +183,9 @@ rawdat_depth_plot
 rawdat_depth_plot2 <- dat_utm %>% 
   filter(mean>-5) %>% 
   ggplot(aes(mean,fill=factor(species)))+
-  geom_histogram(alpha=0.4,bins=10)+
-  facet_wrap(~depth_cat,scales='free_x')+
-  labs(fill="Species",x="Log Conc.")
+  geom_histogram(alpha=0.6,bins=10)+
+  facet_wrap(~depth_cat,scales='free_x',nrow=1)+
+  labs(fill="Species",x="Log Conc.",title="Log eDNA Concentration by Depth (non-zeroes)")
 
 rawdat_depth_plot2
 
@@ -136,20 +195,22 @@ rawdat_depth_plot3 <- dat_utm %>%
   ggplot(aes(-depth_cat,mean))+
   geom_point()+
   coord_flip()+
-  facet_wrap(~species,scales='free_x')+
-  labs(fill="Species",x="Log Conc.")
+  facet_wrap(~species,scales='free_x',nrow=1)+
+  theme(strip.text = element_text(size=7))+
+  labs(fill="Species",x="Depth",y="Log Conc.",title="Log eDNA Concentration by Depth")
 
 rawdat_depth_plot3
 
 # summed
 rawdat_depth_plot4 <- dat_utm %>%
   group_by(species,depth_cat) %>% 
-  summarise(tot=sum(exp(mean))) %>% 
-  ggplot(aes(-depth_cat,tot))+
-  geom_col()+
+  summarise(mean_copies=mean(exp(mean))) %>% 
+  ggplot(aes(-depth_cat,mean_copies))+
+  geom_col(width=10)+
   coord_flip()+
-  facet_wrap(~species,scales='free_x')+
-  labs(fill="Species",x="Sum Across Samples")
+  facet_wrap(~species,scales='free_x',nrow=1)+
+  theme(strip.text = element_text(size=7))+
+  labs(fill="Species",y="Mean Copies",x="Depth",title="Mean eDNA Concentration by Depth")
 
 rawdat_depth_plot4
 
@@ -158,10 +219,12 @@ rawdat_depth_plot5 <- dat_utm %>%
   ggplot(aes(factor(depth_cat),utm.lat.km,size=exp(mean)))+
   geom_point()+
   scale_size_continuous(range = c(1,10))+
-  facet_wrap(~species)+
-  labs(x="Depth",y="Northings (km)",size="Conc.")
+  facet_wrap(~species,nrow=2)+
+  theme(strip.text = element_text(size=7))+
+  labs(x="Depth",y="Northings (km)",size="Conc.",title="eDNA Concentration by Depth and Latitude")
 
 rawdat_depth_plot5
+
 ggsave(here('plots','log_D_lat_depth.png'),rawdat_depth_plot5,h=6,w=8,bg='white')
 ```
 
@@ -181,7 +244,7 @@ gr_pred_df <- gr_pred %>%
   mutate(grID=row_number())
 ```
 
-Another option using the convex/concave hull
+We use `fmesher` to draw a buffered outline of our sample data, to set bounds for our projection domain. The projection grid itself is made up of 5km-width hexagons.
 
 ```{r}
 ch_pred <- gr_pred %>% 
@@ -193,9 +256,13 @@ ch_pred_df <- ch_pred %>%
   mutate(utm.lon.km=ch_centers[,1],utm.lat.km=ch_centers[,2]) %>% 
   st_set_geometry(NULL) %>% 
   mutate(grID=row_number())
+ggplot(ch_pred)+
+  geom_sf()
 ```
 
 ## Bathymetry
+
+Here's a covariate for water depth (bathymetry)
 
 ```{r}
 ### Go get bathymetric data from NOAA to overlay on the samples
@@ -223,11 +290,10 @@ dat_utm <- dat_utm %>%
          log_bathy_scaled2=log_bathy_scaled^2)
 ```
 
-
 ```{r}
 # for the prediction grid
 ch_pred_xy <- ch_pred_df %>% 
-  st_as_sf(coords=c('utm.lon.km','utm.lat.km'),crs="+proj=utm +zone=10 +datum=WGS84 +units=km +no_defs +type=crs") %>% 
+  st_as_sf(coords=c('utm.lon.km','utm.lat.km'),crs="+proj=utm +zone=10 +datum=WGS84 +units=km +no_defs +type=crs") %>%
   st_transform(4326) %>% 
   st_coordinates()
 ch_pred_bathy <- get.depth(b,ch_pred_xy,locator=F) %>% 
@@ -257,7 +323,7 @@ ch_pred %>%
 
 ## Distance from Shore
 
-Derive a predictor that measures straight-line distance to the coast
+Derive a predictor that measures straight-line distance to the coast.
 
 ```{r}
 # gr_pred_df <- gr_pred_df %>% mutate(dist_shore=as.numeric(gr_dists),dist_shore2=dist_shore^2) %>% 
@@ -298,6 +364,8 @@ ch_pred %>%
 #   mutate(depth_cat=as.factor(depth_cat))
 ```
 
+How correlated are distance from shore and bathymetry?
+
 ```{r}
 # how correlated are depth and distance?
 ch_pred_df %>% 
@@ -311,7 +379,7 @@ ch_pred_df %>%
 ```
 ## Distance from Shelf Break (200m isobath)
 
-Derive a predictor that measures straight-line distance to the shelf break
+We can also use a similar approach to derive a predictor that measures straight-line distance to the 200m shelf break
 
 ```{r}
 # plot(b, image=TRUE, deep=-1000, shallow=0, step=250)
@@ -364,10 +432,8 @@ ggplot()+
   geom_sf(data=ch_pred,aes(fill=dist_shelf_scaled),color=NA)+
   geom_sf(data=bdf,color='red',size=0.2)+
   scale_fill_gradient2()+
-  labs(title="Distance from Shelf",fill="km")
+  labs(title="Distance from Shelf\n(scaled)",fill="km")
 ```
-
-## Depth-expanded Projection
 
 ```{r}
 # duplicate the prediction df for different depth categories, for models that include depth_cat
@@ -383,7 +449,7 @@ ch_pred_df_depth <- purrr::map(unique(dat$depth_cat),function(x)ch_pred_df %>% m
 
 ## Depth Integrated
 
-Make a version of the data that is depth-integrated
+Make a version of the data that is depth-integrated, in case we want to use depth-integrated data in the models.
 
 ```{r}
 dat_utm_int <- dat_utm %>% 
@@ -399,32 +465,32 @@ dat_utm_int <- dat_utm %>%
 depth_int_hist <- dat_utm_int %>% 
   ggplot(aes(log(tot)))+
   geom_density()+
-  facet_wrap(~species)+
-  labs(title="Zeroes Informed")
+  facet_wrap(~species)
 depth_int_hist
 ```
 
 ## Zero-informed
 
-In the distributions above, there is a clear delineation for all species except hake at ~ -5 log copies =  ~0.006 copies. Let's make a version of the data where we impose absence as <-5 estimated log copies
+In the distributions above, there is a clear delineation for all species except hake at ~ -2 log copies =  ~0.14 copies, which is certainly below our detection limit. Let's make a version of the data where we impose absence as <-2 estimated log copies. Having zeroes in the data will likely help the SDMs to converge when using a Tweedie link.
 
 ```{r}
 dat_zeroes <- dat_utm %>% 
   mutate(depth_num=depth) %>% 
   mutate(conc=exp(mean)) %>% 
-  mutate(conc=ifelse(conc<exp(-5),0,conc))
+  mutate(conc=ifelse(conc<exp(-2),0,conc))
 # look at the 'raw' integrated data
 dat_zeroes_hist <- dat_zeroes %>% 
   ggplot(aes(log(conc)))+
   geom_density()+
-  facet_wrap(~species)
+  facet_wrap(~species)+
+  labs(title="Log Concentration (zeroes imposed for < -2 log copies)")
 dat_zeroes_hist
 ```
 
 
 ## Model Mesh
 
-Create candidate INLA meshes for the sdmTMB models.
+Create candidate INLA meshes for the sdmTMB models, with varying complexity. Here's one example:
 
 ```{r}
 # make a range of meshes to try, with different cutoffs = different complexity/number of triangles
@@ -439,123 +505,14 @@ meshes <- purrr::map(seq(10,80,by=4),function(co){
 )
 })
 
-walk(meshes,plot)
-
+# walk(meshes,plot)
+plot(meshes[[1]])
 meshes.table <- tibble(meshnum=1:length(meshes),vertices=map_dbl(meshes,function(x)x$n))
 ```
 
 # Run Models
 
-Testing ground
-
-```{r}
-# distance from shore is the only covariate
-# anisotropic variance OFF for now
-# dat_anchovy <- dat_zeroes %>% 
-#   filter(species=="Engraulis mordax") %>% 
-#   mutate(depth_cat=as.factor(depth_cat)) %>% 
-#   mutate(depth_as_time=as.integer(depth_cat))
-
-dat_anchovy <- dat_utm %>% 
-  filter(species=="Engraulis mordax") %>% 
-  mutate(depth_cat=as.factor(depth_cat)) %>% 
-  mutate(depth_as_time=as.integer(depth_cat)) %>% 
-  mutate(conc=exp(mean))
-
-anch1 <-  sdmTMB(
-  data = dat_anchovy,
-  # formula = conc~s(dist_shelf_scaled,k=3)+s(depth_num,k=3),
-  # formula = conc~s(dist_shelf_scaled,k=3)+depth_cat,
-  formula = conc~0+dist_shelf_scaled+dist_shelf_scaled2,
-  # formula = conc~log_dist_scaled+log_dist_scaled2+depth_cat,
-  # formula = conc~s(log_dist_scaled,k=3)+depth_cat,
-  # formula = conc~s(log_bathy_scaled,k=3)+depth_cat,
-  # formula = conc~log_bathy_scaled+log_bathy_scaled2+depth_cat,
-  # formula = conc~log_bathy_scaled+log_bathy_scaled2+s(depth_num),
-  mesh=make_mesh(dat_anchovy,c('utm.lon.km','utm.lat.km'),mesh=meshes[[2]]),
-  family = tweedie(),
-  spatial = "on",
-  time = "depth_as_time",
-  spatiotemporal = "IID"
-)
-sanity(anch1)
-mresids <- residuals(anch1,model=1)
-qqnorm(mresids)
-qqline(mresids)
-# mresids <- residuals(anch1,model=2)
-# qqnorm(mresids)
-# qqline(mresids)
-```
-
-
-```{r}
-# predict
-anch1_preds_ch <- predict(anch1,newdata=ch_pred_df_depth) %>%
-  left_join(ch_pred %>% select(grID),by=join_by(grID)) %>%
-  st_as_sf()
-
-anch1_preds_ch_plot <- ggplot()+
-  geom_sf(data=coaststates,fill='gray80')+
-  geom_sf(data=anch1_preds_ch,aes(fill=est),color=NA)+
-  # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
-  scale_fill_viridis()+
-  facet_wrap(~depth_cat,nrow=1)+
-  xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
-  labs(fill="Log Copies",title="Engraulis mordax",x="")
-
-anch1_preds_ch_plot
-
-#presence/absence (for delta families)
-# anch1_preds_ch_plot1 <- ggplot()+
-#   geom_sf(data=coaststates,fill='gray80')+
-#   geom_sf(data=anch1_preds_ch,aes(fill=est2),color=NA)+
-#   # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
-#   scale_fill_viridis()+
-#   facet_wrap(~depth_cat)+
-#   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
-#   labs(fill="Log Copies",title="Engraulis mordax",x="")
-# 
-# anch1_preds_ch_plot1
-# 
-# anch1_preds_ch_plot2 <- ggplot()+
-#   geom_sf(data=coaststates,fill='gray80')+
-#   geom_sf(data=anch1_preds_ch,aes(fill=1/(1+exp(-est1))),color=NA)+
-#   # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
-#   scale_fill_viridis()+
-#   facet_wrap(~depth_cat)+
-#   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
-#   labs(fill="Prob.",title="Engraulis mordax",x="")
-# 
-# anch1_preds_ch_plot2
-```
-
-```{r}
-# conditional effects
-nd <- crossing(
-  dist_shelf_scaled = seq(min(dat_anchovy$dist_shelf_scaled),
-    max(dat_anchovy$dist_shelf_scaled),
-    length.out = 100),
-  depth_as_time=c(1:5)) %>% 
-  mutate(dist_shelf_scaled2=dist_shelf_scaled^2) %>% 
-  mutate(depth_cat=as.factor(0))
-p <- predict(anch1, newdata = nd, se_fit = TRUE, re_form = NA)
-
-ggplot(p, aes(dist_shelf_scaled, est,
-  ymin = est - 1.96 * est_se,
-  ymax = est + 1.96 * est_se
-)) +
-  geom_line() +
-  geom_ribbon(alpha = 0.4) +
-  scale_x_reverse() +
-  coord_cartesian(expand = F) +
-  labs(x = "Distance from 200m Isobath", y = "Anchovy Copies")
-
-# in link space
-visreg::visreg(anch1,"dist_shelf_scaled2")
-
-```
-
-Now, write a function to do this for any species. We'll stick with the smaller projection domain for now, and will adopt a consistent model equation form
+We write a function to run a simple SDM for any species in the data. We will adopt a consistent model equation that represents estimated log copies as a quadratic function of distance from the 200m shelf, along with a separate spatial field for each depth category.
 
 ## sdmTMB Wrapper
 
@@ -570,7 +527,8 @@ spatial_only_model <- function(df=dat_utm,spp,mesh,f){
   
   # if species is hake, use lognormal instead of tweedie (because hake data has no zeroes)
   if(spp=="Merluccius productus"){
-    m <-  sdmTMB(
+    dat_sub =  dat_sub %>% filter(conc>0)
+    m <-  try(sdmTMB(
       data = dat_sub,
       formula = as.formula(f),
       mesh=make_mesh(dat_sub,c('utm.lon.km','utm.lat.km'),mesh=mesh),
@@ -579,9 +537,9 @@ spatial_only_model <- function(df=dat_utm,spp,mesh,f){
       anisotropy = F,
       time = "depth_as_time",
       spatiotemporal = "IID"
-    ) 
+    ), silent=F)
   } else {
-  m <-  sdmTMB(
+  m <-  try(sdmTMB(
     data = dat_sub,
     formula = as.formula(f),
     mesh=make_mesh(dat_sub,c('utm.lon.km','utm.lat.km'),mesh=mesh),
@@ -590,11 +548,21 @@ spatial_only_model <- function(df=dat_utm,spp,mesh,f){
     anisotropy = F,
     time = "depth_as_time",
     spatiotemporal = "IID"
-  )
+  ),
+  silent=F)
   }
   
+  if(class(m)=="try-error"){
+    print(paste("Error."))
+  } else{
   # print sdmTMB::sanity() to catch bad models
   sanity(m)
+  if(sanity(m)$all_ok){
+    return(m)
+  } else{
+    return("Problem with sanity")
+  }}
+
   
   # # on the restricted domain hull
   # preds_ch <- predict(m,newdata=ch_pred_df_depth) %>%
@@ -614,18 +582,13 @@ spatial_only_model <- function(df=dat_utm,spp,mesh,f){
   #   fit=m,
   #   pred_map=ch_plot
   # ))
-  if(sanity(m)$all_ok){
-    return(m)
-  } else{
-    return("Problem with sanity")
-  }
 }
 
 ```
 
 ## Mesh Complexity Test
 
-For each species, we find the mesh (out of a starter set varying in complexity) that leads to the highest likelihood of the SDM.
+For each species, we use this consistent model form with different INLA meshes to find the mesh that leads to the highest likelihood of the SDM (out of the starter set above that varies in complexity).
 
 ### Anchovy
 
@@ -645,7 +608,7 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Anchovy Models Mesh Test")
 ```
-Looks like Mesh 4 is the best for anchovy, with 116 vertices.
+Looks like Mesh 3 is the best for anchovy, with 154 vertices.
 
 ### Mackerel
 
@@ -665,7 +628,8 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Mackerel Models Mesh Test")
 ```
-Looks like Mesh 2 is the best for mackerel, with 168 vertices.
+
+Looks like Mesh 4 is the best for mackerel, with 116 vertices.
 
 ### Sardine
 
@@ -685,7 +649,7 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Sardine Models Mesh Test")
 ```
-Looks like Mesh 2 is the best for sardine, with 168 vertices.
+Looks like Mesh 1 is the best for sardine, with 204 vertices.
 
 ### Eulachon
 
@@ -705,7 +669,8 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Eulachon Models Mesh Test")
 ```
-For eulachon, the mesh with only 44 vertices worked best (Mesh 14). If this is too sparse, maybe the one with 116 vertices (Mesh 4)
+
+For eulachon, Mesh 5  is the best, with 106 vertices.
 
 ### Herring
 
@@ -725,7 +690,8 @@ meshtest %>%
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Herring Models Mesh Test")
 ```
-Looks like Mesh 9 is the best for herring, with 63 vertices.
+
+Looks like Mesh 1 is the best for herring, with 204 vertices.
 
 ### Hake
 
@@ -746,26 +712,26 @@ meshtest %>%
   geom_point()+
   geom_line()+
   labs(x="Vertices",y="Likelihood",title="Hake Models Mesh Test")
-
 ```
+
 Looks like Mesh 1 is the best for hake, with 204 vertices.
 
 ## All Species
 
-Using the chosen mesh and formula from the examples above, try for all species
+Using the chosen mesh and formula from the examples above, build final SDM for all .
 
 ```{r,fig.height=6,fig.width=4}
-anchovy_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Engraulis mordax",mesh=meshes[[4]])
+anchovy_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Engraulis mordax",mesh=meshes[[3]])
 
 hake_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Merluccius productus",mesh=meshes[[1]])
 
-sardine_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Sardinops sagax",mesh=meshes[[2]])
+sardine_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Sardinops sagax",mesh=meshes[[1]])
 
-mackerel_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Trachurus symmetricus",mesh=meshes[[2]])
+mackerel_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Trachurus symmetricus",mesh=meshes[[4]])
 
-eulachon_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Thaleichthys pacificus",mesh=meshes[[4]])
+eulachon_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Thaleichthys pacificus",mesh=meshes[[5]])
 
-herring_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Clupea pallasii",mesh=meshes[[9]])
+herring_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Clupea pallasii",mesh=meshes[[1]])
 
 all_m <- list(anchovy=anchovy_m,hake=hake_m,sardine=sardine_m,mackerel=mackerel_m,eulachon=eulachon_m,herring=herring_m)
 ```
@@ -806,14 +772,22 @@ ggsave(here('plots','mackerel_preds.png'),mackerel_map,h=6,w=8,bg='white')
 ggsave(here('plots','eulachon_preds.png'),eulachon_map,h=6,w=8,bg='white')
 ggsave(here('plots','herring_preds.png'),herring_map,h=6,w=8,bg='white')
 
+anchovy_map
+hake_map
+sardine_map
+mackerel_map
+eulachon_map
+herring_map
 ```
 
 ## Inshore/Offshore
 
+Plot the conditional effect of distance from the shelf break, for each species.
+
 ```{r}
 nd <- crossing(
-  dist_shelf_scaled = seq(min(dat_anchovy$dist_shelf_scaled),
-    max(dat_anchovy$dist_shelf_scaled),
+  dist_shelf_scaled = seq(min(dat_zeroes$dist_shelf_scaled),
+    max(dat_zeroes$dist_shelf_scaled),
     length.out = 100),
   depth_as_time=1:5) %>%
   mutate(dist_shelf_scaled2=dist_shelf_scaled^2)
@@ -840,7 +814,7 @@ ggsave(here('plots','inshore_offshore_conditional.png'),in_off_plot,h=6,w=8,bg='
 ```
 ## Species Stacking
 
-We can stack models and look at overlap
+Finally, we can stack models and look at overlaps between species. There are many ways to do this, but for now we show the number of species in each projected grid cell that are at or above their 50%/80% quantile across all samples and depths.
 
 ```{r}
 preds_all <- map2(all_m,names(all_m),function(k,l){
@@ -899,3 +873,113 @@ overlap_quant80_map
 ggsave(here('plots','species overlap 80 percent quantile.png'),overlap_quant80_map,h=6,w=8,bg='white')
 ```
 
+# Model Testing and Scratch Notes
+
+Testing ground
+
+```{r,include=F}
+# distance from shore is the only covariate
+# anisotropic variance OFF for now
+dat_anchovy <- dat_zeroes %>%
+  filter(species=="Engraulis mordax") %>%
+  mutate(depth_cat=as.factor(depth_cat)) %>%
+  mutate(depth_as_time=as.integer(depth_cat))
+
+# dat_anchovy <- dat_utm %>% 
+#   filter(species=="Engraulis mordax") %>% 
+#   mutate(depth_cat=as.factor(depth_cat)) %>% 
+#   mutate(depth_as_time=as.integer(depth_cat)) %>% 
+#   mutate(conc=exp(mean))
+
+anch1 <-  sdmTMB(
+  data = dat_anchovy,
+  # formula = conc~s(dist_shelf_scaled,k=3)+s(depth_num,k=3),
+  # formula = conc~s(dist_shelf_scaled,k=3)+depth_cat,
+  formula = conc~0+dist_shelf_scaled+dist_shelf_scaled2,
+  # formula = conc~log_dist_scaled+log_dist_scaled2+depth_cat,
+  # formula = conc~s(log_dist_scaled,k=3)+depth_cat,
+  # formula = conc~s(log_bathy_scaled,k=3)+depth_cat,
+  # formula = conc~log_bathy_scaled+log_bathy_scaled2+depth_cat,
+  # formula = conc~log_bathy_scaled+log_bathy_scaled2+s(depth_num),
+  mesh=make_mesh(dat_anchovy,c('utm.lon.km','utm.lat.km'),mesh=meshes[[2]]),
+  family = tweedie(),
+  spatial = "on",
+  time = "depth_as_time",
+  spatiotemporal = "IID"
+)
+sanity(anch1)
+mresids <- residuals(anch1,model=1)
+qqnorm(mresids)
+qqline(mresids)
+# mresids <- residuals(anch1,model=2)
+# qqnorm(mresids)
+# qqline(mresids)
+```
+
+
+```{r,include=F}
+# predict
+anch1_preds_ch <- predict(anch1,newdata=ch_pred_df_depth) %>%
+  left_join(ch_pred %>% select(grID),by=join_by(grID)) %>%
+  st_as_sf()
+
+anch1_preds_ch_plot <- ggplot()+
+  geom_sf(data=coaststates,fill='gray80')+
+  geom_sf(data=anch1_preds_ch,aes(fill=est),color=NA)+
+  # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
+  scale_fill_viridis()+
+  facet_wrap(~depth_cat,nrow=1)+
+  xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+  labs(fill="Log Copies",title="Engraulis mordax",x="")
+
+anch1_preds_ch_plot
+
+#presence/absence (for delta families)
+# anch1_preds_ch_plot1 <- ggplot()+
+#   geom_sf(data=coaststates,fill='gray80')+
+#   geom_sf(data=anch1_preds_ch,aes(fill=est2),color=NA)+
+#   # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
+#   scale_fill_viridis()+
+#   facet_wrap(~depth_cat)+
+#   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+#   labs(fill="Log Copies",title="Engraulis mordax",x="")
+# 
+# anch1_preds_ch_plot1
+# 
+# anch1_preds_ch_plot2 <- ggplot()+
+#   geom_sf(data=coaststates,fill='gray80')+
+#   geom_sf(data=anch1_preds_ch,aes(fill=1/(1+exp(-est1))),color=NA)+
+#   # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
+#   scale_fill_viridis()+
+#   facet_wrap(~depth_cat)+
+#   xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+#   labs(fill="Prob.",title="Engraulis mordax",x="")
+# 
+# anch1_preds_ch_plot2
+```
+
+```{r,include=F}
+# conditional effects
+nd <- crossing(
+  dist_shelf_scaled = seq(min(dat_anchovy$dist_shelf_scaled),
+    max(dat_anchovy$dist_shelf_scaled),
+    length.out = 100),
+  depth_as_time=c(1:5)) %>% 
+  mutate(dist_shelf_scaled2=dist_shelf_scaled^2) %>% 
+  mutate(depth_cat=as.factor(0))
+p <- predict(anch1, newdata = nd, se_fit = TRUE, re_form = NA)
+
+ggplot(p, aes(dist_shelf_scaled, est,
+  ymin = est - 1.96 * est_se,
+  ymax = est + 1.96 * est_se
+)) +
+  geom_line() +
+  geom_ribbon(alpha = 0.4) +
+  scale_x_reverse() +
+  coord_cartesian(expand = F) +
+  labs(x = "Distance from 200m Isobath", y = "Anchovy Copies")
+
+# in link space
+visreg::visreg(anch1,"dist_shelf_scaled2")
+
+```
