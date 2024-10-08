@@ -331,6 +331,23 @@ copies_fitted <- copies_fitted %>%
 write_rds(copies_fitted,here('code','log_D_fitted.rds'))
 ```
 
+Also want to save the hake qpcr fit
+
+```{r}
+# unk_conc_qpcr from the model fit
+hake_fitted <- fit_summ %>% 
+  filter(grepl('unk_conc_qpcr',variable))
+
+# metadata for qpcr
+hake_meta <- stan_data_joint$qpcr_unk %>% 
+  select(qPCR,well,tubeID,Ct,copies_ul,lat,lon,utm.lat,utm.lon,depth_cat)
+
+hake_fitted <- hake_meta %>% 
+  bind_cols(hake_fitted)
+
+# write
+write_rds(hake_fitted,here('code','hake_fitted.rds'))
+```
 
 # Diagnostics- Sampler
 

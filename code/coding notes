@@ -62,3 +62,11 @@ Folded Ole's fixed-alphas version of the Stan models into this main code
 10.01.24
 Continuing to work on SDMs
 Running a version of the joint model with fixed alphas, but species-specific means for log_D
+
+10.04.24
+Working on some new plots:
+qPCR outliers- what/where are they?
+Marginal depth effects
+hake qPCR model
+other MB data vs. data used in the model
+

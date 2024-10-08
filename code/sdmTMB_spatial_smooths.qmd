@@ -51,6 +51,13 @@ glimpse(dat)
 dat <- dat %>% mutate(species=ifelse(species=="Zz_Engraulis mordax","Engraulis mordax",species))
 ```
 
+We also want the larger dataset of fitted values for hake
+
+```{r}
+hake_fitted <- read_rds(here('code','hake_fitted.rds'))
+glimpse(hake_fitted)
+```
+
 # Spatial Domain
 
 ```{r}
@@ -736,6 +743,59 @@ herring_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_s
 all_m <- list(anchovy=anchovy_m,hake=hake_m,sardine=sardine_m,mackerel=mackerel_m,eulachon=eulachon_m,herring=herring_m)
 ```
 
+## Hake qPCR
+
+Let's fit a model with the expanded hake qPCR data to see if there's a difference.
+
+```{r}
+hake_tubes <- hake_fitted %>% 
+  mutate(conc_fit=exp(mean)) %>% 
+  mutate(depth_as_time=as.integer(as.factor(depth_cat))) %>% 
+  # tube means
+  group_by(tubeID,lat,lon,depth_cat,depth_as_time) %>% 
+  summarise(tubeMean=mean(conc_fit)) %>%
+  ungroup()
+
+hake_tubes_utm <- hake_tubes %>% 
+  st_as_sf(coords=c('lon','lat'),crs=4326) %>% st_transform(st_crs(dat_sf)) %>% 
+  mutate(utm.lon.km=st_coordinates(.)[,1],utm.lat.km=st_coordinates(.)[,2])
+
+# bathymetry
+hakexy <- hake_tubes %>% st_as_sf(coords=c('lon','lat'),crs=4326) %>% st_coordinates()
+
+qpcr.bathy <- get.depth(b,hakexy,locator=F) %>% 
+  rename(bathy=depth)
+
+hake_tubes_utm <- hake_tubes_utm %>% 
+  mutate(bathy=-qpcr.bathy$bathy,
+         log_bathy=log(bathy),
+         log_bathy2=log_bathy^2) %>%
+  mutate(log_bathy_scaled=(log_bathy-mean(log_bathy))/sd(log_bathy),
+         log_bathy_scaled2=log_bathy_scaled^2)
+
+# shelf distance
+
+nn_hake <- st_nn(hake_tubes_utm,bdf,k=1,returnDist = T)
+nn_hake_dists <- nn_hake %>% pluck("dist") %>% unlist()
+hake_tubes <- hake_tubes_utm %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(dist_shelf=as.numeric(nn_hake_dists)/1000) %>% 
+  mutate(dist_shelf=ifelse(bathy>200,dist_shelf,-dist_shelf)) %>% 
+  mutate(dist_shelf_scaled=(dist_shelf-mean(dist_shelf))/sd(dist_shelf),
+         dist_shelf_scaled2=dist_shelf_scaled^2)
+
+hake_qpcr_m <- sdmTMB(
+      data = hake_tubes,
+      formula = as.formula("tubeMean~0+dist_shelf_scaled+dist_shelf_scaled2"),
+      mesh=make_mesh(hake_tubes,c('utm.lon.km','utm.lat.km'),n_knots=100),
+      family = lognormal(),
+      spatial = "on",
+      anisotropy = F,
+      time = "depth_as_time",
+      spatiotemporal = "IID"
+)
+```
+
 # Query Outputs
 
 ## Maps
@@ -785,18 +845,37 @@ herring_map
 Plot the conditional effect of distance from the shelf break, for each species.
 
 ```{r}
-nd <- crossing(
+# make some data that varies across our variable of interest (shelf distance), but also includes variation in our random effects
+distshelf_mean <- mean(dat_zeroes$dist_shelf)
+distshelf_sd  <- sd(dat_zeroes$dist_shelf)
+
+nd <- tibble(
   dist_shelf_scaled = seq(min(dat_zeroes$dist_shelf_scaled),
     max(dat_zeroes$dist_shelf_scaled),
-    length.out = 100),
-  depth_as_time=1:5) %>%
-  mutate(dist_shelf_scaled2=dist_shelf_scaled^2)
+    length.out = 100)) %>% 
+  # depth_as_time=1:5) %>% 
+  mutate(utm.lon.km=mean(dat_zeroes$utm.lon.km),
+         utm.lat.km=mean(dat_zeroes$utm.lat.km),
+         depth_as_time=1) %>% 
+  # utm.lon.km=seq(min(ch_pred_df$utm.lon.km),
+  #                max(ch_pred_df$utm.lon.km),
+  #                length.out=20),
+  # utm.lat.km=seq(min(ch_pred_df$utm.lat.km),
+  #                max(ch_pred_df$utm.lat.km),
+  #                length.out=20)) %>%
+  mutate(dist_shelf_scaled2=dist_shelf_scaled^2) %>% 
+  mutate(dist_shelf=dist_shelf_scaled*distshelf_sd+distshelf_mean)
 
-in_off_cond <- map2(all_m,names(all_m),function(x,y){predict(x, newdata = nd, se_fit = TRUE, re_form = NA) %>% mutate(species=y)}) %>%
+# apply to our fitted sdmTMB models, using simulation (`nsim`) to propogate uncertainty from the joint precision matrix
+
+in_off_cond <- map2(all_m,names(all_m),function(x,y){
+  d <- predict(x, newdata = nd, se_fit = TRUE,re_form= TRUE,re_form_iid=TRUE)
+  d %>% mutate(species=y)
+  }) %>%
   list_rbind()
 
 in_off_plot <- in_off_cond %>%
-  ggplot(aes(dist_shelf_scaled, est,
+  ggplot(aes(dist_shelf, est,
   ymin = est - est_se,
   ymax = est + est_se,
   color=species,fill=species
@@ -807,11 +886,58 @@ in_off_plot <- in_off_cond %>%
   scale_x_reverse() +
   facet_wrap(~species,scales='free_y')+
   coord_cartesian(expand = F) +
-  labs(x = "Distance from 200m Isobath", y = "eDNA Conc.")
+  labs(x = "Distance from 200m Isobath (km)", y = "eDNA Conc.")
 in_off_plot
 
 ggsave(here('plots','inshore_offshore_conditional.png'),in_off_plot,h=6,w=8,bg='white')
 ```
+
+## Marginal Depth
+
+Maps of the estimated random field for depth category, by species. These show the estimates from the model, NOT including the distance from shelf covariate NOR the common spatial field. Think of these maps as a spatial depth-category intercept or offset.
+
+```{r}
+make_pred_st_map <- function(fit,return_what="plot"){
+  preds <- predict(fit,newdata=ch_pred_df_depth) %>%
+    left_join(ch_pred %>% select(grID),by=join_by(grID)) %>%
+    st_as_sf()
+
+  preds_plot <- ggplot()+
+    geom_sf(data=coaststates,fill='gray80')+
+    geom_sf(data=preds,aes(fill=epsilon_st),color=NA)+
+    # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
+    scale_fill_viridis(option="H")+
+    coord_sf(datum=NA)+
+    facet_wrap(~depth_cat,nrow=1)+
+    xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+    labs(fill="Depth RE",x="")
+  if(return_what=="data") return(preds)
+  else(return(preds_plot))
+}
+anchovy_st_map <- make_pred_st_map(anchovy_m)+ggtitle("Anchovy, Depth Effect Only")
+hake_st_map <- make_pred_st_map(hake_m)+ggtitle("Hake, Depth Effect Only")
+sardine_st_map <- make_pred_st_map(sardine_m)+ggtitle("Sardine, Depth Effect Only")
+mackerel_st_map <- make_pred_st_map(mackerel_m)+ggtitle("Mackerel, Depth Effect Only")
+eulachon_st_map <- make_pred_st_map(eulachon_m)+ggtitle("Eulachon, Depth Effect Only")
+herring_st_map <- make_pred_st_map(herring_m)+ggtitle("Herring, Depth Effect Only")
+
+ggsave(here('plots','anchovy_depth_fields.png'),anchovy_st_map,h=6,w=8,bg='white')
+ggsave(here('plots','hake_depth_fields.png'),hake_st_map,h=6,w=8,bg='white')
+ggsave(here('plots','sardine_depth_fields.png'),sardine_st_map,h=6,w=8,bg='white')
+ggsave(here('plots','mackerel_depth_fields.png'),mackerel_st_map,h=6,w=8,bg='white')
+ggsave(here('plots','eulachon_depth_fields.png'),eulachon_st_map,h=6,w=8,bg='white')
+ggsave(here('plots','herring_depth_fields.png'),herring_st_map,h=6,w=8,bg='white')
+
+anchovy_st_map
+hake_st_map
+sardine_st_map
+mackerel_st_map
+eulachon_st_map
+herring_st_map
+```
+
+
+
 ## Species Stacking
 
 Finally, we can stack models and look at overlaps between species. There are many ways to do this, but for now we show the number of species in each projected grid cell that are at or above their 50%/80% quantile across all samples and depths.
