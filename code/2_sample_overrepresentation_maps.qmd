@@ -1,0 +1,196 @@
+---
+title: "Run_amp_eff_model_Mock_2"
+format: 
+  html:
+    toc: true
+    toc-location: left
+    toc-title: "Table of Contents"
+    toc-depth: 2
+    number-sections: true
+    page-layout: full
+    self-contained: true 
+    collapsible: true
+    collapse-level: 1
+    # code-summary: "Show/Hide Code"  # Toggle text for code folding
+    # css: 'style_gg.css'
+    grid:
+      sidebar-width: 200px
+      body-width: 880px
+      margin-width: 200px
+      gutter-width: 1.5rem
+author: Gled Guri
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+}
+
+h1 {
+  font-size: 22px;  /* Adjust the size of H1 headers */
+  font-weight: normal;  /* Make H1 headers not bold */
+}
+
+h2 {
+  font-size: 18px;  /* Adjust the size of H2 headers */
+  font-weight: normal;  /* Make H2 headers not bold */
+}
+
+h3 {
+  font-size: 18px;  /* Adjust the size of H3 headers */
+  font-weight: normal;  /* Make H3 headers not bold */
+}
+
+h4 {
+  font-size: 18px;  /* Adjust the size of H4 headers */
+  font-weight: normal;  /* Make H4 headers not bold */
+}
+</style>
+
+```{r, include=FALSE}
+dwidth <- 150
+options(width = dwidth)
+```
+
+```{r, include=FALSE, warning=FALSE, message=FALSE}
+options(width = 300) #wd
+```
+
+```{r, include=FALSE, warning=FALSE, message=FALSE}
+options(width = dwidth)#wd
+```
+
+# Data prep
+
+## Load libraries
+
+```{r, warning=FALSE, message=FALSE}
+suppressMessages(library(tidyverse))
+options(tidyverse.quiet = TRUE)
+options(dplyr.summarise.inform = FALSE)
+options(dplyr.left_join.inform = FALSE)
+library(raster)
+library(rosm)
+library(prettymapr)
+library(sf)
+library(ggspatial)
+library(gridExtra)
+library(here)
+library(ggrepel)
+```
+
+## Load data with 6 species in the mocks
+
+```{r, warning=FALSE, message=FALSE}
+source(here('code','1_load_data.R'))
+```
+
+### Map
+
+```{r, warning=FALSE, message=FALSE}
+#| fig-width: 14
+#| fig-height: 5.5
+
+samp_map_qpcr <- qPCR_unk %>% select(tubeID,lat,lon,depth_cat) %>% 
+  distinct(tubeID,lat,lon,depth_cat) %>% 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+#make bounding box
+bounding <-makebbox(w = min(samp_map_qpcr$lon),
+                    e = max(samp_map_qpcr$lon),
+                    n = max(samp_map_qpcr$lat),
+                    s = min(samp_map_qpcr$lat))
+
+#download data for map
+map.raster.alt <- osm.raster(bounding, type = "cartolight", projection = 4326)  #default projection 4326
+
+#plot
+basemap <- ggplot() +
+  layer_spatial(map.raster.alt)
+
+samp_map_MB <- qPCR_unk %>% select(tubeID,lat,lon,depth_cat) %>% 
+  distinct(tubeID,lat,lon,depth_cat) %>% 
+  filter(tubeID%in%mfu$Sample) %>% 
+  mutate(group='MB') %>% 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+#number of MB samp (that are also in qPCR)
+samp_map_MB %>% as_tibble() %>% select(-geometry) %>% 
+  count(depth_cat)
+
+latlondep_MB <- samp_map_MB %>% unite(lat,lon,depth_cat,col='x',remove = F) %>% pull(x)
+samp_map_qPCR_no_MB <- qPCR_unk %>% 
+  select(tubeID,lat,lon,depth_cat) %>% 
+  distinct(tubeID,lat,lon,depth_cat) %>% 
+  unite(lat,lon,depth_cat,col='x',remove = F) %>% 
+  filter(!x%in%latlondep_MB) %>% 
+  filter(!duplicated(x)) %>% 
+  mutate(group='qPCR') %>% 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+#number of qPCR samples that are not in MB (kept only 1 bottle per sample so that the numbers don't double)
+samp_map_qPCR_no_MB %>% as_tibble() %>% select(-geometry) %>% 
+  count(depth_cat)
+
+basemap +
+  geom_point(data = samp_map_qPCR_no_MB, 
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = samp_map_MB, 
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  facet_grid(~depth_cat) +
+  scale_color_manual(values = c("qPCR" = "black", "MB" = "red"),
+                     name = "Samples")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+## Load data with 14 species in the mocks
+
+```{r, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+source(here('code','1_load_data_GG.R'))
+```
+
+### Map
+
+```{r, warning=FALSE, message=FALSE}
+#| fig-width: 14
+#| fig-height: 5.5
+
+samp_map_MB <- qPCR_unk %>% select(tubeID,lat,lon,depth_cat) %>%
+  distinct(tubeID,lat,lon,depth_cat) %>%
+  filter(tubeID%in%mfu$Sample) %>%
+  mutate(group='MB') %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+#number of MB samp (that are also in qPCR)
+samp_map_MB %>% as_tibble() %>% select(-geometry) %>%
+  count(depth_cat)
+
+latlondep_MB <- samp_map_MB %>% unite(lat,lon,depth_cat,col='x',remove = F) %>% pull(x)
+samp_map_qPCR_no_MB <- qPCR_unk %>%
+  select(tubeID,lat,lon,depth_cat) %>%
+  distinct(tubeID,lat,lon,depth_cat) %>%
+  unite(lat,lon,depth_cat,col='x',remove = F) %>%
+  filter(!x%in%latlondep_MB) %>%
+  filter(!duplicated(x)) %>%
+  mutate(group='qPCR') %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+#number of qPCR samples that are not in MB (kept only 1 bottle per sample so that the numbers don't double)
+samp_map_qPCR_no_MB %>% as_tibble() %>% select(-geometry) %>%
+  count(depth_cat)
+
+basemap +
+  geom_point(data = samp_map_qPCR_no_MB,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = samp_map_MB,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  facet_grid(~depth_cat) +
+  scale_color_manual(values = c("qPCR" = "black", "MB" = "red"),
+                     name = "Samples")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```

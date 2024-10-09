@@ -1,0 +1,373 @@
+---
+title: "Run_amp_eff_model_Mock_1"
+format: 
+  html:
+    toc: true
+    toc-location: left
+    toc-title: "Table of Contents"
+    toc-depth: 2
+    number-sections: true
+    page-layout: full
+    self-contained: true 
+    collapsible: true
+    collapse-level: 1
+    # code-summary: "Show/Hide Code"  # Toggle text for code folding
+    # css: 'style_gg.css'
+    grid:
+      sidebar-width: 200px
+      body-width: 880px
+      margin-width: 200px
+      gutter-width: 1.5rem
+author: Gled Guri
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+}
+
+h1 {
+  font-size: 22px;  /* Adjust the size of H1 headers */
+  font-weight: normal;  /* Make H1 headers not bold */
+}
+
+h2 {
+  font-size: 18px;  /* Adjust the size of H2 headers */
+  font-weight: normal;  /* Make H2 headers not bold */
+}
+
+h3 {
+  font-size: 18px;  /* Adjust the size of H3 headers */
+  font-weight: normal;  /* Make H3 headers not bold */
+}
+
+h4 {
+  font-size: 18px;  /* Adjust the size of H4 headers */
+  font-weight: normal;  /* Make H4 headers not bold */
+}
+</style>
+
+```{r, include=FALSE}
+dwidth <- 150
+options(width = dwidth)
+```
+
+```{r, include=FALSE, warning=FALSE, message=FALSE}
+options(width = 300) #wd
+```
+
+```{r, include=FALSE, warning=FALSE, message=FALSE}
+options(width = dwidth)#wd
+```
+
+# Data prep
+
+## Load libraries
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tibble)
+library(here)
+library(tidyr)
+library(rstan);options(mc.cores = parallel::detectCores())
+library(QM);#devtools::install_github("gledguri/QM",force = T)
+library(MoMAColors);#devtools::install_github("BlakeRMills/MoMAColors");require(MoMAColors)
+library(ggu.base.fun);#devtools::install_github('gledguri/ggednasd/ggu.base.fun',force = T)
+```
+
+## Load data
+
+```{r, warning=FALSE, message=FALSE}
+mb <- read.csv(here('data/mocks/Mock_v1/Data/','5_ASV_MFU_302_GG_annotated_collapsed_reiterated.csv'))
+
+mock_ini_prop_skew <- read.csv(here('data/mocks/Mock_v1/Data/','mtDNA_props_skewed.csv'))
+mock_ini_prop_even_1 <- read.csv(here('data/mocks/Mock_v1/Data/','Mock_true_proportions_rpk.csv'))
+mock_ini_prop_even_2 <- read.csv(here('data/mocks/Mock_v1/Data/','mock1_expected_props.csv'))
+```
+
+## Curate Data
+
+```{r, warning=FALSE, message=FALSE}
+mock_ini_prop_1 <- left_join(
+	mock_ini_prop_even_1 %>% rename(M1_e_mtDNA='template_prop'),
+	mock_ini_prop_skew %>% select(-Class) %>% rename(M1_s_mtDNA='mtDNA_prop_skewed'),
+	by='Species')
+	
+mock_ini_prop_1 %>% as_tibble()
+
+mock_ini_prop_2 <- left_join(
+	mock_ini_prop_even_2 %>% rename(M1_e_mtDNA_2='Proportion.from.mtDNA'),
+	mock_ini_prop_skew %>% select(-Class) %>% rename(M1_s_mtDNA='mtDNA_prop_skewed'),
+	by='Species') %>% 
+	filter(Class=='Actinopterygii')
+	
+colnames(mb) <-
+	colnames(mb) %>% as.data.frame() %>% setNames('c') %>% 
+	mutate(c=gsub('MFU.mock.','M1.',c)) %>% 
+	mutate(c=gsub('d1.','',c)) %>% 
+	mutate(c=gsub('skewed','s',c)) %>% 
+	mutate(c=gsub('even','e',c)) %>% 
+	pull(c)
+
+mock_ini_prop <-
+	mock_ini_prop_1 %>% select(Species,M1_e_mtDNA,M1_s_mtDNA) %>% 
+	left_join(.,
+						mock_ini_prop_2 %>% 
+							select(Species,M1_e_mtDNA_2),
+						by='Species')
+
+mock1 <- custom_cbind(mock_ini_prop %>% column_to_rownames('Species'),
+										 mb %>% column_to_rownames('Species_name'))
+
+#Show mock 1 data
+mock1 %>% rownames_to_column() %>% 
+	as_tibble() %>% print(n=nrow(.))
+```
+
+## Filter sp
+
+```{r, warning=FALSE, message=FALSE}
+#Filter for only Fish
+#'fixing the proportion for the remaining species that are actually 
+#'in initial mocks and MB outputs
+mock1 <- mock1 %>% 
+	filter(!apply(., 1, function(row) any(is.na(row)))) %>% 
+	mutate(M1_e_mtDNA=M1_e_mtDNA/sum(M1_e_mtDNA)) %>% 
+	mutate(M1_s_mtDNA=M1_s_mtDNA/sum(M1_s_mtDNA)) %>% 
+	mutate(M1_e_mtDNA_2=M1_e_mtDNA_2/sum(M1_e_mtDNA_2))
+```
+
+## Curate data 2
+
+```{r, warning=FALSE, message=FALSE}
+#Select the reference species and create species_idx
+mock1 <- mock1 %>% rownames_to_column('Species') %>% 
+		mutate(Species=if_else(Species=='Merluccius productus',
+											'Zz_Merluccius productus',
+											Species)) %>% 
+		arrange(Species) %>% 
+		mutate(sp_idx=c(1:nrow(.)))
+
+#Show mock 1 data
+mock1 %>% as_tibble()
+```
+
+```{r, warning=FALSE, message=FALSE}
+#Split the mock df into even and skewed (2 data frames)
+mock1_even <- mock1 %>% 
+	select(Species,
+		colnames(.)[grepl('M1_e_mtDNA$',colnames(.))],
+		colnames(.)[grepl('M1\\.e\\.[123]_S',colnames(.))],
+		sp_idx)
+
+#Show mock 1 even
+mock1_even %>% as_tibble()
+
+#Split the mock df into even and skewed (2 data frames)
+mock1_even_2 <- mock1 %>% 
+	select(Species,
+		colnames(.)[grepl('M1_e_mtDNA_2',colnames(.))],
+		colnames(.)[grepl('M1\\.e\\.[123]_S',colnames(.))],
+		sp_idx)
+
+#Show mock 1 even second type
+mock1_even_2 %>% as_tibble()
+
+mock1_skew <- mock1 %>% 
+	select(Species,
+		colnames(.)[grepl('M1_s_mtDNA$',colnames(.))],
+		colnames(.)[grepl('M1\\.s\\.[123]_S',colnames(.))],
+		sp_idx)
+
+#Show mock 1 skew
+mock1_skew %>% as_tibble()
+```
+
+# Model
+
+## Load QM model
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+M3_2_stan_code <- 
+"
+data {
+	// Intigers
+  int N_sp_i_MC2; // Number of species
+  int N_obs_Y_M5; // Number of samples included in mock community
+  //
+  // Data
+  vector[N_sp_i_MC2] alr_M5; // Additive log(e)-ratio of initial concentration of mock community
+  array[N_sp_i_MC2, N_obs_Y_M5] int Y_M5; // Sequence reads of mock community samples
+  int NPCR;  // Number of PCR reactions
+  //
+  // Parameters
+  real alpha_magnitude; // dispersion parameter of alpha
+}
+parameters {
+  vector[N_sp_i_MC2-1] alpha_raw;
+}
+transformed parameters{
+  matrix[N_sp_i_MC2,N_obs_Y_M5] gamma_M5;
+  matrix[N_sp_i_MC2,N_obs_Y_M5] psi_M5;
+  vector[N_sp_i_MC2] alpha;
+  alpha[1:(N_sp_i_MC2-1)] = alpha_raw * alpha_magnitude;
+  alpha[N_sp_i_MC2] = 0;
+  for (i in 1:N_obs_Y_M5){
+    for(j in 1:N_sp_i_MC2){
+      gamma_M5[j,i] = alr_M5[j]+(NPCR*(alpha[j]));
+    }
+  }
+  for (i in 1:N_obs_Y_M5){
+    psi_M5[,i] = softmax(gamma_M5[,i]);
+  }
+}
+model {
+  for (i in 1:N_obs_Y_M5){
+    Y_M5[,i] ~ multinomial(psi_M5[,i]);
+  }
+  alpha_raw ~ std_normal();
+}
+"
+
+M3_2 <- stan_model(model_code = M3_2_stan_code,model_name = 'M3_2 model')
+```
+
+## Prep stan_data
+
+```{r, warning=FALSE, message=FALSE}
+#Preparing stan for mock 1 even
+stan_data_mock_1_even <- prep_stan_M3_2(
+	data = mock1_even,
+	mock_sequencing_columns = c('M1.e.1_S64','M1.e.2_S65','M1.e.3_S66'),
+	mock_initial_concentration = 'M1_e_mtDNA',
+	species_index = 'sp_idx',
+	mock_species_names = 'Species',
+	number_of_PCR = 43,
+	alpha_magnitude = 0.001)
+
+#Preparing stan for mock 1 even
+stan_data_mock_1_even_2 <- prep_stan_M3_2(
+	data = mock1_even_2,
+	mock_sequencing_columns = c('M1.e.1_S64','M1.e.2_S65','M1.e.3_S66'),
+	mock_initial_concentration = 'M1_e_mtDNA_2',
+	species_index = 'sp_idx',
+	mock_species_names = 'Species',
+	number_of_PCR = 43,
+	alpha_magnitude = 0.001)
+
+#Preparing stan for mock 2 skew
+stan_data_mock_1_skew <- prep_stan_M3_2(
+	data = mock1_skew,
+	mock_sequencing_columns = c('M1.s.1_S67', 'M1.s.2_S68', 'M1.s.3_S69'),
+	mock_initial_concentration = 'M1_s_mtDNA',
+	species_index = 'sp_idx',
+	mock_species_names = 'Species',
+	number_of_PCR = 43,
+	alpha_magnitude = 0.001)
+```
+
+## Run stan
+
+```{r, warning=FALSE, message=FALSE,results='hide'}
+#Run alpha model mock 1 even
+stanMod_3_mock_1_even <- sampling(
+	object = M3_2,
+	data = stan_data_mock_1_even,
+	iter = 2000,
+	warmup = 1000,
+	chains = 4)
+
+#Run alpha model mock 1 even type 2
+stanMod_3_mock_1_even_2 <- sampling(
+	object = M3_2,
+	data = stan_data_mock_1_even_2,
+	iter = 2000,
+	warmup = 1000,
+	chains = 4)
+
+#Run alpha model mock 1 skew
+stanMod_3_mock_1_skew <- sampling(
+	object = M3_2,
+	data = stan_data_mock_1_skew,
+	iter = 2000,
+	warmup = 1000,
+	chains = 4)
+```
+
+# Output
+
+## Extract amplification efficiencies
+
+```{r, warning=FALSE, message=FALSE}
+#mock 1 even
+amp_eff_param_mock_1_even <-
+	stan_data_mock_1_even$Species %>%
+	cbind(.,
+				amp_eff_param_extract(stanMod_3_mock_1_even))
+
+amp_eff_param_mock_1_even %>% as_tibble()
+
+#mock 1 even type 2
+amp_eff_param_mock_1_even_2 <-
+	stan_data_mock_1_even_2$Species %>%
+	cbind(.,
+				amp_eff_param_extract(stanMod_3_mock_1_even_2))
+
+amp_eff_param_mock_1_even_2 %>% as_tibble()
+
+#mock 1 skew
+amp_eff_param_mock_1_skew <-
+	stan_data_mock_1_skew$Species %>%
+	cbind(.,
+				amp_eff_param_extract(stanMod_3_mock_1_skew))
+
+amp_eff_param_mock_1_skew %>% as_tibble()
+```
+
+## Curate data 4
+
+```{r, warning=FALSE, message=FALSE}
+amp_eff_param_mock_1 <-
+	cbind(amp_eff_param_mock_1_even %>%
+					select(Species,mean) %>%
+					rename(M1_even='mean'),
+				amp_eff_param_mock_1_even_2 %>%
+					select(Species,mean) %>%
+					rename(M1_even_2='mean'),
+				amp_eff_param_mock_1_skew %>%
+					select(mean) %>%
+					rename(M1_skew='mean')) %>%
+	pivot_longer(cols = starts_with("M1_"),
+							 names_to = "mock_type",
+							 values_to = "alpha")
+```
+
+```{r,warning=FALSE, message=FALSE}
+# saveRDS(mock1_even,here('data/mocks/Mock_v1/Output/''mock1_even_filtered.rds'))
+# saveRDS(mock1_even_2,here('data/mocks/Mock_v1/Output/','mock1_even_2_filtered.rds'))
+# saveRDS(mock1_skew,here('data/mocks/Mock_v1/Output/''mock1_skew_filtered.rds'))
+# saveRDS(amp_eff_param_mock_1,here('data/mocks/Mock_v1/Output/','amp_eff_param_mock_1_all_sp.rds'))
+```
+
+## Plot alphas
+
+```{r, warning=FALSE, message=FALSE}
+#mock 1 (even vs even_2 vs skew)
+ggplot(data = amp_eff_param_mock_1)+
+	geom_point(aes(y=Species,x=alpha,color=mock_type))+
+	ggtitle('Mock 1 even vs evem_2 vs skew')+
+	scale_color_manual(values = moma.colors("Lupi",n = le(amp_eff_param_mock_1$mock_type)))+
+	# xlim(-0.06,0.06)+
+	theme_bw()+
+	geom_vline(xintercept = 0,
+						 linetype = "dashed",
+						 color = 'black',
+						 linewidth=0.2)+
+	labs(x = "Alpha", y = "Species")
+```
