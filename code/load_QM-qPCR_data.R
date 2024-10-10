@@ -31,7 +31,7 @@ atts <- read_csv(here("data","metadata","Hake_2019_metadata.csv"),col_types = co
   select(station,Niskin,year,month,day,transect,lat,lon,utm.lat,utm.lon,bottom.depth.consensus,transect.dist.km) %>%
   distinct()
 
-qPCR.sample.id <- suppressMessages(read_csv(here('Data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'),
+qPCR.sample.id <- suppressMessages(read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'),
                            col_select = all_of(c("Tube #", "CTD cast","Niskin","depth","drop.sample","field.negative.type","water.filtered.L")),
                            col_types=cols()))
 
