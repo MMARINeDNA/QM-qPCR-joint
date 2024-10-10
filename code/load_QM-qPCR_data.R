@@ -260,7 +260,7 @@ load_asv_table <- function(seq_run_number){
 # apply the above function
 mfu <- purrr::map(c(304,313:318),load_asv_table)%>% 
   
-  # row-bind all mocks
+  # row-bind all batches of samples
   list_rbind() %>% 
   
   # rename sample to tubeID
@@ -293,13 +293,6 @@ samp_over_1000 <-mfu %>%
 # Load mock data ------------------------------------------------------------------------------
 #Collect all the mock rds files
 mock_list <- list.files(here('data/mocks'),recursive = T,pattern = '.rds')
-
-#Keep only the raw mock tables
-mock_list <- mock_list[grepl('Mock_v[1234]',mock_list)]
-mock_list <- mock_list[grepl('_filtered',mock_list)]
-
-#Wrong initial proportions for one mock, so don't include it
-mock_list <- mock_list[!grepl('mock1_even_2_filtered.rds',mock_list)] 
 
 # as with the MFU dataset, define a function to consistently load mock data
 load_mock_file <- function(fp){
@@ -365,9 +358,14 @@ writeLines(unique(species_mock_list)[!species_mock_list%in%keep]);cat('\n')
 
 # Filter the mocks to just the species we want
 mock <- mock %>% 
-  filter(species%in%keep)
+  filter(species%in%keep) %>%
+  # renormalize b_proportions after omitting species from Mocks
 
-## Some manual curation of Mock and MB data ---------------------------------------------------------------------
+  group_by(Sample,Rep,) %>% 
+  mutate(b_proportion = b_proportion/sum(b_proportion)) %>% 
+  ungroup()
+
+## Some manual curation of MB data ---------------------------------------------------------------------
 
 mfu <- mfu %>% 
   mutate(BestTaxon=case_when(
@@ -394,7 +392,7 @@ mfu <- mfu %>%
   rename(Species = BestTaxon) %>% 
   filter(Species %in% keep)
 
-cat('Metabarcoding summary::');cat('\n')
+cat('Metabarcoding summary: ');cat('\n')
 mfu %>% group_by(Species) %>% 
   summarise(Sum_reads=sum(nReads)) %>% 
   mutate(prop=(Sum_reads/sum(Sum_reads))*100) %>% print()
@@ -416,7 +414,7 @@ mfu <- mfu %>%
   ungroup() %>% 
   complete(Species,tubeID,fill=list(nReads=0))
 
-cat('\n');cat('# of samples in MB samples::');cat('\n')
+cat('\n');cat('# of samples in MB samples: ')
 cat(length(unique(mfu$tubeID)))
 
 # Filter to samples with >1000 read depth
@@ -426,7 +424,7 @@ mfu <- mfu %>%
   mutate(biol = 1, tech = 1) %>% 
   rename(species = Species)
 
-cat('\n');cat('# of samples in MB samples with >1000 sequencing depth::');cat('\n')
+cat('\n');cat('# of samples in MB samples with >1000 sequencing depth: ')
 cat(length(unique(mfu$tubeID)))
 
 # find samples w no hake MB reads  
@@ -446,7 +444,7 @@ no_others_MB <- mfu %>%
   pull(tubeID)
 
 # find samples that have hake and another species present
-cat('\n');cat('# of samples that have hake and another species present::')
+cat('\n');cat('# of samples that have hake and another species present: ')
 mfu %>% 
   filter(!tubeID%in%no_hake_MB) %>% 
   filter(!tubeID%in%no_others_MB) %>% 
@@ -456,3 +454,7 @@ mfu %>%
 # final filter- remove samples with no hake; we leave samples with only hake for now
 mfu <- mfu %>% 
   filter(!(tubeID%in% no_hake_MB))
+
+
+cat('\n');cat('Final # of metabarcoding samples loaded: ')
+cat(length(unique(mfu$tubeID)))

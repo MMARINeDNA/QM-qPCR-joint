@@ -1,93 +1,8 @@
-# Metabarcoding calibration model function
-# RPK Aug 2022; Revised ORL July 2024
+# Functions to get data ready for Stan
+# RPK Aug 2022; Revised ORL Oct 2024
 
-################DEFINE SUB-FUNCTIONS
-
-format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_data,
-                                      Level_1_treatment_envir, #e.g., unique sampling site
-                                      Level_2_treatment_envir, #nested within level1 units, e.g., unique biological samples
-                                      Level_3_treatment_envir,  #nested within level2 units, e.g., technical replicates of biological samples (NA if absent)
-                                      Level_1_treatment_mock, #e.g., unique biol community
-                                      Level_2_treatment_mock, #nested within level1 units, e.g., unique biological replicates
-                                      Level_3_treatment_mock  #nested within level2 units, e.g., technical replicates of biological replicates (NA if absent)
-                                      ){
-  require(tidyverse)
-  
-  Observation <- input_metabarcoding_data
-    
-  Mock <- input_mock_comm_data %>% 
-    replace(is.na(.), 0) %>% 
-    filter(b_proportion > 0) %>% 
-    filter(Nreads > 0) %>% #omit things that are absent from the mocks
-    filter(!is.na(Nreads)) %>% 
-    rename(level1 = as.name(Level_1_treatment_mock),
-           level2 = as.name(Level_2_treatment_mock))
-  
-  if (is.na(Level_3_treatment_mock)) {Mock$level3 <- 1} else {Mock <- Mock %>% rename(level3 = as.name(Level_3_treatment_mock))}  
-  
-  Mock <- Mock %>% 
-    unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F)
-    
-  # only keep species present in both mocks and observations
-  keepSpecies <- intersect(Mock$species, Observation$species)
-  Observation <- Observation %>% 
-    filter(species %in% keepSpecies) 
-  Mock <- Mock %>% filter(species %in% keepSpecies)
-  
-  # index species to a common standard 
-  sp_list <- data.frame(
-    species = c(Mock$species, Observation$species) %>% unique(),
-    species_idx = NA)
-  sp_list$species_idx <- match(sp_list$species, unique(sp_list$species)) 
-  
-  #reindex and renormalize to deal with omitted species
-  Mock <- Mock %>% 
-    left_join(sp_list) %>% 
-    mutate(level1 = match(level1, unique(level1)),
-           speciesname = species,
-           species = species_idx) %>% 
-    group_by(Sample) %>% 
-    mutate(b_proportion = b_proportion/sum(b_proportion)) %>% 
-    ungroup()
-  
-  Observation <- Observation %>% 
-    rename(level1 = as.name(Level_1_treatment_envir),
-           level2 = as.name(Level_2_treatment_envir))
-  
-  if (is.na(Level_3_treatment_envir)) {Observation$level3 <- 1} else {Observation <- Observation %>% rename(level3 = as.name(Level_3_treatment_envir))}  
-    
-    
-  Observation <- Observation %>% 
-    left_join(sp_list) %>% 
-    mutate(speciesname = species,
-           species = species_idx) %>% 
-    # mutate(station = case_when(stationname == "Dn" ~ 1,
-    #                            stationname == "Up" ~ 2)) %>% 
-    group_by(level1) %>% 
-    mutate(level2 = match(level2, unique(level2))) %>% #reindex, if necess
-    mutate(level3 = match(level3, unique(level3))) %>% #reindex, if necess
-    unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F)
-  
-  station_list <- data.frame(
-    station = Observation$level1 %>% unique(),
-    station_idx = 1:length(unique(Observation$level1)))
-  
-  
-  #list object containing named elements Observation, Mock, and Npcr
-  
-  return(
-  metabarcoding_data <- list(
-    Observation = Observation,
-    Mock = Mock,
-    N_pcr_mock = 43, 
-    NSpecies = nrow(sp_list),
-    station_list = station_list,
-    sp_list = sp_list
-  ))
-}
-
-# prep qPCR data
-# function takes two dataframe inputs, for qPCR unknown samples, and the qPCR standards
+# qPCR to Stan ------------------------------------------------------------------------------
+# Inputs: qPCR unknown samples, and the qPCR standards
 format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
   
   #unknowns
@@ -109,7 +24,7 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     mutate(Ct=str_replace_all(Ct,"Undetermined",'')) %>% 
     mutate(Ct=as.numeric(Ct) %>% round(2))%>% 
     filter(task=="STANDARD") %>% 
-  # HAD AN ISSUE WITH NON-UNIQUE SAMPLE NAMES BETWEEN STDS AND UNKS BECAUSE OF '5' BEING USED AS SAMPLE ID FOR STANDARDS WITH CONC. OF 5 COPIES
+  # had an issue with non-unique sample names between stds and unks because of '5' being used as sample id for standards with conc. of 5 copies
     mutate(tubeID=ifelse(tubeID=="5","5C",tubeID))
   
   # bind standards and unknowns
@@ -119,18 +34,53 @@ format_qPCR_data <- function(qPCR_unknowns, qPCR_standards){
     mutate(Ct = ifelse(is.na(Ct), 99, Ct)) %>%  # Stan doesn't like NAs
     # unique ID for PCR plate
     mutate(plate_idx=match(qPCR,unique(qPCR))) %>% 
-    # unite(c(qPCR,tubeID), col = "plateSample", remove = F) %>% 
-    # mutate(plateSample_idx = match(plateSample, unique(plateSample))) %>% 
     mutate(qpcr_sample_idx=match(tubeID,unique(tubeID))) %>% 
-    # group_by(qpcr_sample_idx) %>% 
-    # add_tally(Ct==99) %>% 
-    # # filter(n < 3) %>% #do away with examples of three non-detections; we have no basis for modeling these.
-    # dplyr::select(-n) %>%
+
     ungroup()
   
   return(qPCRdata)
   
 }
+
+# Metabarcoding to Stan ------------------------------------------------------------------------------
+# inputs: cleaned metabarcoding field samples, clean mock communities, names of nested sampling levels
+format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_data){ #nested within level2 units, e.g., technical replicates of biological replicates (NA if absent)
+
+  Observation <- input_metabarcoding_data
+  
+  Mock <- input_mock_comm_data  
+  
+  # index species to a common standard 
+  sp_list <- data.frame(
+    species = c(Mock$species, Observation$species) %>% unique(),
+    species_idx = NA)
+  sp_list$species_idx <- match(sp_list$species, unique(sp_list$species)) 
+  
+  Observation <- Observation %>% 
+    left_join(sp_list,by=join_by(species)) %>% 
+    group_by(level1) %>% 
+    mutate(level2 = match(level2, unique(level2))) %>% #reindex, if necess
+    mutate(level3 = match(level3, unique(level3))) %>% #reindex, if necess
+    unite(c(level1, level2, level3), col = "Sample", sep = ".", remove = F)
+  
+  station_list <- data.frame(
+    station = Observation$level1 %>% unique(),
+    station_idx = 1:length(unique(Observation$level1)))
+  
+  
+  #list object containing named elements Observation, Mock, and Npcr
+  
+  return(
+    metabarcoding_data <- list(
+      Observation = Observation,
+      Mock = Mock,
+      N_pcr_mock = 43, 
+      NSpecies = nrow(sp_list),
+      station_list = station_list,
+      sp_list = sp_list
+    ))
+}
+
 
 # a last piece is we need a sample identifier across QM and qPCR data
 # We need to link unique qPCR biological samples to unique QM samples

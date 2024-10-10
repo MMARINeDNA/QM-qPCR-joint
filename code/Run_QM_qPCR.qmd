@@ -33,13 +33,16 @@ The first script loads the metabarcoding, qPCR, and mock community data. The sec
 
 ```{r}
 source(here('code','load_QM-qPCR_data.R'))
-
-source(here("code/qm_data_prep_functions.R"))
 ```
 
 ## Format for Stan
 
-We can prepare the data we just loaded to be input into our Stan model, using some of the functions in the previous script.
+We can prepare the data we just loaded to be input into our Stan model
+
+```{r}
+source(here("code/qm_data_prep_functions.R"))
+```
+
 
 ```{r}
 #qPCR
