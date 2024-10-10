@@ -12,14 +12,15 @@ format:
           \usepackage{pdflscape}
           \newcommand{\blandscape}{\begin{landscape}}
           \newcommand{\elandscape}{\end{landscape}}
-editor: visual
+editor: source
 ---
 
-```{r setup}
+```{r setup,warning=F,message=F}
 library(tidyverse)
 library(rstan)
 here::i_am("QM-qPCR-joint.Rproj")
 library(here)
+options(tidyverse.quiet = TRUE, dplyr.summarise.inform = FALSE,dplyr.left_join.inform = FALSE)
 ```
 
 
@@ -43,62 +44,41 @@ We can prepare the data we just loaded to be input into our Stan model
 source(here("code/qm_data_prep_functions.R"))
 ```
 
-
 ```{r}
 #qPCR
 formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
                                    qPCR_standards=qPCR_std,
                                    tube_dat = tube_dat,
-                                   unk_covariates=c("wash_idx","station_depth_idx"),cov_type = c("continuous","factor"),
+                                   unk_covariates=c("wash_idx","station_depth_idx"),
+                                   cov_type = c("continuous","factor"),
                                    unk_offset =c("dilution","volume_offset"))
 
-stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data) %>% 
-                    # Add Random effect for station
-                    c(.,
-                      list(X_bio_rep_tube =X_bio_rep_tube,
-                           X_bio_rep_obs =X_bio_rep_obs,
-                           X_station_depth_tube=X_station_depth_tube,
-                           N_bio_rep_RE = N_bio_rep_RE,
-                           N_bio_rep_param = N_bio_rep_param,
-                           bio_rep_idx =bio_rep_idx,
-                           N_bio_rep_idx = N_bio_rep_idx))
+stan_qPCR_data <- prepare_stan_data_qPCR(formatted_qPCR_data)
 
 # metabarcoding
 formatted_metabarcoding_data <- format_metabarcoding_data(input_metabarcoding_data=mfu, 
-                                                          input_mock_comm_data=mock,
-                                                     Level_1_treatment_envir <- "Sample",
-                                                     Level_2_treatment_envir <- "tech",
-                                                     Level_3_treatment_envir <- NA,
-                                                     Level_1_treatment_mock <- "Sample",
-                                                     Level_2_treatment_mock <- "Rep",
-                                                     Level_3_treatment_mock <- NA)
+                                                          input_mock_comm_data=mock)
 
-# linking with qPCR is now done within this function.
-stan_metabarcoding_data <-  makeDesign(obs= formatted_metabarcoding_data,
-                                       qPCR_tube_obs = formatted_qPCR_data$tube_dat,
-                                  N_pcr_cycles = 43, Nlevels_mock = 2, Nlevels_samp = 2)
+# linking with qPCR is now done within this next function.
+stan_metabarcoding_data <-  prepare_stan_data_MB(obs= formatted_metabarcoding_data,
+                                                 qPCR_tube_obs = formatted_qPCR_data$tube_dat,
+                                                 N_pcr_cycles = 43)
 
-log_D_link_sp_init_mean = 2
-link_species = "Merluccius productus"
-log_D_inits <- makeQM_inits(sample_data =stan_metabarcoding_data$sample_data, 
-                         log_D_link_sp_init_mean = log_D_link_sp_init_mean,
-                         sp_list = formatted_metabarcoding_data$sp_list,
-                         qPCR_ref_sp = link_species )
+# Define link species between qpCR<-->metabarcoding
+link_species = "Zz_Merluccius productus"
+qpcr_mb_link_sp_idx <- formatted_metabarcoding_data$sp_list %>% 
+  filter(species==link_species) %>% 
+  pull(species_idx)
 
-
-
-# get the index of the right species
-qpcr_mb_link_sp_idx <- formatted_metabarcoding_data$sp_list$species_idx[formatted_metabarcoding_data$sp_list$species == link_species]
-
-# join the three lists
+# join the lists of Stan input data to make a final data list
 stan_data_joint <- c(stan_qPCR_data,
                      stan_metabarcoding_data,
                      list(qpcr_mb_link_sp_idx=qpcr_mb_link_sp_idx))
+
 # Check to make sure the order is correct for two of the design matrices that 
 # map to observation and the tubes.  Very important.
-identical(colnames(X_bio_rep_tube),colnames(X_bio_rep_obs))
-identical(colnames(X_station_depth_tube),colnames(stan_data_joint$X_station_depth_obs))
-
+identical(colnames(stan_data_joint$X_bio_rep_tube),colnames(stan_data_joint$X_bio_rep_obs))
+identical(colnames(stan_data_joint$X_station_depth_tube),colnames(stan_data_joint$X_station_depth_obs))
 ```
 
 Now the data should be ready for Stan. We compile the Stan model itself:
@@ -106,9 +86,6 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 ## Load Stan model
 
 ```{r}
-m <- here('code','qm_qpcr_joint.stan')
-m_dm <- here('code','qm_qpcr_joint-DM.stan') # Dirichlet multinomial
-
 m_dm_mock <- here('code','qm_mocks-DM.stan') # Dirichlet multinomial for mocks
 m_dm_fix <- here('code','qm_qpcr_joint-DM_alpha-fix.stan')
 
@@ -120,36 +97,7 @@ m_dm_fix <- here('code','qm_qpcr_joint-DM_alpha-fix.stan')
 
 Run Stan
 
-```{r}
-# n.chains <- 3
-# n.warm <- 500
-# n.samps <- 3000
-# jointMod = stan(file = m ,
-#                 data = stan_data_joint,
-#                 verbose = FALSE,
-#                 chains = n.chains,
-#                 thin = 1,
-#                 warmup = n.warm,
-#                 iter = n.warm+n.samps,
-#                 control = list(adapt_init_buffer = 75,
-#                                   max_treedepth=12,
-#                                   stepsize=0.01,
-#                                   adapt_delta=0.8,
-#                                   metric="diag_e"),
-#                 init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
-#                                     N_species = stan_data_joint$N_species,
-#                                     Nplates=stan_data_joint$Nplates,
-#                                     N_station_depth=stan_data_joint$N_station_depth,
-#                                     log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean),
-#                                     # log_D_raw_inits=log_D_inits$log_D_raw_inits),
-#                                     # log_D_log_D_inits$log_D_inits,
-#                 refresh = 10,
-#                 boost_lib = NULL
-#                 # sample_file="tmpU.csv"
-#                 )
-```
-
-## Dirichlet multinomial
+## Dirichlet (Mocks)
 
 First, run the model for the mock communities
 
@@ -159,8 +107,8 @@ n.chains <- 3
 n.warm <- 500
 n.samps <- 10000
 
-mocksMod = stan(file = m_dm_mock ,
-
+mocksMod = stan(file = m_dm_mock,
+                model_name = "mock communities",
                 data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,
@@ -172,14 +120,7 @@ mocksMod = stan(file = m_dm_mock ,
                                   stepsize=0.01,
                                   adapt_delta=0.8,
                                   metric="diag_e"),
-                init = stan_init_f1(n.chains,N_obs_mb = stan_data_joint$N_obs_mb_samp,
-                                    N_species = stan_data_joint$N_species,
-                                    Nplates=stan_data_joint$Nplates,
-                                    N_station_depth=stan_data_joint$N_station_depth
-                                    # log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
-                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits,
-                                    # log_D_inits = log_D_inits$log_D_inits
-                                    ),
+                save_dso = FALSE,
                 #refresh = 100,
                 boost_lib = NULL
                 # sample_file="tmpU.csv"
@@ -189,15 +130,28 @@ mocksMod = stan(file = m_dm_mock ,
 A <- summary(mocksMod,pars="alpha")
 B <- summary(mocksMod,pars="dm_alpha0_mock")
 
-# rstan::traceplot(mocksMod,pars=c("alpha"))
+rstan::traceplot(mocksMod,pars=c("alpha"))
 # rstan::traceplot(mocksMod,pars=c("log_dm_alpha0_mock"))
 
 alpha_fix <- A$summary %>% as.data.frame() %>% dplyr::select(mean) 
 dm_alpha0_mock <- B$summary %>% as.data.frame() %>% dplyr::select(mean)
 
+# augment the Stan data with these alpha values
 stan_data_joint <- c(stan_data_joint,
                      list(alpha_fix=(alpha_fix$mean),
-                                                dm_alpha0_mock=dm_alpha0_mock$mean))
+                          dm_alpha0_mock=dm_alpha0_mock$mean))
+
+# a wee plot
+Asumm <- A$summary %>% as_tibble()
+alphap <- alpha_fix %>% bind_cols(stan_data_joint$sp_list) %>% mutate(lwr=Asumm$`2.5%`,upr=Asumm$`97.5%`) %>% 
+  ggplot(aes(species,mean,ymin=lwr,ymax=upr))+
+  geom_pointrange()+
+  geom_hline(yintercept=0,linetype=2)+
+  coord_flip()+
+  theme_minimal()+
+  labs(x="Species",y="Alpha")
+
+alphap
 ```
 
 Then, run the joint model with fixed alphas drawn from the model above.
@@ -206,9 +160,13 @@ Then, run the joint model with fixed alphas drawn from the model above.
 n.chains <- 3
 n.warm <- 400
 n.samps <-100
+
+inits <- make_stan_inits(n.chain = n.chains,jointData = stan_data_joint,log_D_link_sp_init_mean = 2)
+
 tictoc::tic("Running DM Joint Model:")
 # jointMod_dm = stan(file = "qm_qpcr_joint-DM_alpha-fix.stan",
 jointMod_dm = stan(file = m_dm_fix,
+                model_name = "joint model fixed alphas",
                 data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,

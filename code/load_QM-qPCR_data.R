@@ -191,39 +191,11 @@ tube_dat <- tube_dat %>% mutate(tube_idx = row_number())
 # Merge back into the qPCR_unk
 qPCR_unk <- qPCR_unk %>% left_join(tube_dat,by = join_by(tubeID, depth_cat, n_tube_station_depth, station_depth_idx, station_idx))
 
-## Design matrix for qPCR data -----------------------------------------------------------------
-
-form <- "depth_cat ~ 0 + factor(station_depth_idx)"
-model_frame   <- model.frame(form, tube_dat)  
-X_station_depth_tube <- model.matrix(as.formula(form), model_frame)
-
-### RANDOM EFFECT DESIGN MATRICES
-# Make a matrix for random effect associated with each station-depth combination at observation level 
-form <- "year ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
-model_frame   <- model.frame(form, qPCR_unk)
-A <- model.matrix(as.formula(form), model_frame)
-# get rid of factor levels (columns) that == 0
-X_bio_rep_obs <- A[,which(colSums(A)>0)]
-
-### Make random effect that sums to zero for the tubes.
-bio_rep_dat <- tube_dat %>% group_by(station_depth_idx) %>% mutate(bio_rep_idx = rep(1:n())) %>%  ungroup()
-bio_rep_dat2 <- bio_rep_dat %>% filter(bio_rep_idx == n_tube_station_depth)
-form <- "depth_cat ~ 0 + factor(tubeID): factor(n_tube_station_depth)"
-model_frame   <- model.frame(form, bio_rep_dat)  
-X_bio_rep_tube <- model.matrix(as.formula(form), model_frame)
-X_bio_rep_tube <- X_bio_rep_tube[,which(colSums(X_bio_rep_tube)>0)]
-
-# figure out how many parameters you actually need to estimate for random effects: RE > param
-N_bio_rep_RE    <- nrow(bio_rep_dat)
-N_bio_rep_param <- bio_rep_dat %>% filter(bio_rep_idx != n_tube_station_depth) %>% nrow()
-bio_rep_idx <- bio_rep_dat2 %>%  pull(bio_rep_idx)
-N_bio_rep_idx <- length(bio_rep_idx)
-
 # Make a metadata file that has all of the requisite stuff post-filtering.
 META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
 write_rds(META,here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
 
-####
+#### Standards don't need much formatting
 qPCR_std <- read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2020-01-04 standards.csv'),col_types=cols()) %>% 
   rename(tubeID=sample)
 
