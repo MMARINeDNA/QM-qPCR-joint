@@ -1,6 +1,6 @@
 # Load data for QM-qPCR joint model
 
-# Packaages ------------------------------------------------------------------------------
+# Packages ------------------------------------------------------------------------------
 suppressPackageStartupMessages(library(here))
 suppressPackageStartupMessages(library(tidyverse))
 options(tidyverse.quiet = TRUE, dplyr.summarise.inform = FALSE,dplyr.left_join.inform = FALSE)

@@ -32,7 +32,7 @@ We implement and fit a Stan model that jointly models qPCR and metabarcoding dat
 The first script loads the metabarcoding, qPCR, and mock community data. The second script loads functions that are useful for working with the data and setting up the Stan model.
 
 ```{r}
-source(here('code','1_load_data.R'))
+source(here('code','load_QM-qPCR_data.R'))
 
 source(here("code/qm_data_prep_functions.R"))
 ```
