@@ -154,6 +154,16 @@ alphap <- alpha_fix %>% bind_cols(stan_data_joint$sp_list) %>% mutate(lwr=Asumm$
 alphap
 ```
 
+## Mock fits
+
+```{r}
+# Code for these diagnostic plots
+source(here('code','diagnostics.R'))
+msumm <- get_param_ests(mocksMod)
+plot_obs_pred_qm_mocks_only(s=msumm,stan_data = stan_data_joint)
+```
+
+
 Then, run the joint model with fixed alphas drawn from the model above.
 
 ```{r}
@@ -208,8 +218,6 @@ jointMod_dm <- read_rds(here('code','fit_dm.rds'))
 # Diagnostics - Observations and Predictions
 
 ```{r}
-# Code for these diagnostic plots
-source(here('code','diagnostics.R'))
 fit_summ <- get_param_ests(jointMod_dm)
 ```
 

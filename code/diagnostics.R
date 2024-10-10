@@ -312,6 +312,82 @@ plot_obs_pred_qm_no_mocks <- function(s,stan_data){
   out
 }
 
+plot_obs_pred_qm_mocks_only <- function(s, stan_data){
+  # mock communities - reads
+  mock_reads_dat <- stan_data %>%
+    pluck('mock_data') %>% 
+    mutate(rep=row_number()) %>% 
+    pivot_longer(-rep,names_to = 'taxa',values_to='reads')
+  
+  # mock communities - proportions
+  mock_alr_dat <- stan_data %>%
+    pluck('alr_mock_true_prop') %>% 
+    mutate(rep=row_number()) %>% 
+    pivot_longer(-rep,names_to = 'taxa',values_to='alr')%>% 
+    group_by(rep) %>% 
+    mutate(prop=softmax(alr)) %>% 
+    ungroup()
+  
+  # mock communities - fitted (estimated) values
+  mock_fit <- s %>% 
+    filter(grepl('logit_val_mock',variable)) %>% 
+    # number of replicates (for doing the softmax) is equal to nrow(mock_dat)
+    # you can also pull it from the names of the variables with regex
+    mutate(rep=str_extract(variable,"(?<=\\[)\\d")) %>% 
+    mutate(se_mean=ifelse(is.nan(se_mean),0,se_mean)) %>% 
+    mutate(alr_upper=mean+se_mean,alr_lower=mean-se_mean) %>% 
+    group_by(rep) %>% 
+    mutate(prop=softmax(mean),prop_upper=softmax(mean+se_mean),prop_lower=softmax(mean-se_mean)) %>% 
+    ungroup()
+  
+  # join obs/preds
+  mock_alr_join <- mock_alr_dat %>% 
+    mutate(alr_fit=mock_fit$mean,
+           alr_upper=mock_fit$alr_upper,
+           alr_lower=mock_fit$alr_lower,
+           prop_fit=mock_fit$prop,
+           prop_upper=mock_fit$prop_upper,
+           prop_lower=mock_fit$prop_lower)
+  
+  mock_reads_join <- mock_reads_dat %>% 
+    mutate(prop_fit=mock_fit$prop,
+           prop_upper=mock_fit$prop_upper,
+           prop_lower=mock_fit$prop_lower) %>% 
+    # back out estimated reads from proportions
+    group_by(rep) %>% 
+    mutate(sumreads=sum(reads)) %>% 
+    ungroup() %>% 
+    mutate(reads_fit=prop_fit*sumreads,
+           reads_upper=prop_upper*sumreads,
+           reads_lower=prop_lower*sumreads)
+  
+  # mock communities - plots
+  mock_alr_plot <- mock_alr_join %>% 
+    ggplot(aes(alr_fit,alr,col=taxa,xmin=alr_lower,xmax=alr_upper))+
+    geom_pointrange()+
+    geom_abline(slope=1,intercept=0,linetype=2)+
+    labs(x="ALR- Predicted",y="ALR - Observed",title="Mock Communities - ALR")+
+    guides(color='none')
+  
+  mock_prop_plot <- mock_alr_join %>% 
+    ggplot(aes(prop_fit,prop,col=taxa,xmin=prop_lower,xmax=prop_upper))+
+    geom_pointrange()+
+    geom_abline(slope=1,intercept=0,linetype=2)+
+    labs(x="Proportion - Predicted",y="Proportion - Observed",title="Mock Communities - ALR")+
+    guides(color='none')
+  
+  mock_reads_plot <- mock_reads_join %>% 
+    ggplot(aes(reads_fit,reads,col=taxa,xmin=reads_lower,xmax=reads_upper))+
+    geom_pointrange()+
+    geom_abline(slope=1,intercept=0,linetype=2)+
+    labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities - Reads")+
+    guides(color='none')
+  
+  # Combined plots
+  out <- plot_grid(mock_reads_plot,mock_prop_plot,mock_reads_plot,nrow=1)
+  out
+}
+
 #### distribution of log_D (estimated reads, i.e., our quantity of interest) ####
 
 plot_est_reads <- function(s){
