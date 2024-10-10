@@ -483,6 +483,8 @@ mfu %>%
   pull(Sample) %>% unique() %>% length() %>% 
   cat();cat('\n');cat('\n')
 
+mfu_0 <- mfu
+
 mfu <- mfu %>% 
   # filter(!(Sample%in% union(no_hake_MB,no_others_MB))) %>% 
   filter(!(Sample%in% no_hake_MB)) %>% 

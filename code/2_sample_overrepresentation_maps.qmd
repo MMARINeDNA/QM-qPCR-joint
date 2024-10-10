@@ -65,9 +65,7 @@ options(width = 300) #wd
 options(width = dwidth)#wd
 ```
 
-# Data prep
-
-## Load libraries
+# Load libraries
 
 ```{r, warning=FALSE, message=FALSE}
 suppressMessages(library(tidyverse))
@@ -82,17 +80,18 @@ library(ggspatial)
 library(gridExtra)
 library(here)
 library(ggrepel)
+library(ggu.base.fun)
 ```
 
 ## Load data with 6 species in the mocks
 
-```{r, warning=FALSE, message=FALSE}
+```{r, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
 source(here('code','1_load_data.R'))
 ```
 
 ### Map
 
-```{r, warning=FALSE, message=FALSE}
+```{r, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
 #| fig-width: 14
 #| fig-height: 5.5
 
@@ -145,29 +144,29 @@ basemap +
   facet_grid(~depth_cat) +
   scale_color_manual(values = c("qPCR" = "black", "MB" = "red"),
                      name = "Samples")+
+  ggtitle('Samp with MB and qPCR')+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
-## Load data with 14 species in the mocks
+# Load data with 14 species in the mocks
 
 ```{r, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
 source(here('code','1_load_data_GG.R'))
 ```
 
-### Map
+## Map over Joint model samples (MB vs qPCR) overall
+
+Comparing the amount of samples from MB part that goes through stan and the qPCR part
 
 ```{r, warning=FALSE, message=FALSE}
-#| fig-width: 14
-#| fig-height: 5.5
-
 samp_map_MB <- qPCR_unk %>% select(tubeID,lat,lon,depth_cat) %>%
   distinct(tubeID,lat,lon,depth_cat) %>%
   filter(tubeID%in%mfu$Sample) %>%
-  mutate(group='MB') %>%
+  mutate(group='MB_in_stan') %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
 
 #number of MB samp (that are also in qPCR)
-samp_map_MB %>% as_tibble() %>% select(-geometry) %>%
+dim_samp_map_MB <- samp_map_MB %>% as_tibble() %>% select(-geometry) %>%
   count(depth_cat)
 
 latlondep_MB <- samp_map_MB %>% unite(lat,lon,depth_cat,col='x',remove = F) %>% pull(x)
@@ -181,8 +180,18 @@ samp_map_qPCR_no_MB <- qPCR_unk %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
 
 #number of qPCR samples that are not in MB (kept only 1 bottle per sample so that the numbers don't double)
-samp_map_qPCR_no_MB %>% as_tibble() %>% select(-geometry) %>%
+dim_samp_map_qPCR_no_MB <- samp_map_qPCR_no_MB %>% as_tibble() %>% select(-geometry) %>%
   count(depth_cat)
+
+custom_cbind(dim_samp_map_MB %>% column_to_rownames('depth_cat') %>% setNames('MB_in_stan'),
+             dim_samp_map_qPCR_no_MB %>% column_to_rownames('depth_cat') %>% setNames('hake_qPCR')) %>% 
+  rownames_to_column('depth') %>% 
+  arrange(as.numeric(depth))
+```
+
+```{r, warning=FALSE, message=FALSE}
+#| fig-width: 14
+#| fig-height: 5.5
 
 basemap +
   geom_point(data = samp_map_qPCR_no_MB,
@@ -190,7 +199,207 @@ basemap +
   geom_point(data = samp_map_MB,
              aes(x = lon, y = lat, color = group), size = 0.5) +
   facet_grid(~depth_cat) +
-  scale_color_manual(values = c("qPCR" = "black", "MB" = "red"),
+  scale_color_manual(values = c("qPCR" = "black", "MB_in_stan" = "red"),
                      name = "Samples")+
+    ggtitle('Samp with MB and qPCR')+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
+
+Focusing only the depths where we have MB samples (0, 50, 150, 300, & 500m)
+
+```{r, warning=FALSE, message=FALSE}
+#| fig-width: 14
+#| fig-height: 8
+
+custom_cbind(dim_samp_map_MB %>% column_to_rownames('depth_cat') %>% setNames('MB_in_stan'),
+             dim_samp_map_qPCR_no_MB %>% column_to_rownames('depth_cat') %>% setNames('hake_qPCR')) %>% 
+  rownames_to_column('depth') %>% 
+  arrange(as.numeric(depth)) %>% 
+  filter(!depth%in%c(25,100,200))
+
+basemap +
+  geom_point(data = samp_map_qPCR_no_MB %>% 
+              filter(!depth_cat%in%c(25,100,200)),
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = samp_map_MB,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  facet_grid(~depth_cat) +
+  scale_color_manual(values = c("qPCR" = "black", "MB_in_stan" = "red"),
+                     name = "Samples")+
+    ggtitle('Samp with MB and qPCR')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+Seems like a half & half split between MB and qPCR
+
+## Including MB samples that have been sequenced but have no Hake (in qPCR)
+
+```{r, warning=FALSE, message=FALSE}
+#| fig-width: 14
+#| fig-height: 8
+
+MB_no_hake <- qPCR_unk %>% select(tubeID,lat,lon,depth_cat) %>%
+  distinct(tubeID,lat,lon,depth_cat) %>%
+  filter(tubeID%in%no_hake_MB) %>%
+  unite(lat,lon,depth_cat,col='x',remove = F) %>% 
+  filter(!duplicated(x)) %>%
+  mutate(group='MB_no_hake') %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+latlondep_MB_no_hake <- MB_no_hake %>% 
+  pull(x)
+
+#number of MB samp that have no hake
+dim_MB_no_hake <- MB_no_hake %>% as_tibble() %>% select(-geometry) %>%
+  count(depth_cat)
+
+samp_map_qPCR_no_MB <- qPCR_unk %>%
+  select(tubeID,lat,lon,depth_cat) %>%
+  distinct(tubeID,lat,lon,depth_cat) %>%
+  unite(lat,lon,depth_cat,col='x',remove = F) %>%
+  filter(!x%in%latlondep_MB) %>%
+  filter(!x%in%latlondep_MB_no_hake) %>%
+  filter(!duplicated(x)) %>%
+  mutate(group='qPCR') %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+#number of qPCR samp that have not been metabarcoded
+dim_samp_map_qPCR_no_MB <- samp_map_qPCR_no_MB %>% as_tibble() %>% select(-geometry) %>%
+  count(depth_cat)
+
+custom_cbind(dim_samp_map_MB %>% column_to_rownames('depth_cat') %>% setNames('MB_in_stan'),
+             dim_samp_map_qPCR_no_MB %>% column_to_rownames('depth_cat') %>%
+               setNames('qPCR_noMB')) %>% 
+  custom_cbind(.,
+               dim_MB_no_hake %>% column_to_rownames('depth_cat') %>% set_names('MB_nohake')) %>% 
+  rownames_to_column('depth') %>% 
+  arrange(as.numeric(depth)) %>% 
+  select(depth, MB_in_stan, MB_nohake, qPCR_noMB)%>% 
+  filter(!depth%in%c(25,100,200))
+
+basemap +
+  geom_point(data = samp_map_qPCR_no_MB %>% 
+               filter(!depth_cat%in%c(25,100,200)),
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = samp_map_MB,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = MB_no_hake,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  facet_grid(~depth_cat) +
+  scale_color_manual(values = c("qPCR" = "black", 
+                                "MB_in_stan" = "red",
+                                "MB_no_hake" = 'white'),
+                     name = "Samples")+
+    ggtitle('Samp with MB and qPCR')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+There\`s way less hake present in the surface. From the data you could spot that hake occupancy is the highest around 50, 150, 300, & 500m
+
+## Adding the samples that have no other sp other than Hake
+
+```{r, warning=FALSE, message=FALSE}
+#| fig-width: 14
+#| fig-height: 8
+
+MB_no_other_than_hake <- qPCR_unk %>% select(tubeID,lat,lon,depth_cat) %>%
+  distinct(tubeID,lat,lon,depth_cat) %>%
+  filter(tubeID%in%no_others_MB) %>%
+  unite(lat,lon,depth_cat,col='x',remove = F) %>% 
+  filter(!duplicated(x)) %>%
+  mutate(group='MB_no_others') %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+latlondep_MB_no_others_MB <- MB_no_other_than_hake %>% 
+  pull(x)
+
+#number of MB samp that have no hake
+dim_onlyhake <- MB_no_other_than_hake %>% as_tibble() %>% select(-geometry) %>%
+  count(depth_cat)
+
+samp_map_MB <- qPCR_unk %>% 
+  select(tubeID,lat,lon,depth_cat) %>%
+  distinct(tubeID,lat,lon,depth_cat) %>%
+  filter(tubeID%in%mfu$Sample) %>%
+  unite(lat,lon,depth_cat,col='x',remove = F) %>%
+  filter(!x%in%latlondep_MB_no_others_MB) %>%
+  mutate(group='MB_in_stan') %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
+
+custom_cbind(dim_samp_map_MB %>% column_to_rownames('depth_cat') %>% setNames('MB_in_stan'),
+             dim_samp_map_qPCR_no_MB %>% column_to_rownames('depth_cat') %>%
+               setNames('qPCR_noMB')) %>% 
+  custom_cbind(.,
+               dim_MB_no_hake %>% column_to_rownames('depth_cat') %>% set_names('MB_nohake')) %>% 
+  custom_cbind(.,
+               dim_onlyhake %>% column_to_rownames('depth_cat') %>% set_names('MB_in_stan_onlyhake')) %>% 
+  rownames_to_column('depth') %>% 
+  arrange(as.numeric(depth)) %>% 
+  select(depth, MB_in_stan, MB_in_stan_onlyhake, MB_nohake, qPCR_noMB) %>% 
+  filter(!depth%in%c(25,100,200))
+
+basemap +
+  geom_point(data = samp_map_qPCR_no_MB %>% 
+               filter(!depth_cat%in%c(25,100,200)),
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = samp_map_MB,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = MB_no_hake,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  geom_point(data = MB_no_other_than_hake,
+             aes(x = lon, y = lat, color = group), size = 0.5) +
+  facet_grid(~depth_cat) +
+  scale_color_manual(values = c("qPCR" = "black",
+                                "MB_in_stan" = "red",
+                                "MB_no_hake" = 'white',
+                                'MB_no_others'='deepskyblue'),
+                     name = "Samples")+
+    ggtitle('Samp with MB and qPCR')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+## Occupancy stats
+
+Looking into probability of other species co-occurring when Hake is present and absent. This can help to select additional species (qPCR assays) for increasing the coverage of qPCR to MB link. Ideally having an additional qPCR assay that has higher porb of occurrence when hake is absent would increase the inclusion of MB samples.
+
+
+```{r}
+sp_occu_hake_not_present <- 
+mfu_0 %>% filter(Sample%in%no_hake_MB) %>% select(-biol,-tech) %>% 
+  pivot_wider(names_from = Sample,
+              values_from = Nreads) %>% 
+  column_to_rownames('species') %>% 
+  pa_conversion() %>% 
+  mutate(tot=rowSums(.)/ncol(.)) %>% 
+  pull(tot)
+
+sp_occu_hake_present <- 
+mfu %>% select(-biol,-tech,-station) %>% 
+  pivot_wider(names_from = Sample,
+              values_from = Nreads) %>% 
+  column_to_rownames('species') %>% 
+  pa_conversion() %>% 
+  mutate(tot=rowSums(.)/ncol(.)) %>% 
+  pull(tot)
+
+sp_occu_hake_pa <- cbind(sp_occu_hake_not_present,
+      sp_occu_hake_present) %>% as.data.frame() %>% 
+  setNames(c('hake_absent','hake_present'))
+
+sp_occu_hake_pa
+
+sp_occu_hake_pa  %>% 
+  rownames_to_column('Species') %>% 
+  pivot_longer(cols = c('hake_absent','hake_present'),
+               names_to = 'hake_pa',
+               values_to = 'prob_of_presence') %>% 
+  filter(Species!='Zz_Merluccius productus') %>% 
+ggplot(aes(x = Species, y = prob_of_presence, fill = hake_pa)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Species", y = "Probability of co-occurrance", fill = "Hake presence") +
+  ggtitle("Probability of co-occurrance of species and Hake") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Seems that _Engraulis mordax_ is the only species that is neg correlated with hake occupancy and _Stenobrachius leucopsarus_ is pos correlated
