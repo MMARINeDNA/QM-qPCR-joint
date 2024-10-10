@@ -275,8 +275,8 @@ alrTransform <- function(formatted_mock){
   nspp <- length(unique(formatted_mock$species))
   
   p_mock <- formatted_mock %>%
-    select(mockID,species,b_proportion) %>% 
-    pivot_wider(names_from = species, values_from = b_proportion, values_fill = 1e-9) %>% 
+    select(mockID,species_idx,b_proportion) %>% 
+    pivot_wider(names_from = species_idx, names_sort=T,names_prefix="alr_",values_from = b_proportion, values_fill = 1e-9) %>% 
     ungroup()
 
   colnames(p_mock)[2:ncol(p_mock)] <- paste0("alr_", 1:nspp)

@@ -120,7 +120,6 @@ mocksMod = stan(file = m_dm_mock,
                                   stepsize=0.01,
                                   adapt_delta=0.8,
                                   metric="diag_e"),
-                save_dso = FALSE,
                 #refresh = 100,
                 boost_lib = NULL
                 # sample_file="tmpU.csv"
@@ -156,7 +155,7 @@ alphap
 
 ## Mock fits
 
-```{r}
+```{r,fig.asp=0.5}
 # Code for these diagnostic plots
 source(here('code','diagnostics.R'))
 msumm <- get_param_ests(mocksMod)

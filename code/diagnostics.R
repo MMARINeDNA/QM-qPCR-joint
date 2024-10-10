@@ -4,6 +4,8 @@
 library(tidyverse)
 library(rstan)
 library(cowplot)
+library(ggsci)
+library(ggpubr)
 
 plot_theme <- theme_minimal()+theme(panel.border = element_rect(color="black",fill=NA),
                                     axis.text=element_text(size=8),plot.title = element_text(size=10))
@@ -184,14 +186,18 @@ plot_obs_pred_qm <- function(s,stan_data){
     ggplot(aes(alr_fit,alr,col=taxa,xmin=alr_lower,xmax=alr_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
-    labs(x="ALR- Predicted",y="ALR - Observed",title="Mock Communities - ALR")+
-    guides(color='none')
+    labs(x="ALR- Predicted",y="ALR - Observed",title="Mock Communities - ALR",color="")+
+    scale_color_simpsons()+
+    theme(legend.position = 'bottom')
+  
+  leg <- get_legend(mock_alr_plot)
   
   mock_prop_plot <- mock_alr_join %>% 
     ggplot(aes(prop_fit,prop,col=taxa,xmin=prop_lower,xmax=prop_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
     labs(x="Proportion - Predicted",y="Proportion - Observed",title="Mock Communities - ALR")+
+    scale_color_simpsons()+
     guides(color='none')
   
   mock_reads_plot <- mock_reads_join %>% 
@@ -199,6 +205,7 @@ plot_obs_pred_qm <- function(s,stan_data){
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
     labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities - Reads")+
+    scale_color_simpsons()+
     guides(color='none')
   
   # metabarcoding field samples - reads
@@ -337,7 +344,7 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data){
     mutate(se_mean=ifelse(is.nan(se_mean),0,se_mean)) %>% 
     mutate(alr_upper=mean+se_mean,alr_lower=mean-se_mean) %>% 
     group_by(rep) %>% 
-    mutate(prop=softmax(mean),prop_upper=softmax(mean+se_mean),prop_lower=softmax(mean-se_mean)) %>% 
+    mutate(prop=softmax(mean),prop_lower=softmax(`2.5%`),prop_upper=softmax(`97.5%`)) %>% 
     ungroup()
   
   # join obs/preds
@@ -366,25 +373,31 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data){
     ggplot(aes(alr_fit,alr,col=taxa,xmin=alr_lower,xmax=alr_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
-    labs(x="ALR- Predicted",y="ALR - Observed",title="Mock Communities - ALR")+
-    guides(color='none')
+    labs(x="ALR- Predicted",y="ALR - Observed",title="Mock Communities -\nALR",color="")+
+    scale_color_simpsons()+
+    theme(legend.position = 'bottom')
+  
+  leg <- get_legend(mock_alr_plot)
   
   mock_prop_plot <- mock_alr_join %>% 
     ggplot(aes(prop_fit,prop,col=taxa,xmin=prop_lower,xmax=prop_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
-    labs(x="Proportion - Predicted",y="Proportion - Observed",title="Mock Communities - ALR")+
+    labs(x="Proportion - Predicted",y="Proportion - Observed",title="Mock Communities -\nProportions")+
+    scale_color_simpsons()+
     guides(color='none')
   
   mock_reads_plot <- mock_reads_join %>% 
     ggplot(aes(reads_fit,reads,col=taxa,xmin=reads_lower,xmax=reads_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
-    labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities - Reads")+
+    labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities -\nReads")+
+    scale_color_simpsons()+
     guides(color='none')
   
   # Combined plots
-  out <- plot_grid(mock_reads_plot,mock_prop_plot,mock_reads_plot,nrow=1)
+  r1 <- plot_grid(mock_alr_plot+guides(color='none'),mock_prop_plot,mock_reads_plot,nrow=1)
+  out <- plot_grid(r1,leg,nrow=2,rel_heights = c(4,1))
   out
 }
 
