@@ -18,8 +18,8 @@ editor: visual
 ```{r setup}
 library(tidyverse)
 library(rstan)
+here::i_am("QM-qPCR-joint.Rproj")
 library(here)
-
 ```
 
 
