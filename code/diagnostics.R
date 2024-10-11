@@ -133,18 +133,20 @@ plot_alphas <- function(s){
 
 plot_obs_pred_qm <- function(s,stan_data){
   
+  mockIDs <- stan_data$mock_data_labeled$mockID
+  
   # mock communities - reads
   mock_reads_dat <- stan_data %>%
     pluck('mock_data') %>% 
-    mutate(rep=row_number()) %>% 
-    pivot_longer(-rep,names_to = 'taxa',values_to='reads')
+    mutate(mockID=mockIDs) %>% 
+    pivot_longer(-mockID,names_to = 'taxa',values_to='reads')
   
   # mock communities - proportions
   mock_alr_dat <- stan_data %>%
     pluck('alr_mock_true_prop') %>% 
-    mutate(rep=row_number()) %>% 
-    pivot_longer(-rep,names_to = 'taxa',values_to='alr')%>% 
-    group_by(rep) %>% 
+    mutate(mockID=mockIDs) %>% 
+    pivot_longer(-mockID,names_to = 'taxa',values_to='alr')%>% 
+    group_by(mockID) %>% 
     mutate(prop=softmax(alr)) %>% 
     ungroup()
   
@@ -153,11 +155,11 @@ plot_obs_pred_qm <- function(s,stan_data){
     filter(grepl('logit_val_mock',variable)) %>% 
     # number of replicates (for doing the softmax) is equal to nrow(mock_dat)
     # you can also pull it from the names of the variables with regex
-    mutate(rep=str_extract(variable,"(?<=\\[)\\d")) %>% 
+    mutate(mockID=mock_alr_dat$mockID) %>% 
     mutate(se_mean=ifelse(is.nan(se_mean),0,se_mean)) %>% 
     mutate(alr_upper=mean+se_mean,alr_lower=mean-se_mean) %>% 
-    group_by(rep) %>% 
-    mutate(prop=softmax(mean),prop_upper=softmax(mean+se_mean),prop_lower=softmax(mean-se_mean)) %>% 
+    group_by(mockID) %>% 
+    mutate(prop=softmax(mean),prop_lower=softmax(`2.5%`),prop_upper=softmax(`97.5%`)) %>% 
     ungroup()
   
   # join obs/preds
@@ -174,7 +176,7 @@ plot_obs_pred_qm <- function(s,stan_data){
            prop_upper=mock_fit$prop_upper,
            prop_lower=mock_fit$prop_lower) %>% 
     # back out estimated reads from proportions
-    group_by(rep) %>% 
+    group_by(mockID) %>% 
     mutate(sumreads=sum(reads)) %>% 
     ungroup() %>% 
     mutate(reads_fit=prop_fit*sumreads,
@@ -186,7 +188,7 @@ plot_obs_pred_qm <- function(s,stan_data){
     ggplot(aes(alr_fit,alr,col=taxa,xmin=alr_lower,xmax=alr_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
-    labs(x="ALR- Predicted",y="ALR - Observed",title="Mock Communities - ALR",color="")+
+    labs(x="ALR- Predicted",y="ALR - Observed",title="Mock Communities -\nALR",color="")+
     scale_color_simpsons()+
     theme(legend.position = 'bottom')
   
@@ -196,7 +198,7 @@ plot_obs_pred_qm <- function(s,stan_data){
     ggplot(aes(prop_fit,prop,col=taxa,xmin=prop_lower,xmax=prop_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
-    labs(x="Proportion - Predicted",y="Proportion - Observed",title="Mock Communities - ALR")+
+    labs(x="Proportion - Predicted",y="Proportion - Observed",title="Mock Communities -\nProportions")+
     scale_color_simpsons()+
     guides(color='none')
   
@@ -204,7 +206,7 @@ plot_obs_pred_qm <- function(s,stan_data){
     ggplot(aes(reads_fit,reads,col=taxa,xmin=reads_lower,xmax=reads_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
-    labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities - Reads")+
+    labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities -\nReads")+
     scale_color_simpsons()+
     guides(color='none')
   
@@ -320,18 +322,21 @@ plot_obs_pred_qm_no_mocks <- function(s,stan_data){
 }
 
 plot_obs_pred_qm_mocks_only <- function(s, stan_data,formatted_mb_data=formatted_metabarcoding_data){
+  
+  mockIDs <- stan_data$mock_data_labeled$mockID
+  
   # mock communities - reads
   mock_reads_dat <- stan_data %>%
     pluck('mock_data') %>% 
-    mutate(rep=row_number()) %>% 
-    pivot_longer(-rep,names_to = 'taxa',values_to='reads')
+    mutate(mockID=mockIDs) %>% 
+    pivot_longer(-mockID,names_to = 'taxa',values_to='reads')
   
   # mock communities - proportions
   mock_alr_dat <- stan_data %>%
     pluck('alr_mock_true_prop') %>% 
-    mutate(rep=row_number()) %>% 
-    pivot_longer(-rep,names_to = 'taxa',values_to='alr')%>% 
-    group_by(rep) %>% 
+    mutate(mockID=mockIDs) %>% 
+    pivot_longer(-mockID,names_to = 'taxa',values_to='alr')%>% 
+    group_by(mockID) %>% 
     mutate(prop=softmax(alr)) %>% 
     ungroup()
   
@@ -340,10 +345,10 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data,formatted_mb_data=formatted
     filter(grepl('logit_val_mock',variable)) %>% 
     # number of replicates (for doing the softmax) is equal to nrow(mock_dat)
     # you can also pull it from the names of the variables with regex
-    mutate(rep=str_extract(variable,"(?<=\\[)\\d")) %>% 
+    mutate(mockID=mock_alr_dat$mockID) %>% 
     mutate(se_mean=ifelse(is.nan(se_mean),0,se_mean)) %>% 
     mutate(alr_upper=mean+se_mean,alr_lower=mean-se_mean) %>% 
-    group_by(rep) %>% 
+    group_by(mockID) %>% 
     mutate(prop=softmax(mean),prop_lower=softmax(`2.5%`),prop_upper=softmax(`97.5%`)) %>% 
     ungroup()
   
@@ -361,7 +366,7 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data,formatted_mb_data=formatted
            prop_upper=mock_fit$prop_upper,
            prop_lower=mock_fit$prop_lower) %>% 
     # back out estimated reads from proportions
-    group_by(rep) %>% 
+    group_by(mockID) %>% 
     mutate(sumreads=sum(reads)) %>% 
     ungroup() %>% 
     mutate(reads_fit=prop_fit*sumreads,
@@ -400,7 +405,7 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data,formatted_mb_data=formatted
     select(Sample_short,Mock_type,mockID) %>% 
     distinct(mockID,.keep_all = T)
   mock_reads_join %>% 
-    left_join(METAmock,by=join_by(rep==mockID)) %>% 
+    left_join(METAmock,by=join_by(mockID)) %>% 
     ggplot(aes(reads_fit,reads,col=taxa,xmin=reads_lower,xmax=reads_upper))+
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
