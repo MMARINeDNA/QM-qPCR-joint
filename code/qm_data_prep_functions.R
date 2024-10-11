@@ -249,15 +249,16 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
   Observation <- Observation %>% 
     left_join(sp_list,by=join_by(species))
   
-  Mock <- Mock %>% 
-    rename(Mock_name=Sample) %>% 
-    left_join(sp_list,by=join_by(species)) %>% 
-    # make a combined mockID
-    arrange(Mock_name,Mock_type,Rep) %>% 
-    group_by(Mock_name,Mock_type,Rep) %>% 
-    mutate(mockID=cur_group_id()) %>% 
-    ungroup()
-  
+  Mock_unique <- Mock %>% distinct(Sample) %>% 
+                  arrange(Sample) %>% mutate(mockID = 1:nrow(.))
+  Mock <- left_join(Mock,Mock_unique) %>% ungroup() %>% 
+           left_join(sp_list,by=join_by(species))
+    # # make a combined mockID
+    # arrange(Mock_name,Mock_type,Rep) %>% 
+    # group_by(Mock_name,Mock_type,Rep) %>% 
+    # mutate(mockID=cur_group_id()) %>% 
+    # ungroup()
+    # 
   return(
     metabarcoding_data <- list(
       Observation = Observation,
@@ -277,9 +278,14 @@ alrTransform <- function(formatted_mock){
   # wide form to long form, and fill in 1e-09 for "zeroes" to enable the log ratio calculation
   p_mock <- formatted_mock %>%
     select(mockID,species_idx,b_proportion) %>% 
+    distinct(mockID,species_idx,b_proportion) %>%  
     pivot_wider(names_from = species_idx, names_sort=T,names_prefix="alr_",values_from = b_proportion, values_fill = 1e-9) %>% 
-    ungroup()
+    ungroup() %>% 
+    arrange(mockID)
 
+  p_mock <- left_join(formatted_mock %>% distinct(mockID,Rep) %>%  select(mockID),
+                      p_mock)
+  
   colnames(p_mock)[2:ncol(p_mock)] <- paste0("alr_", 1:nspp)
   
   # calculate the ALRs
@@ -314,7 +320,7 @@ prepare_stan_data_MB <- function(obs, #obs is the list output from format_metaba
   p_mock_all <- alrTransform(MOCK)
   
   MOCK <- MOCK %>% 
-    dplyr::select(species_idx,Mock_name,Mock_type,mockID,  #unique biological samples
+    dplyr::select(species_idx,Mock_name=Sample,Mock_type,mockID,  #unique biological samples
                   all_of(rep_level_mock),  #lowest level of replication
                   Nreads) %>% 
     ungroup() %>%
@@ -403,6 +409,7 @@ prepare_stan_data_MB <- function(obs, #obs is the list output from format_metaba
     ref_sp_idx = ref_sp_idx$ref_sp_idx,
     tube_link_idx = tube_link_idx,
 
+    mock_data_labeled   = MOCK ,
     mock_data   = MOCK %>% dplyr::select(contains("sp")),
 
     # True proportions for mock community
