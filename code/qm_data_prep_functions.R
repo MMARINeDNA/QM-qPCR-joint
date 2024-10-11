@@ -274,6 +274,7 @@ alrTransform <- function(formatted_mock){
   # number of species
   nspp <- length(unique(formatted_mock$species))
   
+  # wide form to long form, and fill in 1e-09 for "zeroes" to enable the log ratio calculation
   p_mock <- formatted_mock %>%
     select(mockID,species_idx,b_proportion) %>% 
     pivot_wider(names_from = species_idx, names_sort=T,names_prefix="alr_",values_from = b_proportion, values_fill = 1e-9) %>% 
@@ -281,6 +282,7 @@ alrTransform <- function(formatted_mock){
 
   colnames(p_mock)[2:ncol(p_mock)] <- paste0("alr_", 1:nspp)
   
+  # calculate the ALRs
   p_mock <- alr(p_mock[,2:ncol(p_mock)]) %>% as.matrix() %>% as.data.frame()
   
   p_mock[,nspp] <- 0  #add zero expressly for reference species

@@ -296,6 +296,12 @@ mock <- mock_comb %>%
   setNames(c('Sample','Mock_type','Rep','species','Nreads','b_proportion')) %>% 
   mutate(Primer='MFU')
 
+# look at them?
+# x <- mock_comb %>% group_by(Sample) %>% mutate(prop=Reads/sum(Reads)) %>% ungroup()
+y <- mock %>% unite(sn,Sample,Mock_type,Rep) %>% ungroup()
+y %>% ggplot(aes(sn,b_proportion,fill=species))+geom_col(position='stack')+theme(axis.text.x=element_text(angle=45))
+x %>% ggplot(aes(Sample,prop,fill=Species))+geom_col(position='stack')+theme(axis.text.x=element_text(angle=45))
+
 # Species in the mocks
 species_mock_list <- mock %>% 
   # Add "Zz" to make hake the QM reference species

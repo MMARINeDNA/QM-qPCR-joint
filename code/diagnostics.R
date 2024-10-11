@@ -319,7 +319,7 @@ plot_obs_pred_qm_no_mocks <- function(s,stan_data){
   out
 }
 
-plot_obs_pred_qm_mocks_only <- function(s, stan_data){
+plot_obs_pred_qm_mocks_only <- function(s, stan_data,formatted_mb_data=formatted_metabarcoding_data){
   # mock communities - reads
   mock_reads_dat <- stan_data %>%
     pluck('mock_data') %>% 
@@ -394,6 +394,18 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data){
     labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities -\nReads")+
     scale_color_simpsons()+
     guides(color='none')
+  
+  # facetted by mock
+  METAmock <- formatted_mb_data$Mock %>% 
+    select(Mock_name,Mock_type,mockID) %>% 
+    distinct(mockID,.keep_all = T)
+  mock_reads_join %>% 
+    left_join(METAmock,by=join_by(rep==mockID)) %>% 
+    ggplot(aes(reads_fit,reads,col=taxa,xmin=reads_lower,xmax=reads_upper))+
+    geom_pointrange()+
+    geom_abline(slope=1,intercept=0,linetype=2)+
+    labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities -\nReads")+
+    scale_color_simpsons()+guides(color='none')+facet_wrap(vars(Mock_name,Mock_type))
   
   # Combined plots
   r1 <- plot_grid(mock_alr_plot+guides(color='none'),mock_prop_plot,mock_reads_plot,nrow=1)
