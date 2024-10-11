@@ -296,6 +296,10 @@ mock <- mock_comb %>%
   setNames(c('Sample','Mock_type','Rep','species','Nreads','b_proportion')) %>% 
   mutate(Primer='MFU')
 
+########################################################
+mock <- mock %>% rename(Sample_short=Sample) %>% mutate(Sample = paste0(Sample_short,"_",Mock_type))
+########################################################
+
 # Species in the mocks
 species_mock_list <- mock %>% 
   # Add "Zz" to make hake the QM reference species
@@ -333,7 +337,7 @@ mock <- mock %>%
   filter(species%in%keep) %>%
   # renormalize b_proportions after omitting species from Mocks
 
-  group_by(Sample,Rep,) %>% 
+  group_by(Sample,Rep) %>% 
   mutate(b_proportion = b_proportion/sum(b_proportion)) %>% 
   ungroup()
 
