@@ -397,7 +397,7 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data,formatted_mb_data=formatted
   
   # facetted by mock
   METAmock <- formatted_mb_data$Mock %>% 
-    select(Mock_name,Mock_type,mockID) %>% 
+    select(Sample_short,Mock_type,mockID) %>% 
     distinct(mockID,.keep_all = T)
   mock_reads_join %>% 
     left_join(METAmock,by=join_by(rep==mockID)) %>% 
@@ -405,12 +405,12 @@ plot_obs_pred_qm_mocks_only <- function(s, stan_data,formatted_mb_data=formatted
     geom_pointrange()+
     geom_abline(slope=1,intercept=0,linetype=2)+
     labs(x="Reads- Predicted",y="Reads - Observed",title="Mock Communities -\nReads")+
-    scale_color_simpsons()+guides(color='none')+facet_wrap(vars(Mock_name,Mock_type))
+    scale_color_simpsons()+guides(color='none')+facet_wrap(vars(Sample_short,Mock_type))
   
   # Combined plots
   r1 <- plot_grid(mock_alr_plot+guides(color='none'),mock_prop_plot,mock_reads_plot,nrow=1)
   out <- plot_grid(r1,leg,nrow=2,rel_heights = c(4,1))
-  out
+  return(out)
 }
 
 #### distribution of log_D (estimated reads, i.e., our quantity of interest) ####

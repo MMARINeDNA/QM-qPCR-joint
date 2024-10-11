@@ -155,7 +155,7 @@ alphap
 
 ## Mock fits
 
-```{r,fig.asp=0.5}
+```{r,fig.height=6,fig.width=10}
 # Code for these diagnostic plots
 source(here('code','diagnostics.R'))
 msumm <- get_param_ests(mocksMod)

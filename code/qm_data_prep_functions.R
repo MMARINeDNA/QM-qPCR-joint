@@ -251,7 +251,7 @@ format_metabarcoding_data <- function(input_metabarcoding_data, input_mock_comm_
   
   Mock_unique <- Mock %>% distinct(Sample) %>% 
                   arrange(Sample) %>% mutate(mockID = 1:nrow(.))
-  Mock <- left_join(Mock,Mock_unique) %>% ungroup() %>% 
+  Mock <- left_join(Mock,Mock_unique,by=join_by(Sample)) %>% ungroup() %>% 
            left_join(sp_list,by=join_by(species))
     # # make a combined mockID
     # arrange(Mock_name,Mock_type,Rep) %>% 
@@ -284,7 +284,7 @@ alrTransform <- function(formatted_mock){
     arrange(mockID)
 
   p_mock <- left_join(formatted_mock %>% distinct(mockID,Rep) %>%  select(mockID),
-                      p_mock)
+                      p_mock,by=join_by(mockID))
   
   colnames(p_mock)[2:ncol(p_mock)] <- paste0("alr_", 1:nspp)
   
