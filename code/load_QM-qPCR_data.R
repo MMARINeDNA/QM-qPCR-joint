@@ -300,7 +300,6 @@ mock <- mock_comb %>%
 # x <- mock_comb %>% group_by(Sample) %>% mutate(prop=Reads/sum(Reads)) %>% ungroup()
 y <- mock %>% unite(sn,Sample,Mock_type,Rep) %>% ungroup()
 y %>% ggplot(aes(sn,b_proportion,fill=species))+geom_col(position='stack')+theme(axis.text.x=element_text(angle=45))
-x %>% ggplot(aes(Sample,prop,fill=Species))+geom_col(position='stack')+theme(axis.text.x=element_text(angle=45))
 
 ########################################################
 mock <- mock %>% rename(Sample_short=Sample) %>% mutate(Sample = paste0(Sample_short,"_",Mock_type))
