@@ -187,15 +187,7 @@ jointMod_dm = stan(file = m_dm_fix,
                                 stepsize=0.05,
                                 adapt_delta=0.80,
                                 metric="diag_e"),
-                init = stan_init_f1(n.chains,
-                                    N_obs_mb = stan_data_joint$N_obs_mb_samp,
-                                    N_species = stan_data_joint$N_species,
-                                    Nplates=stan_data_joint$Nplates,
-                                    N_station_depth=stan_data_joint$N_station_depth
-                                    # log_D_link_sp_init_mean=log_D_inits$log_D_link_sp_init_mean,
-                                    # log_D_raw_inits=log_D_inits$log_D_raw_inits,
-                                    # log_D_inits=log_D_inits$log_D_inits
-                                    ),
+                init = inits,
                 refresh = 10,
                 boost_lib = NULL,
                 sample_file="tmpX.csv"
