@@ -400,7 +400,7 @@ prepare_stan_data_MB <- function(obs, #obs is the list output from format_metaba
   stan_data <- list(
     sp_list = obs$sp_list,
     N_species = ncol(p_samp_all %>% dplyr::select(contains("sp"))),   # Number of species in data
-    N_obs_mb_samp = nrow(p_samp_all), # Number of observed community samples and tech replicates ; this will be Ncreek * Nt * Nbiol * Ntech * 2 [for upstream/downstream observations]
+    N_obs_mb_samp = nrow(p_samp_all), # Number of observed community samples and tech replicates
     N_obs_mock = nrow(p_mock_all), # Number of observed mock samples, including tech replicates
     
     # Observed data of community matrices

@@ -138,9 +138,9 @@ transformed parameters {
   // vector[N_obs_mock] eta_mock[N_species]; // overdispersion coefficients
   //real dm_alpha0_mock; // alpha param for the Dirichlet multinomial, mocks
   matrix[N_obs_mb_samp,N_species] logit_val_samp; //species proportions in metabarcoding, logit
-  matrix[N_obs_mock,N_species] logit_val_mock; //species proportions in metabarcoding, logit
+  // matrix[N_obs_mock,N_species] logit_val_mock; //species proportions in metabarcoding, logit
   matrix[N_obs_mb_samp,N_species] prop_samp; // proportion of each taxon in field samples= softmax(transpose(logit_val_samp[m,]));
-  matrix[N_obs_mock,N_species] prop_mock; // proportion of each taxon in field samples
+  // matrix[N_obs_mock,N_species] prop_mock; // proportion of each taxon in field samples
   // matrix[N_obs_mb_samp,N_species] mu_samp; // estimates of read counts, in log space
   // matrix[N_obs_mock,N_species] mu_mock; // estimates of read counts, in log space
 
@@ -193,6 +193,8 @@ transformed parameters {
   Ct = (beta_std_curve_0_offset + beta_std_curve_0[plate_idx]) + beta_std_curve_1[plate_idx].*unk_conc_qpcr;
   sigma_samp = exp(gamma_0 + gamma_1 .* unk_conc_qpcr );
   logit_theta_samp = phi_0 + phi_1 *exp(unk_conc_qpcr);
+  // logit_theta_samp = phi_0 + phi_1 *unk_conc_qpcr;
+ 
  
   //Link to QM
   for(i in 1:N_species){
@@ -294,7 +296,7 @@ model{
   phi_1 ~ normal(1, 1);
   wash_effect ~ normal(wash_prior[1],wash_prior[2]);
 
-  mean_hake ~normal(2,8); //global mean hake concentration
+  mean_hake ~normal(2,2); //global mean hake concentration
   log_D_sigma ~ normal(0,3); //variance on log_D_station_depth
   log_D_station_depth ~ normal(0,log_D_sigma); //log scale
 
@@ -320,7 +322,7 @@ model{
   // if you're only using the Dirichlet for the mocks...
   for(i in 1:N_obs_mb_samp){
     sample_data[i,] ~  multinomial_logit(to_vector(logit_val_samp[i,])); // Multinomial sampling of mu (proportions in field samples)
-    //dirichlet_multinomial(to_vector(prop_samp[i,])*dm_alpha0_mock) ;
+    //sample_data[i,] ~  dirichlet_multinomial(to_vector(prop_samp[i,])*dm_alpha0_mock) ;
   }
 
   // print("3:",target());

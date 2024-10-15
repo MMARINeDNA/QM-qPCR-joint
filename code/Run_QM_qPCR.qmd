@@ -129,7 +129,7 @@ mocksMod = stan(file = m_dm_mock,
 A <- summary(mocksMod,pars="alpha")
 B <- summary(mocksMod,pars="dm_alpha0_mock")
 
-rstan::traceplot(mocksMod,pars=c("alpha"))
+# rstan::traceplot(mocksMod,pars=c("alpha"))
 # rstan::traceplot(mocksMod,pars=c("log_dm_alpha0_mock"))
 
 alpha_fix <- A$summary %>% as.data.frame() %>% dplyr::select(mean) 
@@ -162,12 +162,13 @@ msumm <- get_param_ests(mocksMod)
 plot_obs_pred_qm_mocks_only(s=msumm,stan_data = stan_data_joint)
 ```
 
+## Fixed alphas
 
 Then, run the joint model with fixed alphas drawn from the model above.
 
 ```{r}
-n.chains <- 3
-n.warm <- 400
+n.chains <- 1
+n.warm <- 200
 n.samps <-100
 
 inits <- make_stan_inits(n.chain = n.chains,jointData = stan_data_joint,log_D_link_sp_init_mean = 2)
@@ -182,10 +183,10 @@ jointMod_dm = stan(file = m_dm_fix,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 80,
-                                max_treedepth=11,
+                control = list(adapt_init_buffer = 100,
+                                max_treedepth=10,
                                 stepsize=0.05,
-                                adapt_delta=0.80,
+                                adapt_delta=0.8,
                                 metric="diag_e"),
                 init = inits,
                 refresh = 10,
@@ -198,11 +199,9 @@ tictoc::toc()
 
 ```{r}
 # save (big file!)
-write_rds(jointMod,here('code','fit1.rds'))
 write_rds(jointMod_dm,here('code','fit_dm.rds'))
 
 # if reading
-jointMod <- read_rds(here('code','fit1.rds'))
 jointMod_dm <- read_rds(here('code','fit_dm.rds'))
 ```
 
@@ -311,7 +310,7 @@ write_rds(hake_fitted,here('code','hake_fitted.rds'))
 
 # Diagnostics- Sampler
 
-```{r,fig.height=3,fig.width=4}
+```{r,fig.height=10,fig.width=10}
 samps <- read_csv(here('code','tmpU.csv'),skip = 25,col_select = c(1:100))
 sampslong <- samps %>% 
   mutate(samp=row_number()) %>% 
@@ -337,6 +336,7 @@ plot_trace(sampslong,'mean_hake')
 plot_trace(sampslong,"log_D_sigma")
 plot_trace(sampslong,"dm_alpha0_mock")
 # plot_trace(sampslong,"bio_rep_RE")
+rstan::traceplot(jointMod_dm,pars=c("beta_std_curve_0"))
 ```
 
 ```{r}
