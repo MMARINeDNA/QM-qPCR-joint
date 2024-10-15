@@ -205,6 +205,44 @@ write_rds(jointMod_dm,here('code','fit_dm.rds'))
 jointMod_dm <- read_rds(here('code','fit_dm.rds'))
 ```
 
+## qPCR Only
+
+For testing and debugging, here's a version of the fixed-alphas model, but with everything removed except for the qPCR pieces
+
+```{r}
+
+m_qpcr_only <- here('code','qpcr_only_testing.stan')
+
+n.chains <- 1
+n.warm <- 200
+n.samps <-100
+
+inits <- make_stan_inits(n.chain = n.chains,jointData = stan_data_joint,log_D_link_sp_init_mean = 2)
+
+tictoc::tic("Running qPCR Only Model:")
+qpcr_only_mod = stan(file = m_qpcr_only,
+                model_name = "qpcr model",
+                data = stan_data_joint,
+                verbose = FALSE,
+                chains = n.chains,
+                thin = 1,
+                warmup = n.warm,
+                iter = n.warm+n.samps,
+                control = list(adapt_init_buffer = 100,
+                                max_treedepth=10,
+                                stepsize=0.05,
+                                adapt_delta=0.8,
+                                metric="diag_e"),
+                init = inits,
+                refresh = 10,
+                boost_lib = NULL,
+                sample_file="tmpX.csv"
+                )
+tictoc::toc()
+```
+
+
+
 # Diagnostics - Observations and Predictions
 
 ```{r}
@@ -328,14 +366,6 @@ plot_trace <- function(samples,param_str){
     labs(title=param_str)
 }
 
-plot_trace(sampslong,"logit_val_samp")
-plot_trace(sampslong,"logit_val_mock")
-# plot_trace(sampslong,"eta_mock")
-plot_trace(sampslong,"alpha.2")
-plot_trace(sampslong,'mean_hake')
-plot_trace(sampslong,"log_D_sigma")
-plot_trace(sampslong,"dm_alpha0_mock")
-# plot_trace(sampslong,"bio_rep_RE")
 rstan::traceplot(jointMod_dm,pars=c("beta_std_curve_0"))
 ```
 
