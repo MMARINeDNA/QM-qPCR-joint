@@ -36,6 +36,8 @@ data {
   array[N_bio_rep_idx] int bio_rep_idx; //index of biological replicates
   matrix[NSamples_qpcr,N_bio_rep_RE] X_bio_rep_tube;// covariate design matrices for unique samples
   matrix[Nobs_qpcr,N_bio_rep_RE] X_bio_rep_obs;// covariate design matrices for observations
+  
+  real<lower=0, upper=0.1> sigma_bio_RE; // soft-zero constraint on REs (scale param)
 
   vector[Nobs_qpcr] wash_idx;//design matrix for wash effect
   array[2] real wash_prior; //priors for wash offset ~ N(wash_offset_prior[1],wash_offset_prior[2]) 
@@ -133,6 +135,7 @@ transformed parameters {
   vector[Nobs_qpcr] sigma_samp; //SD of Ct values, field samples
   vector[Nobs_qpcr] logit_theta_samp; //Probability of amplification, field samples
   vector[N_bio_rep_RE] bio_rep_RE; // log DNA concentration in field samples
+  vector[N_bio_rep_idx] bio_rep_sums; // if doing soft-constrained sum ~ N(0,sigma_bio_RE*bio_rep_idx)
 
   // for QM part
   // vector[N_species] alpha; // vector of efficiency coefficients (log-efficiencies relative to reference taxon)
@@ -156,30 +159,54 @@ transformed parameters {
   logit_theta_std = phi_0 + phi_1 .* exp(log_known_conc);
 
   // qPCR unknowns 
-    {// locals for making sum-to-0 random effects.
+    // {// locals for making sum-to-0 random effects.
+    //   int count_tot;
+    //   int count_par;
+    //   real bio_rep_sum;
+    // // random effect of biological replicate
+    // // This does depend on the stations and tubes being in order from small to large.
+    // count_tot = 0;
+    // count_par = 0;
+    // for(j in 1:N_bio_rep_idx){
+    //   bio_rep_sum = 0 ;
+    //   for(k in 1:bio_rep_idx[j]){
+    //     count_tot = count_tot + 1;
+    //     if(k < bio_rep_idx[j]){
+    //       count_par = count_par + 1;
+    //       bio_rep_RE[count_tot] = bio_rep_param[count_par] * tau_bio_rep ;
+    //       bio_rep_sum = bio_rep_sum + bio_rep_RE[count_tot];
+    //     }else if(bio_rep_idx[j]==1){
+    //       bio_rep_RE[count_tot] = 0 ;
+    //     }else{
+    //       bio_rep_RE[count_tot] = -bio_rep_sum;
+    //     }
+    //       } // end k loop
+    //     } // end j loop
+    //   } // end local variables.
+    
+    {// locals for making soft constrained sum-to-0 random effects.
       int count_tot;
       int count_par;
       real bio_rep_sum;
-    // random effect of biological replicate 
+    // random effect of biological replicate
     // This does depend on the stations and tubes being in order from small to large.
     count_tot = 0;
     count_par = 0;
     for(j in 1:N_bio_rep_idx){
-      bio_rep_sum = 0 ;   
+      bio_rep_sum = 0 ;
       for(k in 1:bio_rep_idx[j]){
         count_tot = count_tot + 1;
-        if(k < bio_rep_idx[j]){
+        if(bio_rep_idx[j]==1){
+          bio_rep_RE[count_tot]=0;
+        }else{
           count_par = count_par + 1;
           bio_rep_RE[count_tot] = bio_rep_param[count_par] * tau_bio_rep ;
           bio_rep_sum = bio_rep_sum + bio_rep_RE[count_tot];
-        }else if(bio_rep_idx[j]==1){
-          bio_rep_RE[count_tot] = 0 ;
-        }else{
-          bio_rep_RE[count_tot] = -bio_rep_sum;
-        }
-          } // end k loop
-        } // end j loop
-      } // end local variables.
+          }
+        } // end k loop
+        bio_rep_sums[j] = bio_rep_sum;
+      } // end j loop
+    } // end local variables.
 
   /// THIS IS THE LATENT STATE THAT WILL BE NEEDED TO CONNECT TO THE MB DATA
   log_D_station_depth_tube = mean_hake + X_station_depth_tube * log_D_station_depth +
@@ -287,6 +314,9 @@ model{
   
   bio_rep_param ~ std_normal(); 
   tau_bio_rep ~ normal(0,0.2);
+  for(i in 1:N_bio_rep_idx){
+    bio_rep_sums[i] ~ normal(0,sigma_bio_RE*bio_rep_idx[i]);
+  }
   
   // for(i in 1:(N_species-1)){
   //   // ONLY set a prior for the species that ARE NOT the qPCR link species (hake)

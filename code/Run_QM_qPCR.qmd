@@ -213,9 +213,9 @@ For testing and debugging, here's a version of the fixed-alphas model, but with 
 
 m_qpcr_only <- here('code','qpcr_only_testing.stan')
 
-n.chains <- 1
-n.warm <- 200
-n.samps <-100
+n.chains <- 3
+n.warm <- 125
+n.samps <-300
 
 inits <- make_stan_inits(n.chain = n.chains,jointData = stan_data_joint,log_D_link_sp_init_mean = 2)
 
@@ -228,7 +228,7 @@ qpcr_only_mod = stan(file = m_qpcr_only,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 100,
+                control = list(adapt_init_buffer = 50,
                                 max_treedepth=10,
                                 stepsize=0.05,
                                 adapt_delta=0.8,
@@ -236,7 +236,7 @@ qpcr_only_mod = stan(file = m_qpcr_only,
                 init = inits,
                 refresh = 10,
                 boost_lib = NULL,
-                sample_file="tmpX.csv"
+                sample_file="tmp_qpcr.csv"
                 )
 tictoc::toc()
 ```
@@ -246,7 +246,7 @@ tictoc::toc()
 # Diagnostics - Observations and Predictions
 
 ```{r}
-fit_summ <- get_param_ests(jointMod_dm)
+fit_summ <- get_param_ests(qpcr_only_mod)
 ```
 
 ## qPCR
@@ -257,7 +257,7 @@ plot_obs_pred_qPCR(fit_summ,stan_data_joint)
 
 Look a little closer at the outlier field samples
 
-```{r,fig.height=3,fig.width=4}
+```{r}
 qpcr_out <- plot_obs_pred_qPCR(fit_summ,stan_data_joint,return_what = 'data') %>% pluck('qPCR_unk')
 qpcr_out <- qpcr_out %>% 
   filter(z==1) %>% 
@@ -268,12 +268,24 @@ qpcr_out %>%
 # upper 5% most divergent
 qpcr_outliers <- qpcr_out %>% 
   mutate(absdiff=abs(Ctdiff)) %>% 
-  mutate(percent_rank(absdiff)>0.95)
+  filter(percent_rank(absdiff)>0.95)
 qpcr_outliers %>% 
   ggplot(aes(absdiff))+geom_histogram()+labs(x="Absolute Difference")
 
 # there's an obvious break between a Ct difference of ~8 and ~13. Maybe we should remove all the ones in that upper bin?
 qpcr_outliers2 <- qpcr_outliers %>% filter(absdiff>9)
+nout <- nrow(qpcr_outliers2)
+# map
+qpcr_outliers2 %>% 
+  ggplot(aes(lon,lat,color=factor(plate_idx)))+
+  geom_jitter()+
+  # coord_equal()+
+  facet_wrap(~depth_cat,nrow=1)+
+  theme(axis.text.x = element_blank())+
+  ggtitle(paste0("Large qPCR outliers\n (n=",nout,")"))
+
+# doesn't seem like a lot of spatial pattern
+
 ```
 
 
