@@ -13,8 +13,7 @@ format: pdf
 editor: visual
 ---
 
-Target: PNAS, end of summer 2024
-
+Target: PNAS, end of 2024
 
 ```{r}
 #| echo: false
@@ -25,44 +24,47 @@ suppressMessages(library(tidyverse))
 
 ## Abstract
 
-Molecular data can reflect the abundance of species' DNA, an index immediately relevant to natural resources management at a continental scale. These data commonly derive from qPCR or ddPCR assays --- which focus on a single species --- or metabarcoding assays from more general PCR primers that amplify many species simultaneously. Multispecies data represent an efficient use of field samples and laboratory time, and speak to inherently multispecies questions of management and ecological research. However, unlike single-species techniques, metabarcoding by itself can reflect only the proportions of target-species DNA present, not their absolute quantities. Here, we combine qPCR and metabarcoding data derived from the same samples to map quantities of many fish species along the US Pacific coast, demonstrating a technique of practical importance for both management and ecology. We derive spatially explicit estimates of eDNA abundance for \[13\] common species of commercial and management importance and point the way to quantitative surveys of wild species using molecules alone. <!--Maybe add slightly on the results of species accumulation or that we detect species ecological niches -->
+Molecular data from environmental samples can reflect the abundance of species' DNA, an index immediately relevant to natural resources management at a continental scale. These data commonly derive from qPCR or ddPCR assays --- which focus on a single species --- or metabarcoding assays from more general PCR primers that amplify many species simultaneously. Multispecies analyses make efficient use of field samples and laboratory time, and speak to inherently multispecies questions of management and ecological research. However, unlike single-species techniques, metabarcoding by itself can reflect only the proportions of target-species DNA present, not their absolute quantities. Here, we combine qPCR and metabarcoding data derived from the same samples to map quantities of many fish species along the US Pacific coast in three dimensions, demonstrating a technique of practical importance for both management and ecology. We derive spatially explicit estimates of eDNA abundance for \[13\] common species of commercial and management importance and point the way to quantitative surveys of wild species using molecules alone. <!--Maybe add slightly on the results of species accumulation or that we detect species ecological niches -->
 
 **What is necessary to mention in intro:**
 
--   eDNA quantities = organismal abundance + ε
--   eDNA MB != quantities
--   Multispecies survey is crutial (saves time and \$)
--   Trawls have challenges (catchability, expensive)
--   eDNA MB helpful tool due to multi species ability
--   Circumvent MB quantification problem with qPCR + MB
+-   eDNA quantities = organismal abundance + ε \[DONE?\]
+
+-   eDNA MB != quantities \[DONE?\]
+
+-   Multispecies survey saves time and \$ \[DONE?\]
+
+-   Trawls have challenges (catchability, expensive) \[Not sure how to treat this one; we can't anger the trawl people; we need to engage w them; tread lightly; OLE\]
+
+-   eDNA MB helpful tool due to multi species ability \[DONE?\]
+
+-   Circumvent MB quantification problem with qPCR + MB \[DONE?\]
 
 ## Intro
 
-Multicellular organisms are, by definition, composed of cells, most of which contain DNA. Accordingly, where there are more such cells --- a straightforward measure of organismal abundance --- there is more of the species' DNA. The spatial pattern of a species' DNA is therefore a principled approximation of the pattern of abundance of the species itself <!--I would rephrase this sentence into: the aggregation of species DNA is a function of their abundance with some deviation-->. Deviations from this expectation arise from biophysical processes (such as when DNA is transported by currents), observation variance (such as stochastic detection of rare target molecules in the environment), and process variance (as when an animal differentially sheds DNA as a result of injury or life-history stage) <!--\cite{yates_2022}-->. The latter two of these are sources of statistical noise that may be distinguished analytically from biological signal.
+Multicellular organisms are, by definition, composed of cells, most of which contain DNA. Accordingly, where there are more such cells --- a straightforward measure of organismal abundance --- there is more of the species' DNA. At sufficiently large spatial scales, patterns of species' environmental DNA (eDNA) therefore approximate the patterns of abundance of the species themselves, with deviations due to biophysical processes (such as when DNA is transported by currents), observation variance (such as stochastic detection of rare target molecules in the environment), and process variance (as when an animal differentially sheds DNA as a result of injury or life-history stage) <!--\cite{yates_2022}-->. The latter two of these are sources of statistical noise that may be distinguished analytically from biological signal.
 
-Single-species eDNA analysis, generally using qPCR or ddPCR, often reveals patterns of eDNA abundance quite closely associated with organismal abundance <!--\cite{maes_2023}-->, although mismatches in the spatial scale of sampling vs. biological process can result in a loss of biological signal and therefore in counter-intuitive observations \[CITE\]. Multispecies analysis (or metabarcoding, in which characteristic fragments of DNA from a mix of species in an environmental sample) reflects information on many species of interest simultaneously, but <!-- additional: MB are NOT quantitative hence cannot yield organism abundance--> at the analytical costs of requiring 1) correction for species-specific observation efficiency, and 2) a resulting dataset consisting of a composition, rather than of a set of statistically independent observations. Consequently single-species eDNA surveys have been much more common where quantitative analysis is required \[CITE\].
+Where the spatial scale of the sampling is appropriate to the scale of the species of interest, single-species eDNA data --- generally derived from qPCR or ddPCR analysis --- routinely track organismal abundance in environmental contexts as varied as aquaria \[CITE Jo\], rivers and streams \[CITE\], estuaries and nearshore habitats \[CITE\], and coastal oceans \[CITE\]. <!--\cite{maes_2023} , plus Shelton et al. 2019--> However, mismatches in the spatial scale of sampling vs. biological process can result in a loss of biological signal and therefore in counter-intuitive observations \[CITE\]. For example, discrete water samples taken at 100km intervals are unlikely to reflect eDNA \[signals\] useful for describing patterns in species that vary over much larger or much smaller scales (e.g., large-bodied pelagic predators or krill, respectively). <!--#[CITE that atlantic fisheries paper that looked at ?tuna?]. --> <!--# this is consistent with sampling strategies in use throughout ecology and natural-resources management; the sampling tool must be appropriate to the job at hand-->
 
-Estimating the abundances of wild species is a routine and general challenge in natural resources management; such assessments are often desirable or even required by law \[CITE examples\]. For example, under the Magnuson-Stevens Act of 1976, NOAA Fisheries must routinely survey stocks of commercially exploited fish species. This systematic, science-based accounting --- independent of the commercial fishing industry itself --- has been a revolutionary stride toward sustainable management of the nation's natural resources.
+Where quantitative analysis is required, single-species eDNA studies have been much more common than multispecies surveys (i.e., metabarcoding, in which characteristic fragments of DNA from a mix of species in an environmental sample) \[CITE\], despite seemingly greater information content in \[the latter\]. Multispecies analysis reflects information on many species of interest simultaneously, but at the analytical costs of requiring 1) correction for species-specific observation efficiency, and 2) a resulting dataset consisting of a composition, rather than of a set of statistically independent observations. Consequently, metabarcoding data themselves cannot yield information about the abundances of organisms in an environmental sample.
 
-As implemented in commercial fisheries stock assessments, stock assessors develop a unitless index that is linearly proportional to biomass --- a doubling of the index represents a doubling of biomass --- but with the proportionality constant undefined \[OR defined later, using some denominator... OLE\]. The eDNA-derived estimates we provide here are well-suited to the same treatment, such that they may fold into stock assessments with little additional effort. However, the cost and effort required to collect often-imprecise estimates of fish stock biomass are substantial, ranging into the \[\$10s of millions\] per \[monthlong\] research cruise. Improving the information yield from these cruises therefore would be a welcome advance. \[Metabarcoding / eDNA data is one way to do this\]
+Estimating the abundances of wild species is a routine and general challenge in natural resources management; such assessments are often desirable or required by law \[CITE examples\]. For example, under the Magnuson-Stevens Act of 1976, NOAA Fisheries must routinely survey stocks of commercially exploited fish species. This systematic, science-based accounting --- independent of the commercial fishing industry itself --- has been a revolutionary stride toward sustainable management of the nation's natural resources <!--# CITE the Magnuson-Stevens Act at 40 report; https://www.fisheries.noaa.gov/leadership-message/governance-fish-forty-years-under-magnuson-stevens-act -->. However, the cost and effort required to collect often-imprecise estimates of fish stock biomass are substantial, ranging into the \[\$10s of millions\] per \[monthlong\] research cruise. Improving the information yield from these cruises therefore would be a welcome advance.
 
-<!-- additional idea: Multispecies stock assessments are a hard thing to do due to the need for multiple types of gear to effectively target various fish species. The varying responses of different species to different fishing gears complicates the catchability term when doing multispecies surveys. The way to come around this problem is to increase the sample size in space and time for estimating the catchability term \cite{zhang_2020}. Hence, large amount of data is required, thus leading to a loss of resolution in fish abundance estimates \cite{zhang_2020}. This trade-off increases the accuracy of abundance estimation (by having the correct catchability) but needs to be aggregated at larger scale. We can by-pass this trade-off with MB data as we can have more replicates per given space and time, hence increasing the estimates resolution -->
+Here, we provide quantitative, three-dimensional distribution models for \[13\] commercially important species, derived entirely from residual genetic material (eDNA) in a single set of 347 water samples taken as part of a NOAA Fisheries cruise. To do so, we correct for species-specific differences in observation efficiency (i.e., amplification bias) and link corrected metabarcoding proportions to absolute quantities of eDNA via expansion using a reference species quantified with qPCR.
 
-Here, we provide quantitative, three-dimensional distribution models for \[13\] commercially important species, derived from residual genetic material (eDNA) in a single set of 347 water samples taken as part of a NOAA Fisheries cruise. To do so, we correct for species-specific differences in observation efficiency (i.e., amplification bias) and link corrected metabarcoding proportions to absolute quantities of eDNA via expansion using a quantified reference species.
+As implemented in commercial fisheries stock assessments, stock assessors develop a unitless index that is linearly proportional to biomass --- a doubling of the index represents a doubling of biomass --- but with the proportionality constant initially undefined \[defined later or approximated, using some denominator... OLE\]. The eDNA-derived estimates we provide here are well-suited to the same treatment, such that they may fold into stock assessments with little additional effort. Moreover, multispecies stock assessments often require multiple gear types to effectively target various fish species. However, using different gear types requires a substantial increase in sampling effort to estimate gear-specific catchability terms for each target species <!--# \cite{zhang_2020} -->, resulting in a tradeoff of spatial resolution vs. precision in abundance estimates. Metabarcoding avoids this tradeoff by surveying many species with the same "gear" in a format that is easily replicated in space and time.
 
-As agencies begin to implement the new National Aquatic eDNA Strategy -- the first goal of which is to implement eDNA data into federal decisionmaking -- this and other large-scale examples point the way to maximizing the benefit of this information-rich datastream for natural-resources management.
+As agencies begin to implement the new National Aquatic eDNA Strategy -- the first goal of which is to fold eDNA data into federal decisionmaking -- this and other large-scale examples point the way to maximizing the benefit of this information-rich datastream for natural-resources management at a continental scale.
 
 ## Methods
 
-In brief, we join calibrated <!--maybe corrected is a better word?--> metabarcoding data (proportions, many species) with qPCR data (absolute quantity, single species) to expand the observed proportions <!--isn't it the initial proportions?--> of fish DNA into absolute abundance estimates for each fish in each sample of our dataset. This technique follows that of Allan et al. (2023), but improves on that model by jointly estimating 1) the standard curve linking laboratory standards to environmental concentrations of reference species DNA using qPCR, 2) the observation (amplification) efficiency for each focal species in a multispecies (metabarcoding) PCR relative to the reference species, and 3) the abundance of each species' DNA in each environmental sample. A similar analysis featured in Guri et al. (2024). The details of each step follow below.
+In brief, we calibrated metabarcoding data, correcting raw species observations to their initial proportions using a community of known composition <!--# \cite{shelton_2022} -->. We then used the absolute quantity of one species to expand the initial estimated proportions into absolute abundance estimates for each species <!--# \cite{guri_2024} and see also Allan et al. 2023--> in each of \[347\] 2L water samples collected during a 2019 NOAA cruise <!--# See Ramon-Laca et al. 2021; Shelton et al. 2022 -->. The details of each step follow below.
 
-<!-- My suggestion on that paragraph: In brief, we corrected metabarcoding data to their initial proportions (using a community of known concentrations). We then used the absolute quantity of one species to expand the initial estimated proportions into absolute abundance estimates for each fish in each sample of our dataset as conceptually described in \cite{guri_2024} (replacing ddPCR model with qPCR as in \cite{shelton_2022}). The details of each step follow below.-->
-
-\[WILL this include a spatial smooth?\]
+<!--# We jointly estimate 1) the standard curve linking laboratory standards to environmental concentrations of reference species DNA using qPCR, 2) the observation (amplification) efficiency for each focal species in a multispecies (metabarcoding) PCR relative to the reference species, and 3) the abundance of each species' DNA in each environmental sample. A similar analysis featured in Guri et al. (2024). The details of each step follow below. -->
 
 ### Sample Collection and Processing
 
-Samples were collected aboard the ship *Bell Shimada* during Summer 2019, as described in Ramón-Laca et al. (2021) and Shelton et al. (2022b). These were 2.5L samples taken from Niskin bottles deployed at night on a CTD rosette at a maximum of five depths (50, 100, 150, 300 and 500 m) at 186 stations; in addition samples from 3m depth were collected from the ship's saltwater intake line and processed identically to Niskin samples. 347 individual water samples, each representing a unique depth-station combination, are included here. Samples were filtered immediately using a vacuum pump on 47 mm diameter mixed cellulose-ester sterile filters with a 1 μm pore size, and stored at room temperature in Longmire's buffer until DNA extraction. 
+Samples were collected aboard the ship *Bell Shimada* during Summer 2019, as described in Ramón-Laca et al. (2021) and Shelton et al. (2022b). These were 2.5L samples taken from Niskin bottles deployed at night on a CTD rosette at a maximum of five depths (50, 100, 150, 300 and 500 m) at 186 stations; in addition samples from 3m depth were collected from the ship's saltwater intake line and processed identically to Niskin samples. 347 individual water samples, each representing a unique depth-station combination, are included here. Samples were filtered immediately using a vacuum pump on 47 mm diameter mixed cellulose-ester sterile filters with a 1 μm pore size, and stored at room temperature in Longmire's buffer until DNA extraction.
 
 \[Metadata, as appropriate\] \[note that the 347 samples included here are the intersection of those with hake metabarcoding obs and positive qPCR obs\]
 
@@ -81,7 +83,6 @@ We used qPCR data for *Merluccius productus* (Pacific Hake), previously publishe
   \sigma_{ij} &= e^{\theta + \gamma{Ct_{ij}}}
 \end{align}
 ```
-
 where $C_{ij}$ is the concentration of species $j$ in sample $i$, $Ct_{ij}$ is the observed cycle-threshold value in the qPCR assay for species $j$ in sample $i$, etc.
 
 This is a standard logistic-regression model in which the probability of detection is a function of target species concentration, $C$ (Eq. 1 and 2), jointly estimated with the linear model relating the standard curve to field eDNA concentrations (Eq. 3), which itself allows the standard deviation among $Ct$ values to vary with the mean (Eq. 4). Relevant parameters for equations 3 and 4 are estimated using observations of $Ct$ for samples of known concentration (i.e., standards) varying across seven orders of magnitude. See Shelton et al. (2023) and \[earlier dropouts paper\] for similar work.
@@ -98,9 +99,13 @@ total reads, total annotations
 
 ### Metabarcoding Calibration and Expansion
 
-Calibrated metabarcoding analysis yielded quantitative estimates of the proportions of species' DNA in environmental samples prior to PCR, following Shelton et al. (2022a). We generated mock communities of XX fish species derived from total DNA extract from fin or other tissues (SUPPLEMENT). These mocks consisted of equimolar concentrations of total genomic DNA from each species, but following Shaffer et al. (SUBMITTED), we calculated species-specific amplification efficiencies according to the species-specific ddPCR concentrations using the relevant MiFish primer with accompanying SYBR assay. These data reflect the proportions of MiFish-amplifiable DNA for each species in the mixture, rather than proportions of total DNA.
+<!--# Calibrated metabarcoding analysis yielded quantitative estimates of the proportions of species' DNA in environmental samples prior to PCR, following Shelton et al. (2022a).  -->
+
+We generated mock communities of XX fish species derived from total DNA extract from fin or other tissues (SUPPLEMENT). These mocks consisted of equimolar concentrations of total genomic DNA from each species, but following Shaffer et al. (SUBMITTED), we calculated species-specific amplification efficiencies according to the species-specific ddPCR concentrations using the relevant MiFish primer with accompanying SYBR assay. These data reflect the proportions of MiFish-amplifiable DNA for each species in the mixture, rather than proportions of total DNA.
 
 We observed substantial differences in amplification efficiency across species (SUPPLEMENT), and therefore calibration yielded estimates of community composition that different in important ways from the observed uncalibrated proportions. Notably, herring (*Clupea pallasii*) ...
+
+*NOTE -- need to change the math below, to reflect 1) separate estimate of alpha, and 2) dirichlet-multinomial*
 
 ```{=tex}
 \begin{align}\label{eq:ratios}
@@ -109,7 +114,6 @@ We observed substantial differences in amplification efficiency across species (
   N_{PCR}\log\left(\dfrac{1+a_i}{1+a_R}\right)
 \end{align}
 ```
-
 We amend the above equation to simplify notation, 1) defining $\log\left(\dfrac{Y_i}{Y_R}\right)$ as $\nu_i$ and 2) $\log\left(\dfrac{1+a_i}{1+a_R}\right)$ as $\alpha_i$, 3) allowing for species-specific process variation, $\epsilon_i$, and 4) separating the initial concentration terms $c$ to yield:
 
 ```{=tex}
@@ -117,7 +121,6 @@ We amend the above equation to simplify notation, 1) defining $\log\left(\dfrac{
   \nu_i & = (\log{c_i} - \log{c_R}) + N_{PCR} \alpha_i + \epsilon_i
 \end{align}
 ```
-
 Sequence-read observations for a given sample, $\boldsymbol{Y}$, are then treated as draws from a multinomial distribution with element proportions $\boldsymbol{\pi}$ and sample size (= sample read depth) $N$. Individual species proportions $\pi_{i}$ are softmax transformations of $\nu_i$ , such that $\sum_{i=1}^I \pi_i = 1$. Where species-specific process variation, $\epsilon_i$, is greater than zero, this is an overdispersed multinomial distribution.
 
 ```{=tex}
@@ -127,7 +130,6 @@ Sequence-read observations for a given sample, $\boldsymbol{Y}$, are then treate
   \epsilon_i &\sim N(0,\tau_i)
 \end{align}
 ```
-
 We preserve estimates of observation variation at the various observation steps, such that they ramify throughout the joint model. For the metabarcoding observations, practical limitations required we sequence only single PCR replicates for most samples; we used \[a handful of replicated samples\] to estimate $\epsilon_i$ for target species, \[and applied that info by applying some fuzz to our predictions...\].
 
 ### Spatial-Statistical Analysis
@@ -136,20 +138,21 @@ Given estimates of species' DNA concentrations from environmental samples, we ge
 
 <!--We used the R package sdmTMB to fit the estimated eDNA concentrations for generating species distribution models. Each species was fitted individually while we created and selected the best mesh for approximating spatial Gaussian random fields as part of the model. Owen can add more specifics to this?-->
 
-
 ## Results
 
 ### Species Patterns by Latitude and Depth
 
-
+\[FIG 1: faceted maps\]
 
 ### Ecological Patterns and Associations with Covariates
 
--   species overlaps. Richness peaks at surface at 45 degrees N; attenuates with depth. (Richness also peaks closest to shore, where bathymetric depth is near zero).
+\[FIG 2: posterior means vs. covariate values; post-hoc, not built into model\]
 
 -   trends w salinity, temperature, etc. Upwelling index, nutrient / chla
 
-\[surface trends of richness -- and total MiFish eDNA for target species -- peak at 46 degrees latitude, where the Columbia comes in. Look to see if this pattern holds in spatial smooths\]
+\[FIG 3: map of species overlaps\]
+
+-   species overlaps. Richness peaks at surface at 45 degrees N; attenuates with depth. (Richness also peaks closest to shore, where bathymetric depth is near zero). Is this an artifact of the handful of target species? or effect of the Columbia?
 
 ## Discussion
 
