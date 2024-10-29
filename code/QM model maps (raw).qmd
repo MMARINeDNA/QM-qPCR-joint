@@ -1,0 +1,111 @@
+---
+title: "QM model maps (raw)"
+format: 
+  html:
+    toc: true
+    toc-location: right
+    toc-title: "Table of Contents"
+    toc-depth: 2
+    number-sections: true
+    page-layout: full
+    self-contained: true 
+    collapsible: true
+    collapse-level: 1
+    grid:
+      sidebar-width: 200px
+      body-width: 880px
+      margin-width: 200px
+      gutter-width: 1.5rem
+author: Gled Guri
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+}
+
+h1 {
+  font-size: 22px;  /* Adjust the size of H1 headers */
+  font-weight: bold;  /* Make H1 headers not bold */
+}
+
+h2 {
+  font-size: 18px;  /* Adjust the size of H2 headers */
+  font-weight: normal;  /* Make H2 headers not bold */
+}
+
+h3 {
+  font-size: 18px;  /* Adjust the size of H3 headers */
+  font-weight: normal;  /* Make H3 headers not bold */
+}
+
+h4 {
+  font-size: 18px;  /* Adjust the size of H4 headers */
+  font-weight: normal;  /* Make H4 headers not bold */
+}
+</style>
+
+```{r, message=FALSE, warning=FALSE}
+library(here)
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(rnaturalearth)
+library(MoMAColors)
+
+dat_sf <- readRDS(here('data','diff_spat_models','dat_sf.rds'))
+
+coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
+  filter(name %in% c('California','Oregon','Washington','Nevada')) %>% 
+  st_transform(st_crs(dat_sf))
+dat_bbox <- st_bbox(dat_sf)
+```
+
+```{r, include=TRUE, warning=FALSE}
+#| fig-width: 13
+#| fig-height: 13
+
+plot_list <- list()
+sp_list <- dat_sf %>% 
+  filter(species!='Merluccius productus') %>% 
+  filter(species!='Hippoglossus stenolepis') %>% 
+  pull(species) %>% 
+  unique()
+
+for (i in 1:length(sp_list)) {
+  
+plot_list[[i]] <-
+    dat_sf %>% filter(species==sp_list[i]) %>% 
+    ggplot() +
+    geom_sf(aes(size = mean, fill = mean), shape = 21, color = "black") +
+    geom_sf(data = coaststates, fill = 'gray80') +
+  ggtitle(paste0(sp_list[i], '\n',
+                   'QM model estimates (log10 eDNA) > -4 (QM sp Presence)')) +
+    facet_wrap(~depth_cat, nrow = 1) +
+    coord_sf(datum = NA) +
+    scale_fill_gradientn(
+      colors = moma.colors("ustwo", n = 21, direction = -1),
+      limits = c(-5, 15),
+      values = scales::rescale(c(-5:15)),
+      name = "QM posteriors"
+    ) +
+    scale_size_continuous(
+      name = "QM posteriors",
+      limits = c(-16, 15),
+      breaks = c(-5, -3, 0, 5, 10,15),
+      labels = c('-5', '-3', '0', '5', '10','15'),
+      range = c(-9, 7)
+    ) +
+    xlim(dat_bbox[1], dat_bbox[3]) +
+    ylim(dat_bbox[2], dat_bbox[4]) +
+    theme_bw()
+ggsave(here('plots',paste0(sp_list[i],'_raw.jpg')))
+}
+plot_list
+```
+
