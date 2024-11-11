@@ -26,19 +26,19 @@ suppressMessages(library(tidyverse))
 
 Molecular data from environmental samples can reflect the abundance of species' DNA, an index immediately relevant to natural resources management at a continental scale. These data commonly derive from qPCR or ddPCR assays --- which focus on a single species --- or metabarcoding assays from more general PCR primers that amplify many species simultaneously. Multispecies analyses make efficient use of field samples and laboratory time, and speak to inherently multispecies questions of management and ecological research. However, unlike single-species techniques, metabarcoding by itself can reflect only the proportions of target-species DNA present, not their absolute quantities. Here, we combine qPCR and metabarcoding data derived from the same samples to map quantities of many fish species along the US Pacific coast in three dimensions, demonstrating a technique of practical importance for both management and ecology. We derive spatially explicit estimates of eDNA abundance for \[13\] common species of commercial and management importance and point the way to quantitative surveys of wild species using molecules alone. <!--Maybe add slightly on the results of species accumulation or that we detect species ecological niches -->
 
-**What is necessary to mention in intro:**
+<!--# What is necessary to mention in intro:  -->
 
--   eDNA quantities = organismal abundance + ε \[DONE?\]
+<!--# eDNA quantities = organismal abundance + ε [DONE?]  -->
 
--   eDNA MB != quantities \[DONE?\]
+<!--# eDNA MB != quantities [DONE?]  -->
 
--   Multispecies survey saves time and \$ \[DONE?\]
+<!--# Multispecies survey saves time and $ [DONE?]  -->
 
--   Trawls have challenges (catchability, expensive) \[Not sure how to treat this one; we can't anger the trawl people; we need to engage w them; tread lightly; OLE\]
+Trawls have challenges (catchability, expensive) \[Not sure how to treat this one; we can't anger the trawl people; we need to engage w them; tread lightly; OLE\]
 
--   eDNA MB helpful tool due to multi species ability \[DONE?\]
+<!--# eDNA MB helpful tool due to multi species ability [DONE?]  -->
 
--   Circumvent MB quantification problem with qPCR + MB \[DONE?\]
+<!--# Circumvent MB quantification problem with qPCR + MB [DONE?]  -->
 
 ## Intro
 
@@ -144,6 +144,8 @@ Given estimates of species' DNA concentrations from environmental samples, we ge
 
 \[FIG 1: faceted maps\]
 
+![](images/Combined_plot_landscape.jpg)
+
 ### Ecological Patterns and Associations with Covariates
 
 \[FIG 2: posterior means vs. covariate values; post-hoc, not built into model\]
@@ -156,7 +158,13 @@ Given estimates of species' DNA concentrations from environmental samples, we ge
 
 ## Discussion
 
-We have developed a quantitative method of simultaneously surveying many wild species, using molecular methods alone. We have reported spatially explicit estimates for 10 species of commercial importance --- information of the kind that is required under the Magnuson-Stevens act, which governs commercial fishing in the United States --- but the same technique is equally applicable to many questions of ecological management or conservation concern. Below we highlight spatial patterns rising out of the present analysis that illustrate conclusions relevant to management questions.
+We report patterns of species-specific eDNA concentrations that closely mirror the \[known\] abundance distributions of the species themselves, in three dimensions and over ten degrees of latitude. Our results point the way to a broader use of eDNA for management of commercially important species, such as is required under the Magnuson-Stevens Act in the United States.
+
+### Species Patterns by Latitude and Depth
+
+The eDNA data reflect well-understood latitudinal patterns in most species. For example, the bulk of anchovy being more northerly than sardines, hake being ubiquitous across latitudes, and so on.
+
+<!--# We have developed a quantitative method of simultaneously surveying many wild species, using molecular methods alone. We have reported spatially explicit estimates for 10 species of commercial importance — information of the kind that is required under the Magnuson-Stevens act, which governs commercial fishing in the United States — but the same technique is equally applicable to many questions of ecological management or conservation concern. Below we highlight spatial patterns rising out of the present analysis that illustrate conclusions relevant to management questions. -->
 
 <!--By creating species distribution models and outputs we can better understand species habitat suitabilities. Furthermore coupling it with environmental covariates we can better predict how marine species will shift in response to environmental changes, aiding both fisheries management and biological conservation. This allows for more effective strategies to protect biodiversity while ensuring the sustainability of fisheries resources \cite{liu_2023}.-->
 
@@ -180,13 +188,33 @@ Eulachon and flatfish eDNA distribution appears to be in conflict with the distr
 
 Our analysis reflects spatial patterns associated with a gradient in temperature -- inseparable from latitude in the present dataset -- but associations with other important ecological covariates are readily apparent. Surface salinity reflects the influence of the Columbia River, for example, and predicts well the presence or absence of anadromous fishes, including eulachon and salmonids. Shifts in the community composition of fishes associated with differences in upwelling index are similarly robust \[signaling and ecological response to a change in physical/oceanographic conditions.\]
 
-### eDNA Relationship with Existing Surveys
-
-Although we have shown an example of the substantial value of multispecies eDNA analysis for fisheries and other natural-resource management questions, eDNA data alone do not provide information on size- or age structure of the kind important to traditional fisheries management. Moreover, the eDNA sampling itself depends upon fisheries research vessel cruises for access to deep water. Finally fisheries control rules are expressed in units of mass; converting from DNA concentration to species mass requires data external to the eDNA signal. We therefore see eDNA as an important datastream that maximizes the information value of existing research cruises, rather than a means of replacing those cruises themselves.
-
-### Ecological applications
-
 <!--Species conservation, overlaps of shared habitat indicate productive and nursing areas thus high importance. -->
+
+### Environmental Smoothing and Sampling Frequency
+
+In general, the scale of environmental sampling limits the resolution with which we can understand spatial variability in a signal. Characterizing a strong, continuous signal -- here, a high concentration of a species' DNA persisting in the environment -- requires fewer sampling points in space than does a more subtle or discrete signal. We therefore expect schooling, high-biomass fish species with broad distributions (sardine, anchovy) to have strong eDNA signals that vary smoothly over space given our sampling design, while more solitary species should be detected more sporadically. Our observations are consistent with these expectations.
+
+The observable eDNA signal is an integrated function of production and loss terms (blurred somewhat by sampling variability, which we address elsewhere; Gold et al. 2023). Qualitatively, if we imagine the rate of eDNA loss (via degradation or sinking) as being fast relative to transport (via surface currents and, to a limited extent, diffusion), an eDNA signal will be detectable only close to a source animal in space and time. The scale over which the eDNA signal is observable will be a function of the ratio of production and loss terms in any given context. We refer to this spatial scale as environmental smoothing of eDNA signal relative to the source animals themselves.
+
+Although eDNA may remain detectable kilometers away from a source (under unidirectional flow; Pont et al; Thalinger et al), it is by far most abundant within meters of the source (Xiong et al. in review). Moreover, the vast majority of eDNA an animal sheds into the environment is lost from surface samples within a period of hours (Brasseale et al in review). The horizontal scale of environmental smoothing in the present dataset is therefore kilometers at most. Because sampling stations are spaced at intervals greater than this \[HOW MANY KM?\], the spatial patterns we report are likely to reflect real differences in abundance rather than artifacts arising from transport.
+
+Vertical smoothing, by contrast, appears minimal -- perhaps at the scale of meters: shallow-water species (sardine, anchovy, herring) occur largely at the surface and 50m depth bins, *Sebastes melanops* occurs almost exclusively at the 50m depth bin (its known habitat; CITE), species found throughout the water column are either diel vertical migrators or species occupying different depths at various life-history stages (Fig 1), and bottom-dwelling fishes are detected primarily at the deepest point sampled on any station.
+
+### Maximizing Information from Existing Surveys
+
+Although we have shown an example of the substantial value of multispecies eDNA analysis for fisheries and other natural-resource management questions, eDNA data alone do not provide information on size- or age structure of the kind important to traditional fisheries management. Moreover, the eDNA sampling itself depends upon fisheries research vessel cruises for access to deep water. Finally fisheries control-rules are expressed in units of mass; converting from DNA concentration to species mass requires data external to the eDNA signal.
+
+Effective management of natural resources at a continental scale requires that we maximize the information content of existing sampling regimes. Here, we follow Shelton et al. (2023) and Liu et al. (in prep?), leveraging the same water samples to provide information on an additional 13 species of commercial importance. Elsewhere, the same set of samples has yielded information on the distribution of marine mammals (Valdivia et al, in revision). We therefore see eDNA as an important datastream that maximizes the information value of existing research cruises, rather than a means of replacing those cruises themselves.
+
+### Observation Model
+
+Unlike single-species observation methods, metabarcoding data yields information on species proportions rather than absolute values. Metabarcoding has no generalizable species-specific detection probability (= sensitivity) because the probability of detection for a given species depends strongly upon an interaction between the other species in the reaction and on the total read-depth for the sample. Where total read-depth is greater, rarer species are more likely to be detected, conditional on their having been sampled and on their amplifiability with the PCR primer being used.
+
+The observation model we use here focuses on species common in the raw dataset, which are those farthest from the lower limits of detection within the present context, and therefore having the highest confidence for consistent detectability.
+
+Our observation model also depends upon detection of hake (our reference species) in both metabarcoding and qPCR datasets for each water sample (\~ 95% ?? of all samples); samples omitted from analysis for lack of hake detections were sporadically distributed in the data, and their omission appears not to have induced substantial bias in our estimates (SUPPLEMENT).
+
+The raw dataset (SUPPLEMENT) contained many more species than we chose to analyze here, nearly all of which were rarer in the data.
 
 ## Conclusion
 
