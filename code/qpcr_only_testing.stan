@@ -198,11 +198,14 @@ transformed parameters {
         count_tot = count_tot + 1;
         if(bio_rep_idx[j]==1){
           bio_rep_RE[count_tot]=0;
-        }else{
+        }else if(k < bio_rep_idx[j]){
           count_par = count_par + 1;
           bio_rep_RE[count_tot] = bio_rep_param[count_par] * tau_bio_rep ;
           bio_rep_sum = bio_rep_sum + bio_rep_RE[count_tot];
-          }
+        }else{
+          bio_rep_RE[count_tot] = bio_rep_param[count_par] * tau_bio_rep ;
+          bio_rep_sum = bio_rep_sum + bio_rep_RE[count_tot];
+        }
         } // end k loop
         bio_rep_sums[j] = bio_rep_sum;
       } // end j loop
