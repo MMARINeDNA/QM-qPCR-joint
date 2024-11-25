@@ -146,21 +146,27 @@ Given estimates of species' DNA concentrations from environmental samples, we ge
 
 ![Figure 1](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/1.%20Figure_1.jpg)
 
-Our results indicate that eDNA estimated concentration reflects concordantly species distirbution known from literature. We have visuzlised 6 species (for simplicity, for all species see Supplementary Material xxx) eDNA estimated concentration across the US pacific coast in Figure 1A and the known depth habitat range of those species in Figure 1B. 
+Patterns of eDNA concentration reflect known species distributions across more than ten degrees of latitude and five depth categories (Fig 1; six species shown for ease of visualization; all 13 species shown in supplement). Below, we highlight species of commercial or management importance, but in principle the same techniques are applicable to any number of taxa.
 
 <!--I am writing a lot of information here just to have it but it can be cut or parts of it moved to discussion. Feel free to move/remove things around-->
 
 **Surface**
 
-Our selected surface species included two clupeoids, northern anchovy and sardines. Northern anchovy (*Engraulis mordax*) is an epipelagic species ranging from Baja, California, to British Columbia, Canada occuring mostly in the photic area above the thermocline. Larvae and juveniles typically occupy the upper layer of the epipelagic zone 0 - 50m while adults move to surface at night and all the way down to 100m during the day to avoid predators. Their major spawning peaks in July (in accordance with our sampling period) with an epicenter located off Oregon and Washington which is associated with the nutrient rich water near Columbia River plume \cite{litz_2008}. Our eDNA concentration estimates reflected clearly anchovy's signal with high aggregation of concentration and higher occupancy on the surface layers (0 - 50m). Additionally the eDNA abundance estimates signaled the peak abundance matched the spawning location near Columbia River plume suggesting the aggregation of eDNA concentration coming from eggs and larvae on surface in addition to adults.
+<!--# Our selected surface species included two clupeoids, northern anchovy and sardines.  -->
 
-Pacific sardine (*Sardinops sagax*) is an epipelagic specie with very similar distribution to anchoviy in terms of depth ranges with the depth ranges slightly deeper than anchovy and has a preference for warmer waters. The eDNA patters revealed the ecological niche latitudinal differences between anchovy and sardines where the former prefers cold surface sea temperatures (SST; 10 ̊–14 ̊C) often located north of California while the latter prefers warmer SST (18–24°C) \cite{nevarez-martinez_2001}.
+Northern anchovy (*Engraulis mordax*) is epipelagic, occurring mostly above the thermocline between Baja California and British Columbia. While larvae and juveniles typically occupy the upper 50m, adults move to 100m during the day to avoid predators. The species has a major spawning peak in July (our sampling period), centered on the nutrient-rich water near the Columbia River plume \cite{litz_2008}. We find eDNA concentrations clearly reflect these signals, with high concentrations at the surface in northern latitudes, particularly near the Columbia River outflow, possibly reflecting a mix of adults, larvae, and eggs.
 
-**Midwater**
+<!--#  -->
 
-Mid water species include mesopelagic species and here we included widow rockfish and lanternfish. Lanternfish is a mesopelagic species occupying the depths of 400 - 700m during the day and 20 - 200m at night \cite{moku2000}. This dial vertical migration (DVM) is due to their feeding strategies as they feed mainly on krill, amphipods, and copepods \cite{moku2000}\cite{suntsov2008} which also does DVM for avoiding predators. Our eDNA concentration estimates signaled that this fish is occuring along the entire water column (studied here) with sparser detection and lower concentrations at the surface. In our eDNA results, there were distinct patches of occurrences of latnternfish on the surface, such as near Columbia river, south of Oregon and north of California while in deeper layers the occurrence is more ubiquitous. 
+Pacific sardine (*Sardinops sagax*) is a similarly epipelagic species, but is more common in warmer waters (SST 18--24°C vs 10 ̊--14 ̊C for anchovy) and at slightly greater depths \cite{nevarez-martinez_2001}. The eDNA patterns accurately reflect these differences, with sardine's centroid of \[eDNA concentration\] being XXkm south of anchovy and XXm deeper.
 
-Widow rockfish (*Sebastes entomelas*) is typically found at depths ranging from 100 to 250 meters, with juveniles occupying the 50 to 150-meter zone is distributed from northern Baja California to southern Alaska. Widow rockfish exibits schooling behavior, forming dense feeding schools at night preying on euphausiids, salps, sergestids, myctophids, and other small fish which disperse at dawn \cite{Adams_1987}. During summer, widow rockfish are commonly observed at depths between 100 and 150 meters \cite{reynolds_2001}. Our eDNA concentration estimates for Widow rockfish matched previous studies on their abundance and additionally identified their distribution to be strongly associated with vertical depth within the water column as previously reported \cite{reynolds_2001}.
+**Mid-water**
+
+Widow rockfish (*Sebastes entomelas*) are distributed from northern Baja California to southern Alaska and in summer are commonly found between 100-150m, with juveniles occupying somewhat shallower habitats (50 - 150m) \cite{reynolds_2001}. Individuals form dense feeding schools at night -- preying on euphausiids, salps, and small fishes -- and disperse at dawn \cite{Adams_1987}. The eDNA concentration estimates for the rockfish are consistent with the shallower end of these expected habitats, with the 50m samples capturing the majority of the signal. \[TODO: centroids for each species, for supplement\]
+
+Lanternfish (SPECIES) is an abuntant species throughout the coast, living at 400 - 700m during the day and 20 - 200m at night \cite{moku2000}. This dial vertical migration (DVM) is thought to balance predator avoidance with a diet of krill, amphipods, and copepods \cite{moku2000}\cite{suntsov2008}. eDNA patterns for the species are again consistent with the species' ecology; we find high eDNA concentrations throughout the sampled water column but notably lower concentrations at the surface.
+
+<!--#  In our eDNA results, there were distinct patches of occurrences of latnternfish on the surface, such as near Columbia river, south of Oregon and north of California while in deeper layers the occurrence is more ubiquitous. -->
 
 **Benthic**
 
@@ -182,10 +188,6 @@ Dover sole (*Microstomus pacificus*) is a deep-water flatfish inhabiting depths 
 
 We report patterns of species-specific eDNA concentrations that closely mirror the \[known\] abundance distributions of the species themselves, in three dimensions and over ten degrees of latitude. Our results point the way to a broader use of eDNA for management of commercially important species, such as is required under the Magnuson-Stevens Act in the United States.
 
-### Species Patterns by Latitude and Depth
-
-The eDNA data reflect well-understood latitudinal patterns in most species. For example, the bulk of anchovy being more northerly than sardines, hake being ubiquitous across latitudes, and so on.
-
 <!--# We have developed a quantitative method of simultaneously surveying many wild species, using molecular methods alone. We have reported spatially explicit estimates for 10 species of commercial importance — information of the kind that is required under the Magnuson-Stevens act, which governs commercial fishing in the United States — but the same technique is equally applicable to many questions of ecological management or conservation concern. Below we highlight spatial patterns rising out of the present analysis that illustrate conclusions relevant to management questions. -->
 
 <!--By creating species distribution models and outputs we can better understand species habitat suitabilities. Furthermore coupling it with environmental covariates we can better predict how marine species will shift in response to environmental changes, aiding both fisheries management and biological conservation. This allows for more effective strategies to protect biodiversity while ensuring the sustainability of fisheries resources \cite{liu_2023}.-->
@@ -196,9 +198,9 @@ The eDNA data reflect well-understood latitudinal patterns in most species. For 
 
 <!-- A bit about abiotic factors influencing the detectabilty of eDNA. If the patterns of fish distribution (cold and warm water species) correspond with their habitat suitability, then eDNA degradation from abiotic / biotic factors can be ballpark estimated to be constant/small accross species over the large (large here is the key word) survey area. If not then it is affecting our observation of certain species (biased towards cold temp species?) -->
 
-Discrete depth sampling has the distinct advantage over other survey methods in so far as it can provide distribution estimates in three dimensions. Widow rockfish, for example, appear almost exclusively in the 50 m depth band, which is unsampled by traditional trawls. This species is of special interest because its commercial harvest has resumed after years of closure, and no existing survey adequately captures its patterns of abundance \[CITE\].
+Discrete depth sampling has the distinct advantage over other survey methods insofar as it can provide distribution estimates in three dimensions. Widow rockfish, for example, appear almost exclusively in the 50 m depth band, which is unsampled by traditional trawls. This species is of special interest because its commercial harvest has resumed after years of closure, and no existing survey adequately captures its patterns of abundance \[CITE\].
 
-eDNA at depth reflects, to some degree, and attenuated signal from species nearer the surface --- see, for example, the concentration of hake eDNA with depth (Shelton et al. 2022b). However, the widow rockfish pattern suggests this sinking-and-spreading does not dominate signal at lower depths for that species.
+eDNA at depth reflects, to some degree, an attenuated signal from species nearer the surface --- see, for example, the concentration of hake eDNA with depth (Shelton et al. 2022b). However, the widow rockfish pattern suggests this sinking-and-spreading does not dominate signal at lower depths for that species.
 
 <!--# This is likely a function of the overall abundance of species' eDNA and of the species' habitats: highly abundant surface species such as hake and anchovy show attenuated eDNA signals with depth, while less abundant species are more strictly associated with particular sampling depths [SUPPLEMENT]. Abundant surface species' DNA is likely to be a component of marine snow, transported as feces and other waste materials via gravity to lower depths -- rarer species would accordingly make up a smaller fraction of genetic materal raining downward. Hake is more evenly distributed across depths. -->
 
