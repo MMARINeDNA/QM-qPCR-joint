@@ -180,6 +180,22 @@ Dover sole (*Microstomus pacificus*) is a deep-water flatfish inhabiting depths 
 
 -   trends w salinity, temperature, etc. Upwelling index, nutrient / chla
 
+[*Figure 2*. Multispecies summaries]
+
+![Figure 2](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/2.%20Figure_2.jpg)
+
+Correlation analyses of estimated eDNA concentrations among species (Fig. 2) revealed that species occupying similar ecological habitats - particularly concerning depth - tended to cluster together. This pattern of correlation and segregation was gradual when species were ordered from the upper to the lower parts of the water column, aligning with their known habitat preferences.
+
+Three major groups of species emerged from the visual analysis of the correlation plots: surface (epipelagic), midwater (mesopelagic), and deep-water (bathypelagic) species. Within the surface species, a subtle subdivision became apparent. Chub mackerel and sardines exhibited slightly distinct correlation patterns compared to the other surface species. These species showed little to negative correlation with mesopelagic fish. In contrast, the remaining surface species showed additional correlation to midwater species, suggesting that their habitat occupancy overlaps with both surface and midwater zones.
+
+This minor segregation within the surface species is attributed to the differing distributions of  subgroups. The subgroup including chub mackerel and sardines predominantly occupies the southern Pacific Ocean, characterized by warmer waters. In contrast, the other epipelagic species are mainly found in the northern Pacific Ocean, which has colder waters. This northern epipelagic group shares habitats with mesopelagic species, as they also prefer colder environments and are more widely distributed in the northern Pacific. Bathypelagic species formed a distinct group of their own, exhibiting little to no correlation with species from other depth zones. Furthermore, classifying deep-water species presents challenges due to the vagueness of their definitions. Depending on the study’s purpose, these species may be categorized differently, leading to them interchangeably swapping places between mesopelagic and bathypelagic classifications. 
+
+![Figure 3](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/3.%20Figure_3.jpg)
+
+Species richness exhibited a pronounced depth-dependent gradient, with the highest richness observed at the surface and a progressive decline with increasing depth (Fig. 3). This pattern is consistent with the species composition included in this study, which predominantly comprises epipelagic and mesopelagic species, and reflects the expectation that habitat availability is greatest near the surface. Surface waters not only serve as habitats for epipelagic species but also provide critical environments for the eggs, larvae, and juvenile stages of meso- and bathypelagic species; hence, higher species accumulation is to be expected in the upper layer of the water column. The species overlap map (Fig, 3) revealed a richness hotspot located along the Oregon coast, a region representing the confluence of different thermal habitats where both cold- and warm-water species co-occur.
+
+Furthermore, the spatial distribution of species richness corresponds strongly with the influence of Columbia River plume, which extends both north and south of the river mouth. The nitrate-rich water discharged from the river interacts with ocean currents creating upwelling zones where nutrient-rich deep water is brought to the surface. This upwelling enhances phytoplankton and zooplankton production, thereby creating optimal conditions for the early life stages of fish and secondary consumers, supporting higher species richness near the surface (Fig. 3).
+
 \[FIG 3: map of species overlaps\]
 
 -   species overlaps. Richness peaks at surface at 45 degrees N; attenuates with depth. (Richness also peaks closest to shore, where bathymetric depth is near zero). Is this an artifact of the handful of target species? or effect of the Columbia?
