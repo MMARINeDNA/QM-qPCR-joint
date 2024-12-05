@@ -5,3 +5,5 @@
 model_output/
 code/*.csv
 data/*.rds
+.DS_Store
+.DS_Store
