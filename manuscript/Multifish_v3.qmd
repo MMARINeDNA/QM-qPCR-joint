@@ -226,6 +226,7 @@ where $x,y,z$ index longitude, latitude, and depth (respectively), $\alpha_d$ is
 
 Each species was fitted individually while we created and selected the best mesh for approximating spatial Gaussian random fields as part of the model. [OWEN add detail]
 
+All statistical analysis, figure preparation, and data curation were performed in R [CITE R].
 
 # References
 
