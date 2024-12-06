@@ -45,6 +45,7 @@ Target: PNAS, end of 2024
 
 + v3 has a revised introduction by Ole.  References need to be added to the intro.
 + v3 added first paragraph in Results from Ryan. 
++ v3 Ryan rearranged to match PNAS format and condensed methods
 
 ## Abstract
 
@@ -54,7 +55,7 @@ Molecular data from environmental samples can reflect the abundance of species' 
 
 # Intro
 
-4000 words is standard (6 pages).  8000 words (12 pages max).  Average 4 figures.
+*4000 words is standard (6 pages).  8000 words (12 pages max).  Average 4 figures.*
 
 Environmental DNA (eDNA, residual genetic material sampled from water, soil, or air) is an increasingly common tool for non-invasively sampling marine and aquatic ecological communities, valuable for estimating species occurrence (refs), biodiversity (ie. Richness; Muenzel et al. 2024 PNAS), and genetic structure (Andres et al. 2023 PNAS). However, eDNA has not been widely used for quantitative abundance estimation, upon which many practical management and conservation applications rely (but see Shelton et al., Guri et al, Stoeckle et al., etc…). While the use of eDNA for quantification is supported both conceptually -- where there is more of a species, more cells are shed in the environment, and thus there is more DNA – and empirically (e.g. there are strong linkages between single-species eDNA measures of in aquaria \[CITE Jo\] Kim Ledger et al. (2024), rivers and streams \[CITE\], estuaries and nearshore habitats \[CITE\], and coastal oceans \[CITE\] [@maes2023], plus [Shelton et al. 2019]), quantitative uses of eDNA observations have significantly lagged behind their use in occurrence and biodiversity applications. 
 
@@ -62,70 +63,17 @@ Quantitative estimates of DNA are more common with species-specific assays (e.g.
 
 Here, we develop quantitative estimates for a coastal pelagic fish community across 10 degrees of latitude along the US west coast entirely from residual genetic material (eDNA).  We combine single- and multi-species genetics approaches to provide quantitative, three-dimensional distribution models for *X* commercially important species and *Y* abundant, co-occuring but relatively poorly studied species. Our study illustrates how eDNA can simultaneously complement distributional and abundance information for well-studied species while revealing new biological details for ecologically important but understudied species. We present results for 13 fish species to illustrate the approach, but note that it immediately generalizes to any ecological community of interest.
 
+[Maybe one more sentence about methods / joint model above here, to ease transition into Results]
+
 The eDNA-derived estimates we provide here speak directly to the requirements of natural-resources management at large scales. For example, indices of abundance have a central role in determining stock status for fisheries applications (i.e. stock assessments in the U.S. under the Magnunson-Stevens Act) as well as informing conservation status (e.g., under the U.S. Endangered Species Act). Thus eDNA-derived abundance indices can fill a variety of existing legal requirements for management. While these indices are still in their infancy and will require additional technical developments to ensure their proper usage, they are conceptually and practically little different from abundance estimates derived from more traditional ocean survey method (i.e. net-based or acoustic surveys). Indeed, eDNA methods may provide some notable improvements because single- and multi-species eDNA approaches avoid tradeoffs involved with physically capturing many species simultaneously using a single net. Molecular surveys capture many species with the same "gear" using methods that are easily replicated in space and time. As agencies begin to implement the new National Aquatic eDNA Strategy (REF) -- the first goal of which is to fold eDNA data into federal decisionmaking -- this and other large-scale examples point the way to maximizing the benefit of this information-rich datastream for natural-resources management at a continental scale.
-
-# Methods
-
-We developed and joined three distinct datasets (qPCR targeting hake, metabarcoding sequencing reads for a mock community with known concentrations, and metabarcoding sequencing reads for environmental samples with unknown concentrations) into a joint Bayesian model following the formulation in [@guri2024a]. In brief, we calibrated metabarcoding data, correcting raw species observations to their initial proportions using a community of known composition [@shelton2023] . We then used the absolute quantity of one species to expand the initial estimated proportions into absolute abundance estimates for each species  [@guri2024a; and see also @allan2023] in each of \[347\] 2L water samples collected during a 2019 NOAA cruise [see @ramon-laca2021; and @shelton2022]. The details for creating each dataset is explained below. Subsequently the estimated eDNA quantities were spatially smoothed using sdmTMB package (an approximation of Gaussian Process models) for generating species distribution maps.
-
-## Sample Collection and Processing
-
-Samples were collected along the West Coast of the US aboard the ship *Bell Shimada* during Summer 2019, as described in @ramon-laca2021 and @shelton2022. These were 2.5L samples taken from Niskin bottles deployed at night on a CTD rosette at a maximum of five depths (0, 50, 150, 300 and 500 m) at 186 stations; in addition samples from 3m depth were collected from the ship's saltwater intake line and processed identically to Niskin samples. 347 individual water samples, each representing a unique depth-station combination, are included here. Samples were filtered immediately using a vacuum pump on 47 mm diameter mixed cellulose-ester sterile filters with a 1 $\mu$m pore size, and stored at room temperature in Longmire's buffer until DNA extraction.
-
-DNA extraction of water samples was done using a phase lock phenol-chloroform protocol, as in xxx. Negative controls such as field water and air blanks, and laboratory blanks (extraction blanks) were taken throughout the workflow. The extracted eDNA were analyzed downstream to get estimates of hake DNA concentrations (via quantitative PCR, qPCR) and of fish community composition (via DNA amplicon metabarcoding).
-
-<!--\[Metadata, as appropriate\] \[note that the 347 samples included here are the intersection of those with hake metabarcoding obs and positive qPCR obs\]-->
-
-<!--\[OLE: do we have to correct for air hake, or has that already happened w the dataset I've sourced?\]-->
-
-## qPCR quantification of Pacific hake
-
-Environmental samples were analysed in triplicate using the multiplexed assay described in @ramon-laca2021 on a QuanStudio 6 (Applied Biosystems) as presented in @shelton2022. The thermocycler protocol included an initial denaturation step at 95 °C 10 min followed by 40  cycles of 15 s at 95 °C and 1 min at 58 °C. All thermocycler reactions were run in 20 $\mu$L volume consisting of 10 $\mu$L of TaqMan Environmental Master Mix 2.0, 1 $\mu$L of each primer (forward and reverse, 10 nM concentration each), 0.5 $\mu$L of probe (10nM concentration), 3 $\mu$L of dH20 and 2 $\mu$L of DNA template. To monitor quality control, all runs included an internal positive control (IPC) to detect PCR inhibition and a negative template control (NTC) containing water instead of DNA template. Any IPC delay exceeding 0.5 cycles in the NTC was considered inhibition.
-
-To quantify Pacific hake DNA, environmental samples were analyzed alongside standards constructed from a 120 bp synthetic DNA fragment (gBlock; IDT) representing the 12S region of Pacific hake (Merluccius productus), which encompasses the 101 bp 12S qPCR target (sequence information available in Ramón-Laca et al. 2021). The synthetic DNA fragment was diluted to create a series of standards with final concentrations ranging from $10^{0}$ to $10^{5}$ copies/$\mu$L.
-
-## Metabarcoding
-
-In total, 347 samples divided into 7 libraries, including eDNA samples (n = xxx), PCR blanks (n = xxx), positive controls (n = 8), extraction blanks (n = xxx), fieldwork water and air blank (n = xxx and xxx respectively), were amplified using MiFish-U universal primers [bolded; @miya2015a] with Illumina tails (forward TCG TCG GCA GCG TCA GAT GTG TAT AAG AGA CAG **GCC GGT AAA ACT CGT GCC AGC**; reverse GTC TCG TGG GCT CGG AGA TGT GTA TAA GAG ACAG **CA TAG TGG GGT ATC TAA TCC CAG TTTG**). DNA was amplified in the first PCR reaction (PCR1) in a 20 $\mu$L reaction consisting of: 10 $\mu$L of Phusion Master Mix (2X), 0.4 $\mu$L of the forward primer (10 $\mu$M); 0.4 $\mu$L of the reverse primer (10 $\mu$M), 0.6 $\mu$L of 100% DMSO, 0.5 $\mu$L of rAlbumin (20 $\mu$g/$\mu$L), 4.4 $\mu$L of nuclease-free water and 2 $\mu$L of DNA template. Reactions were run with the following cycling conditions: an initial denaturation of 98°C for 30 sec; followed by 35 cycles of 98°C for 10 sec, 60°C for 30 sec, and of 72°C for 3 sec; with a final extension of 72°C for 10 min.
-
-PCR product was bead cleaned using Ampure Beads (1.2x) and then indexed in a second PCR. The indexing reaction consisted of (for a 25 $\mu$L reaction): 12.5 $\mu$L KAPA Hifi HotStart ReadyMix, 1.25 $\mu$L of the unique IDT for Illumina DNA/RNA UD Index (one per sample), 5 ul of PCR1 product and 6.25 of nuclease-free water. The cycling conditions were run with initial denaturation of 95°C for 5 min; followed by 8 cycles of 98°C for 20 sec, 56°C for 30 sec, 72°C for 1 min; and a final extension of 72°C for 5 min. Products were visualized on a 2% agarose gel and quantified using QuantIt (REF xxx) with Fluoroskan (REF xxx). Products were pooled based on both the strength of the target band (in relation to the offtarget bacteria band) and the quantification. The final pool was size selected to extract only the target fish band using the E-gel Size Select System (REF xxx).
-
-Libraries were sequenced on Illumina MiSeq platform using the v3 600 cycle kit. Sequences were de-multiplexed and the adapters removed by Illumina sequencing. Primers were removed with Cutadapt v4.9 [@martin2011]. We then used DADA2 [default parameters, @callahan2016] to denoise sequences, remove chimeras, and generate amplicon sequence variants (ASVs). The sequences were then blasted against the NCBI nucleotide (nt) database (access: August 2024) using BLASTn algorithm with a cut off at 97% identity, assigning the least common ancestor of the top hit, resulting in species, genus, family, or higher rank classifications. Samples with fewer total number of reads than 1000 were removed from downstream analysis as indicator of poor quality samples.
-
-
-
-## Mock community
-
-To calibrate metabarcoding observations and account for amplification bias [@gold2023; @shelton2023], we generated multiple mock communities comprising a total of 39 fish species. Vouchered DNA extracts or tissues were obtained  from either the University of Washington Fish Collection at the Burke Museum or the NOAA Northwest Fisheries Science Center collections. We quantified the total genomic DNA in each extract using Qubit HS assay. We then quantified the concentration of the 12S rRNA gene using MarVer1 primers [@valsecchi2020], which perfectly match the template and give unbiased estimates of concentration (cite Megan's paper xxx), using anthe QX200 Droplet Digital PCR (ddPCR) system (Bio-Rad). Each tissue of each species was quantified in a 22 $\mu$L reaction consisted of 2 $\mu$L of DNA template from genomic DNA , 11 $\mu$L of ddPCR EvaGreen (Bio-Rad), 0.22 $\mu$L of each forward and reverse primers (10 uM), and 0.56 $\mu$L of nuclease free water. The thermocycler reactions were run in C1000 Touch Thermal Cycler with 96-Deep Well Reaction Module (Bio-Rad) using the PCR program as follows: 2 min at 50°C for enzyme activation, 2 min at 95° C for initial denaturation, and 40 cycles of denaturation for 1 sec at 95°C and primer annealing and elongation for 30 sec min at 60° C, with a ramp rate of 2° C per s and heldat 4° C until droplets were read. Droplets were determined to be positive after drawing a threshold based on NTCs.
-
-After quantifying the mitochondrial DNA template in copies/ng using ddPCR, we constructed a total of eight mock communities (4 even and 4 skewed proportions of mitochondrial DNA) with different species (n = 11, 16, 14, and 24 respectively for each mock commuinty) combined for different projects. All the mock community samples were amplified and sequenced following the same metabarcoding protocol as the environmental samples (see below). Only 13 species in the mock community and metabarcoding samples including Pacific herring (*Clupea pallasii*), northern anchovy (*Engraulis mordax*), northern smoothtongue (*Leuroglossus stilbius*), Dover sole (*Microstomus pacificus*), Pacific sardine (*Sardinops sagax*), Pacific chub mackerel (*Scomber japonicus*), widow rockfish (*Sebastes entomelas*), northern lampfish (*Stenobrachius leucopsarus*), California barracudina (Tactostoma macropus), plainfin midshipman (*Tarletonbeania crenularis*), eulachon (*Thaleichthys pacificus*), Pacific jack mackerel (*Trachurus symmetricus*), and Pacific hake (*Merluccius productus*) were used in the downstream workflows and analysis.
-
-## Statistical analysis (Stan & spatial model)
-
-We estimated amplification efficiencies of the listed species from mock community metabarcoding run as described in [@shelton2023] using the Stan language as implemented in R (package: Rstan) running 4 MCMC chains with 5000 warmup and 5000 sampling iterations each (see Supplementary math & code). We then used the amplification efficiencies for each species to estimate the initial proportions of each species in environmental samples and the absolute quantity of Pacific hake (from qPCR) to expand the estimated proportions into absolute eDNA estimates (copies/$\mu$L) for each species in each sample as described on [@guri2024a] and Allan et al. 2023 in a joint model. The joint model was implemented Stan running 4 MCMC chains with 1000 warmup and 2000 sampling iterations each (see Supplementary math & code). The posterior of both model predictions were diagnosed using $\hat{R}$ statistics (Gelman and Rubin, 1992) and considered convergence for $\hat{R}$ values less than 1.1 and effective sample size (ESS) greater than 200 for all parameters. 
-
-After fitting the species-specific eDNA concentration from the joint model, for generating species distribution maps, we smoothed the estimated DNA concentration as a spatially smooth process at each depth sampled (d = 0, 50, 150, 300 or 500 m) and linear on the log scale using sdmTMB package for generating species distribution models in the following model:
-$$
-ln(C_{xyz})=\alpha_d + \omega(s)+\epsilon_d(s)
-$$
-where $\alpha_d$ is the spatial intercept for each depth (random effect), $\omega(s)$ is the smooth spline as a function of sample depth (m), and $\epsilon_d(s)$ is the depth dependent error term. 
-
-Each species was fitted individually while we created and selected the best mesh for approximating spatial Gaussian random fields as part of the model. [Owen can add more specifics to this?] Also how were the mesh evalued?
 
 # Results
 
 We find spatial patterns of DNA concentrations reflect the distributions of commercially important coastal-pelagic fish species with remarkable fidelity, in three dimensions and across ten degrees of latitude (Fig 1: Anchovy, Sardine, herring; Supplement mackerel). For other high-biomass species otherwise lacking well-described distributions, we provide the first species distribution models (Fig 1, other species). We find correlated patterns of eDNA concentrations among species reflecting clusters of species with similar habitat preferences (Fig 2). Emergent patterns of species richness indicate variability in coastal pelagic fish diversity and abundance associated with [primary productivity, etc]. Particularly for forage fish species — critical high-biomass links in marine food webs, but difficult to survey with traditional methods — molecular methods offer a tractable and quantitative index of abundance over large spatial scales.
 
-
-
-
 ## Species Patterns by Latitude and Depth
 
 ![Estimated species eDNA concentration (A) across 0, 50, 150, 300, and 500m depth samples and known depth distribution of those species from literature (B)](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/1.%20Figure_1.jpg)
-
-We find spatial patterns of DNA concentrations reflect the distributions of commercially important coastal-pelagic fish species with remarkable fidelity, in three dimensions and across ten degrees of latitude (Fig 1: Anchovy, Sardine, herring; Supplement mackerel). For other high-biomass species otherwise lacking well-described distributions, we provide the first species distribution models (Fig 1, other species). We find correlated patterns of eDNA concentrations among species reflecting clusters of species with similar habitat preferences (Fig 2). Emergent patterns of species richness indicate variability in coastal pelagic fish diversity and abundance associated with [primary productivity, etc]. Particularly for forage fish species — critical high-biomass links in marine food webs, but difficult to survey with traditional methods — molecular methods offer a tractable and quantitative index of abundance over large spatial scales.
-
-
 
 ### **Surface**
 
@@ -145,11 +93,13 @@ Lanternfish (*Stenobrachius leucopsarus*) is an abuntant species throughout the 
 
 ### **Benthic**
 
+[To be shortened; also emphasize that these are common species about which relatively little is known]
+
 The deep water species include benthic dwelling dover sole and dragonfish. Dragonfish (*Tactostoma macropus*) is a mesopelagic to bathypelagic species found in the subarctic and transitional North Pacific typically between 40 to 50 degree latitude [@kawaguchi1993]. Adult dragonfish primarily reside in deep waters, occupying depths between 300 and 900 meters. However, their eggs are spawned at depth but rise to the warmer, productive surface layers above the thermocline (0-60m) during summer [@kawaguchi1993], where after hatching feed mainly on copepods and krill [@kawaguchi1993]. As they grow, juvenile dragonfish start performing DVM [@willis1982], following their primary prey, krill, to depths around 100 meters [@kawaguchi1993]. Thereafter they settle at depths below 300 meters, as their feed type shifts towards myctophids [@fisher1983, @kawaguchi1993]. Such bimodal lifestyle activity, especially in the summer, is reflected through the eDNA concentration estimates where the signal from larvae and juveniles is predominantly present near Columbia river plume which has nutrient rich water and is known to be a high productive area in terms of primary consumers and the adults (i.e., 500m deep signal) from mainly two hotspots, near Columbia river and northern California.
 
 Dover sole (*Microstomus pacificus*) is a deep-water flatfish inhabiting depths between 200 and 1200 meters along the Pacific coast, from southern California to the Bering Sea [@drazen2007;@brodziak2000;@drazen2012]. This species exhibits ontogenetic migration, with individuals moving progressively deeper as they grow, following the seafloor as they age [@vetter1994;@hunter1990]. The eDNA concentration estimates aligned with this pattern, showing high concentrations mostly in deep water samples and in shallow samples when located near the seabed. Additionally two distinct patches of were observed, one in north of Oregon and the other in northern California. <!--They spawn in deep waters (600-1000m) and their eggs are positively boyant which makes them float to surface but hatch in winter which is not in accordance with our sampling time hence we see no DNA signal at surface (IDK if this is vital info).-->
 
-## Ecological Patterns and Associations with Covariates
+## Species Associations
 
 
 
@@ -167,11 +117,9 @@ This minor segregation within the surface species is attributed to the differing
 
 Species richness exhibited a pronounced depth-dependent gradient, with the highest richness observed at the surface and a progressive decline with increasing depth (Fig. 3). This pattern is consistent with the species composition included in this study, which predominantly comprises epipelagic and mesopelagic species, and reflects the expectation that habitat availability is greatest near the surface. Surface waters not only serve as habitats for epipelagic species but also provide critical environments for the eggs, larvae, and juvenile stages of meso- and bathypelagic species; hence, higher species accumulation is to be expected in the upper layer of the water column. Furthermore, the spatial distribution of species richness corresponds strongly with the influence of Columbia River plume, which extends both north and south of the river mouth. The nitrate-rich water discharged from the river interacts with ocean currents creating upwelling zones (predominantly during summer) where nutrient-rich deep water is brought to the surface. This upwelling enhances phytoplankton and zooplankton production, thereby creating optimal conditions for the early life stages of fish and secondary consumers, supporting higher species richness near the surface (Fig. 3). Additionally the richness hotspot located along the Oregon coast represents the confluence of different thermal habitats where both cold- and warm-water species co-occur.
 
-
-
 # Discussion
 
-We report patterns of species-specific eDNA concentrations that closely mirror the \[known\] abundance distributions of the species themselves, in three dimensions and over ten degrees of latitude. Our results point the way to a broader use of eDNA for management of commercially important species, such as is required under the Magnuson-Stevens Act in the United States.
+We report patterns of species-specific eDNA concentrations that closely mirror the \[known\] abundance distributions of the species themselves, in three dimensions and over ten degrees of latitude. Our results point to a broader use of eDNA for management of commercially important species, such as is required under the Magnuson-Stevens Act in the United States.
 
 <!--We have developed a quantitative method of simultaneously surveying many wild species, using molecular methods alone. We have reported spatially explicit estimates for 10 species of commercial importance — information of the kind that is required under the Magnuson-Stevens act, which governs commercial fishing in the United States — but the same technique is equally applicable to many questions of ecological management or conservation concern. Below we highlight spatial patterns rising out of the present analysis that illustrate conclusions relevant to management questions.--> 
 
@@ -193,9 +141,9 @@ Eulachon and flatfish eDNA distribution appears to be in conflict with the distr
 
 <!--low abundance species are very sporadically occurring and hence the maps are not as granular as the other species who are more abundant and the smoothing surface is better. Since those species are at the virge of detection, species occupancy models would yield better results than spatial smoothing. -->
 
-## Ecological Patterns and Associations with Covariates
+## Species Associations 
 
-Our analysis reflects spatial patterns associated with a gradient in temperature -- inseparable from latitude in the present dataset -- but associations with other important ecological covariates are readily apparent. Surface salinity reflects the influence of the Columbia River, for example, and predicts well the presence or absence of anadromous fishes, including eulachon and salmonids. Shifts in the community composition of fishes associated with differences in upwelling index are similarly robust \[signaling and ecological response to a change in physical/oceanographic conditions.\]
+<!-- Our analysis reflects spatial patterns associated with a gradient in temperature -- inseparable from latitude in the present dataset -- but associations with other important ecological covariates are readily apparent. Surface salinity reflects the influence of the Columbia River, for example, and predicts well the presence or absence of anadromous fishes, including eulachon and salmonids. Shifts in the community composition of fishes associated with differences in upwelling index are similarly robust \[signaling and ecological response to a change in physical/oceanographic conditions.\] -->
 
 <!--Species conservation, overlaps of shared habitat indicate productive and nursing areas thus high importance. -->
 
@@ -225,9 +173,59 @@ Our observation model also depends upon detection of hake (our reference species
 
 The raw dataset (SUPPLEMENT) contained many more species than we chose to analyze here, nearly all of which were rarer in the data.
 
-# Conclusion
 
-We get a lot of information out of limited number of discrete water samples, about a lot of species simultaneously, with a cost-effective and scaleable technique.
+# Methods
+
+We developed and joined three distinct datasets (qPCR targeting hake (*Merluccius productus*) as a reference species [@shelton2022], metabarcoding sequencing reads (12s mtDNA) for a mock community of known composition, and metabarcoding sequencing reads (12s mtDNA) for environmental samples with unknown concentrations) into a joint Bayesian model following the formulation in [@guri2024a]. In brief, we (1) calibrated metabarcoding data, correcting raw species observations to their initial proportions using the mock community [@shelton2023], (2) used the absolute quantity of hake eDNA to expand the initial estimated proportions into absolute abundance estimates for each species  [@guri2024a; and see also @allan2023] in each of \[347\] 2L water samples collected during a 2019 NOAA cruise [see @ramon-laca2021; and @shelton2022], and (3) spatially smoothed the estimated eDNA quantities to generate species distributions.
+
+## Sample Collection, Processing, and Quantitative PCR (qPCR)
+
+Samples were collected in 2.5L Niskin bottles at five depths from stations along the West Coast of the US aboard the ship *Bell Shimada* during Summer 2019, filtered immediately on 47 mm diameter mixed cellulose-ester sterile filters with a 1 $\mu$m pore size, subsequently extracted using a phase-lock phenol-chloroform protocol, and analysed in triplicate using a qPCR assay as described in @ramon-laca2021 and @shelton2022. 
+<!-- These were 2.5L samples taken from Niskin bottles deployed at night on a CTD rosette at a maximum of five depths (0, 50, 150, 300 and 500 m) at 186 stations; in addition samples from 3m depth were collected from the ship's saltwater intake line and processed identically to Niskin samples. 347 individual water samples, each representing a unique depth-station combination, are included here. Samples were filtered immediately using a vacuum pump on 47 mm diameter mixed cellulose-ester sterile filters with a 1 $\mu$m pore size, and stored at room temperature in Longmire's buffer until DNA extraction. -->
+
+<!-- DNA extraction of water samples was done using a phase lock phenol-chloroform protocol, as in xxx. Negative controls such as field water and air blanks, and laboratory blanks (extraction blanks) were taken throughout the workflow. The extracted eDNA were analyzed downstream to get estimates of hake DNA concentrations (via quantitative PCR, qPCR) and of fish community composition (via DNA amplicon metabarcoding). -->
+
+<!--\[Metadata, as appropriate\] \[note that the 347 samples included here are the intersection of those with hake metabarcoding obs and positive qPCR obs\]-->
+
+<!--\[OLE: do we have to correct for air hake, or has that already happened w the dataset I've sourced?\]-->
+
+<!-- ## qPCR quantification of Pacific hake -->
+
+<!-- Environmental samples were analysed in triplicate using the qPCR assay described in @ramon-laca2021 as presented in @shelton2022.  -->
+
+<!-- The thermocycler protocol included an initial denaturation step at 95 °C 10 min followed by 40  cycles of 15 s at 95 °C and 1 min at 58 °C. All thermocycler reactions were run in 20 $\mu$L volume consisting of 10 $\mu$L of TaqMan Environmental Master Mix 2.0, 1 $\mu$L of each primer (forward and reverse, 10 nM concentration each), 0.5 $\mu$L of probe (10nM concentration), 3 $\mu$L of dH20 and 2 $\mu$L of DNA template. To monitor quality control, all runs included an internal positive control (IPC) to detect PCR inhibition and a negative template control (NTC) containing water instead of DNA template. Any IPC delay exceeding 0.5 cycles in the NTC was considered inhibition. -->
+
+<!-- To quantify Pacific hake DNA, environmental samples were analyzed alongside standards constructed from a 120 bp synthetic DNA fragment (gBlock; IDT) representing the 12S region of Pacific hake (Merluccius productus), which encompasses the 101 bp 12S qPCR target (sequence information available in Ramón-Laca et al. 2021). The synthetic DNA fragment was diluted to create a series of standards with final concentrations ranging from $10^{0}$ to $10^{5}$ copies/$\mu$L. -->
+
+## Metabarcoding: Environmental Samples and Mock Community
+
+In total, [347] environmental samples were randomized and divided into 7 sequencing libraries for an Illumina MiSeq (v3 600 cycle kit). Total PCR reactions included eDNA samples (n = xxx), PCR blanks (n = xxx), positive controls (n = 8), extraction blanks (n = xxx), fieldwork water and air blank (n = xxx and xxx respectively), were amplified using MiFish-U universal primers [bolded; @miya2015a] with Illumina tails (forward TCG TCG GCA GCG TCA GAT GTG TAT AAG AGA CAG **GCC GGT AAA ACT CGT GCC AGC**; reverse GTC TCG TGG GCT CGG AGA TGT GTA TAA GAG ACAG **CA TAG TGG GGT ATC TAA TCC CAG TTTG**). DNA was amplified in the first PCR reaction (PCR1) in a 20 $\mu$L reaction consisting of: 10 $\mu$L of Phusion Master Mix (2X), 0.4 $\mu$L of the forward primer (10 $\mu$M); 0.4 $\mu$L of the reverse primer (10 $\mu$M), 0.6 $\mu$L of 100% DMSO, 0.5 $\mu$L of recombinant albumin (20 $\mu$g/$\mu$L), 4.4 $\mu$L of nuclease-free water and 2 $\mu$L of DNA template. Reactions were run with the following cycling conditions: 98°C for 30s; 35 cycles of 98°C for 10s, 60°C for 30s, and of 72°C for 3s; 72°C for 10m.
+
+PCR product was cleaned using Ampure Beads (1.2x) and then indexed in a second reaction (12.5 $\mu$L KAPA Hifi HotStart ReadyMix, 1.25 $\mu$L of nucleotide indexes (one per sample, Illumina Corp., IDT for Illumina DNA/RNA UD Index), 5 ul of PCR1 product and 6.25 of nuclease-free water) with cycling conditions of 95°C for 5m; 8 cycles of 98°C for 20s, 56°C for 30s, 72°C for 1m; 72°C for 5m. Products were visualized on a 2% agarose gel and quantified using QuantIt (REF xxx) with Fluoroskan (REF xxx). Indexed products were pooled into libraries for sequencing, and then size- selected to extract only the target fish band using the E-gel Size Select System (REF xxx).
+
+Sequences were de-multiplexed and the adapters removed by Illumina sequencing. Primers were removed with Cutadapt v4.9 [@martin2011]. We then used DADA2 [default parameters, @callahan2016] to denoise sequences, remove chimeras, and generate amplicon sequence variants (ASVs). The sequences were then blasted against the NCBI nucleotide (nt) database (access: August 2024) using BLASTn algorithm with a cut off at 97% identity, assigning the least common ancestor of the top hit, resulting in species, genus, family, or higher rank classifications. Samples with fewer total number of reads than 1000 were removed from downstream analysis as indicator of poor reliability. Bioinformatic pipeline code and relevant data are available [HERE].
+
+To calibrate metabarcoding observations and account for amplification bias [@gold2023; @shelton2023], we generated multiple mock communities comprising a total of 39 fish species. Vouchered DNA extracts or tissues were obtained from either the University of Washington Fish Collection at the Burke Museum or the NOAA Northwest Fisheries Science Center collections. After quantifying the concentration of mitochondrial DNA template in each DNA extract, we constructed a total of eight mock communities (4 even and 4 skewed proportions of mitochondrial DNA) of varying species compositions (see SUPPLEMENTAL METHODS). We selected 13 species of commercial and ecological importance that co-occurred in the environmental samples and in the mock community for downstream analysis: Pacific herring (*Clupea pallasii*), northern anchovy (*Engraulis mordax*), northern smoothtongue (*Leuroglossus stilbius*), Dover sole (*Microstomus pacificus*), Pacific sardine (*Sardinops sagax*), Pacific chub mackerel (*Scomber japonicus*), widow rockfish (*Sebastes entomelas*), northern lampfish (*Stenobrachius leucopsarus*), California barracudina (Tactostoma macropus), plainfin midshipman (*Tarletonbeania crenularis*), eulachon (*Thaleichthys pacificus*), Pacific jack mackerel (*Trachurus symmetricus*), and Pacific hake (*Merluccius productus*). After amplification and sequencing using the protocols outlined above, we used the mock communities to estimate species-specific amplification efficiencies and correct for amplification bias following [@shelton2022].
+
+<!-- [MOVE TO SUPPLEMENT?] We quantified the total genomic DNA in each extract using Qubit HS assay. We then quantified the concentration of the 12S rRNA gene using MarVer1 primers [@valsecchi2020], which perfectly match the template and give unbiased estimates of concentration [SHAFFER et al in review], using ddPCR (Bio-Rad, Inc., QX200 Droplet Digital PCR system). Each tissue of each species was quantified in a 22 $\mu$L reaction consisted of 2 $\mu$L of DNA template from genomic DNA , 11 $\mu$L of ddPCR EvaGreen (Bio-Rad), 0.22 $\mu$L of each forward and reverse primers (10 uM), and 0.56 $\mu$L of nuclease free water. The thermocycler reactions were run in C1000 Touch Thermal Cycler with 96-Deep Well Reaction Module (Bio-Rad) using the PCR program as follows: 2 min at 50°C for enzyme activation, 2 min at 95° C for initial denaturation, and 40 cycles of denaturation for 1 sec at 95°C and primer annealing and elongation for 30 sec min at 60° C, with a ramp rate of 2° C per s and heldat 4° C until droplets were read. Droplets were determined to be positive after drawing a threshold based on NTCs. -->
+
+
+## Statistical analysis
+
+<!-- We estimated amplification efficiencies of the listed species from mock community metabarcoding run as described in [@shelton2023] using the Stan language as implemented in R (package: Rstan) running 4 MCMC chains with 5000 warmup and 5000 sampling iterations each (see Supplementary math & code).  -->
+
+Having estimated the initial proportions of each species in environmental samples, we then used the absolute quantity of Pacific hake (from qPCR) to expand, for each sample, the proportions into absolute eDNA estimates (copies/$\mu$L) for each species as described in [@guri2024a] and Allan et al. 2023 in a joint model implemented Stan [CITE rstan] (see Supplementary math & code). 
+
+<!-- The posterior of both model predictions were diagnosed using $\hat{R}$ statistics (Gelman and Rubin, 1992) and considered convergence for $\hat{R}$ values less than 1.1 and effective sample size (ESS) greater than 200 for all parameters.  -->
+
+Finally, we smoothed the species-specific DNA concentrations ($C$) at each depth sampled (d = 0, 50, 150, 300 or 500 m) using sdmTMB package [CITE] to generate distribution models for the concentration of eDNA , as:
+$$
+ln(C_{xyz})=\alpha_d + \omega(s)+\epsilon_d(s)
+$$
+where $x,y,z$ index longitude, latitude, and depth (respectively), $\alpha_d$ is the spatial intercept for each depth, $\omega(s)$ is the smooth spline as a function of sample depth (in m), and $\epsilon_d(s)$ is a smooth, depth-dependent error term. 
+
+Each species was fitted individually while we created and selected the best mesh for approximating spatial Gaussian random fields as part of the model. [OWEN add detail]
+
 
 # References
 
