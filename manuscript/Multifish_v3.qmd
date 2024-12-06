@@ -44,6 +44,7 @@ Target: PNAS, end of 2024
 ## Change log
 
 + v3 has a revised introduction by Ole.  References need to be added to the intro.
++ v3 added first paragraph in Results from Ryan. 
 
 ## Abstract
 
@@ -112,6 +113,11 @@ where $\alpha_d$ is the spatial intercept for each depth (random effect), $\omeg
 Each species was fitted individually while we created and selected the best mesh for approximating spatial Gaussian random fields as part of the model. [Owen can add more specifics to this?] Also how were the mesh evalued?
 
 # Results
+
+We find spatial patterns of DNA concentrations reflect the distributions of commercially important coastal-pelagic fish species with remarkable fidelity, in three dimensions and across ten degrees of latitude (Fig 1: Anchovy, Sardine, herring; Supplement mackerel). For other high-biomass species otherwise lacking well-described distributions, we provide the first species distribution models (Fig 1, other species). We find correlated patterns of eDNA concentrations among species reflecting clusters of species with similar habitat preferences (Fig 2). Emergent patterns of species richness indicate variability in coastal pelagic fish diversity and abundance associated with [primary productivity, etc]. Particularly for forage fish species — critical high-biomass links in marine food webs, but difficult to survey with traditional methods — molecular methods offer a tractable and quantitative index of abundance over large spatial scales.
+
+
+
 
 ## Species Patterns by Latitude and Depth
 
