@@ -1,0 +1,365 @@
+---
+title: "Overestimation smooths for QM model"
+format: 
+  html:
+    toc: true
+    toc-location: right
+    toc-title: "Table of Contents"
+    toc-depth: 2
+    number-sections: true
+    page-layout: full
+    self-contained: true 
+    collapsible: true
+    collapse-level: 1
+    grid:
+      sidebar-width: 200px
+      body-width: 880px
+      margin-width: 200px
+      gutter-width: 1.5rem
+author: Gled Guri
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+}
+
+h1 {
+  font-size: 22px;  /* Adjust the size of H1 headers */
+  font-weight: bold;  /* Make H1 headers not bold */
+}
+
+h2 {
+  font-size: 18px;  /* Adjust the size of H2 headers */
+  font-weight: normal;  /* Make H2 headers not bold */
+}
+
+h3 {
+  font-size: 18px;  /* Adjust the size of H3 headers */
+  font-weight: normal;  /* Make H3 headers not bold */
+}
+
+h4 {
+  font-size: 18px;  /* Adjust the size of H4 headers */
+  font-weight: normal;  /* Make H4 headers not bold */
+}
+</style>
+
+
+```{r, include=FALSE, warning=FALSE}
+spatial_only_model <- function(df=dat_utm,spp,mesh,f){
+  dat_sub <- df %>% 
+    filter(species==spp) %>% 
+    mutate(depth_cat=as.factor(depth_cat)) %>% 
+    mutate(depth_as_time=as.integer(depth_cat))
+  
+    m <-  try(sdmTMB(
+      data = dat_sub,
+      formula = as.formula(f),
+      mesh=make_mesh(dat_sub,c('utm.lon.km','utm.lat.km'),mesh=mesh),
+      family = tweedie(link='log'),
+      spatial = "on",
+      anisotropy = F,
+      time = "depth_as_time",
+      spatiotemporal = "IID"
+    ),
+    silent=F)
+  
+  if(class(m)=="try-error"){
+    print(paste("Error."))
+  } else{
+    # print sdmTMB::sanity() to catch bad models
+    sanity(m)
+    if(sanity(m)$all_ok){
+      return(m)
+    } else{
+      return("Problem with sanity")
+    }}
+}
+make_pred <- function(fit){
+  preds <- predict(fit,newdata=ch_pred_df_depth) %>%
+    left_join(ch_pred %>% select(grID),by=join_by(grID)) %>%
+    st_as_sf()
+}
+extract_pred <- function(pred_data){
+point_data <- dat_sf %>% distinct(utm.lon.km,utm.lat.km,depth_cat) %>% 
+  as.data.frame()
+
+pred_extracted_temp <- matrix(NA,nrow = nrow(point_data),ncol = ncol(ch_pred_df_depth)) %>% 
+  as.data.frame() %>% 
+  setNames(colnames(ch_pred_df_depth)) %>% 
+  mutate(est=NA) %>% 
+  mutate(est_non_rf=NA) %>% 
+  mutate(est_rf=NA) %>% 
+  mutate(omega_s=NA) %>% 
+  mutate(epsilon_st=NA) %>% 
+  # mutate(formula=NA) %>% 
+  mutate(diff_lat=NA) %>% 
+  mutate(diff_lon=NA) %>% 
+  mutate(diff=NA)
+
+for (i in 1:nrow(point_data)) {
+  lat <- point_data$utm.lat.km[i]
+  lon <- point_data$utm.lon.km[i]
+  dep <- point_data$depth_cat[i]
+  
+  pred_extracted_temp[i,] <- pred_data %>%
+    as.data.frame() %>% 
+    select(-x) %>% 
+    mutate(diff_lat = abs(utm.lat.km - lat)) %>%
+    mutate(diff_lon = abs(utm.lon.km - lon)) %>%
+    filter(depth_num==dep) %>% 
+    mutate(diff=((diff_lat)^2)+((diff_lon)^2)) %>% 
+    arrange(diff) %>%
+    slice(1)
+}
+pred_extracted_temp <- pred_extracted_temp %>% 
+  select(-utm.lon.km,-utm.lat.km,-depth_cat)
+return(pred_extracted_temp)
+}
+library(here)
+library(dplyr)
+library(sf)
+library(sdmTMB)
+library(ggplot2)
+library(rnaturalearth)
+library(MoMAColors)
+
+ch_pred_df_depth <- readRDS(here('data','diff_spat_models','ch_pred_df_depth.rds'))
+dat_sf <- readRDS(here('data','diff_spat_models','dat_sf.rds'))
+dat_zeroes <- readRDS(here('data','diff_spat_models','dat_zeroes.rds'))
+meshes <- readRDS(here('data','diff_spat_models','meshes.rds'))
+ch_pred <- readRDS(here('data','diff_spat_models','ch_pred.rds'))
+
+coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
+  filter(name %in% c('California','Oregon','Washington','Nevada')) %>% 
+  st_transform(st_crs(dat_sf))
+dat_bbox <- st_bbox(dat_sf)
+# write_rds(ch_pred_df_depth,here('data','diff_spat_models','ch_pred_df_depth.rds'))
+# write_rds(dat_sf,here('data','diff_spat_models','dat_sf.rds'))
+# write_rds(dat_zeroes,here('data','diff_spat_models','dat_zeroes.rds'))
+# write_rds(meshes,here('data','diff_spat_models','meshes.rds'))
+# write_rds(ch_pred,here('data','diff_spat_models','ch_pred.rds'))
+```
+
+Fit the spatial smooth models
+
+```{r, include=TRUE, warning=FALSE, message=FALSE}
+anchovy_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Engraulis mordax",mesh=meshes[[2]])
+
+mackerel_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Trachurus symmetricus",mesh=meshes[[6]])
+
+sardine_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Sardinops sagax",mesh=meshes[[1]])
+
+eulachon_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Thaleichthys pacificus",mesh=meshes[[7]])
+
+herring_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Clupea pallasii",mesh=meshes[[4]])
+
+chmakerel_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Scomber japonicus",mesh=meshes[[3]])
+
+smoothtongue_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Leuroglossus stilbius",mesh=meshes[[16]])
+
+sole_m <- spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Microstomus pacificus",mesh=meshes[[31]])
+
+widow_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Sebastes entomelas",mesh=meshes[[2]])
+
+lampfish_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Stenobrachius leucopsarus",mesh=meshes[[4]])
+
+tactostoma_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Tactostoma macropus",mesh=meshes[[6]])
+
+lanternfish_m <- spatial_only_model(df=dat_zeroes,f='conc~0+dist_shelf_scaled+dist_shelf_scaled2',spp = "Tarletonbeania crenularis",mesh=meshes[[3]])
+```
+
+Make predictions based on spatial smooth models
+
+```{r, include=TRUE, warning=FALSE}
+sardine_pred <- make_pred(sardine_m)
+
+widow_pred <- make_pred(widow_m)
+
+sole_pred <- make_pred(sole_m)
+
+anchovy_pred <- make_pred(anchovy_m)
+
+chmackerel_pred <- make_pred(chmakerel_m)
+
+mackerel_pred <- make_pred(mackerel_m)
+
+herring_pred <- make_pred(herring_m)
+
+eulachon_pred <- make_pred(eulachon_m)
+
+smoothtongue_pred <- make_pred(smoothtongue_m)
+
+lampfish_pred <- make_pred(lampfish_m)
+
+tactostoma_pred <- make_pred(tactostoma_m)
+
+lanternfish_pred <- make_pred(lanternfish_m)
+```
+
+Extract predictions for the point data that we have eDNA estimates (from MB)
+```{r, include=TRUE, warning=FALSE}
+anchovy_pred_extracted <- extract_pred(anchovy_pred) %>% cbind(.,dat_sf %>% filter(species=='Engraulis mordax'))
+
+sardine_pred_extracted <- extract_pred(sardine_pred) %>% cbind(.,dat_sf %>% filter(species=='Sardinops sagax'))
+
+widow_pred_extracted <- extract_pred(widow_pred) %>% cbind(.,dat_sf %>% filter(species=='Sebastes entomelas'))
+
+sole_pred_extracted <- extract_pred(sole_pred) %>% cbind(.,dat_sf %>% filter(species=='Microstomus pacificus'))
+
+chmackerel_pred_extracted <- extract_pred(chmackerel_pred) %>% cbind(.,dat_sf %>% filter(species=='Scomber japonicus'))
+
+mackerel_pred_extracted <- extract_pred(mackerel_pred) %>% cbind(.,dat_sf %>% filter(species=='Trachurus symmetricus'))
+
+herring_pred_extracted <- extract_pred(herring_pred) %>% cbind(.,dat_sf %>% filter(species=='Clupea pallasii'))
+
+eulachon_pred_extracted <- extract_pred(eulachon_pred) %>% cbind(.,dat_sf %>% filter(species=='Thaleichthys pacificus'))
+
+smoothtongue_pred_extracted <- extract_pred(smoothtongue_pred) %>% cbind(.,dat_sf %>% filter(species=='Leuroglossus stilbius'))
+
+lampfish_pred_extracted <- extract_pred(lampfish_pred) %>% cbind(.,dat_sf %>% filter(species=='Stenobrachius leucopsarus'))
+
+tactostoma_pred_extracted <- extract_pred(tactostoma_pred) %>% cbind(.,dat_sf %>% filter(species=='Tactostoma macropus'))
+
+lanternfish_pred_extracted <- extract_pred(lanternfish_pred) %>% cbind(.,dat_sf %>% filter(species=='Tarletonbeania crenularis'))
+
+pred_extracted_list <- list(anchovy_pred_extracted,
+             sardine_pred_extracted,
+             widow_pred_extracted,
+             sole_pred_extracted,
+             chmackerel_pred_extracted,
+             mackerel_pred_extracted,
+             herring_pred_extracted,
+             eulachon_pred_extracted,
+             smoothtongue_pred_extracted,
+             lampfish_pred_extracted,
+             tactostoma_pred_extracted,
+             lanternfish_pred_extracted)
+```
+
+
+```{r, include=TRUE, warning=FALSE}
+#| fig-width: 13
+#| fig-height: 18
+
+plot_list <- list()
+
+for (i in 1:length(pred_extracted_list)) {
+  
+sp <- pred_extracted_list[[i]]$species %>% unique()
+
+  # Create pp3 plot
+pp3 <- 
+  ggplot(pred_extracted_list[[i]], aes(x = mean)) +
+  geom_histogram(bins = 100, fill = "skyblue", color = "black") +
+  geom_vline(xintercept = -4, color = "red", linetype = "dashed", size = 1) +
+  annotate("text", x = -5, y = 30, label = "Absence", color = "black", hjust = 1) +
+  annotate("text", x = -3, y = 30, label = "Presence", color = "black", hjust = 0) +
+  labs(title = paste0("Distribution of QM estimated values (log10 eDNA conc) of ", sp),
+       x = "Mean",
+       y = "Frequency") +
+  theme_bw()
+  
+plot_data <- pred_extracted_list[[i]] %>% 
+    mutate(over = if_else((est - mean) > 0, 'over', 'under')) %>% 
+    mutate(diff_est = (est - mean)) %>% 
+    mutate(diff_est_abs = abs(est - mean)) %>% 
+    mutate(diff_est_exp = abs(exp(est) - exp(mean))) %>% 
+    st_as_sf(coords = c('utm.lon.km', 'utm.lat.km'), crs = "+proj=utm +zone=10 +datum=WGS84 +units=km +no_defs +type=crs")
+  
+  # Create pp1 plot
+  plot_data_filtered1 <- plot_data %>% filter(mean > -4)
+  pp1 <- ggplot(plot_data_filtered1) +
+    geom_sf(aes(size = est, fill = mean), shape = 21, color = "black") +
+    geom_sf(data = coaststates, fill = 'gray80') +
+ggtitle(paste0(sp, '\n',
+                   'Comparison of smooth estimates (size of circle) and','\n',
+                   'QM model estimate (colors) for','\n',
+                   'QM estimates (log10 eDNA) > -4 (QM sp Presence)')) +    
+    facet_wrap(~depth_cat, nrow = 1) +
+    coord_sf(datum = NA) +
+    scale_fill_gradientn(
+      colors = moma.colors("ustwo", n = 21, direction = -1),
+      limits = c(-10, 10),
+      values = scales::rescale(c(-10:10)), 
+      name = "QM posteriors"
+    ) +
+    scale_size_continuous(
+      name = "Smooth estimate",
+      limits = c(-9, 14),
+      breaks = c(-9, -5, -3, 0, 5, 10),
+      labels = c('-9', '-5', '-3', '0', '5', '10'),
+      range = c(-3, 7)
+    ) +
+    xlim(dat_bbox[1], dat_bbox[3]) +
+    ylim(dat_bbox[2], dat_bbox[4]) +
+    theme_bw()
+  
+  # Create pp2 plot
+  plot_data_filtered2 <- plot_data %>% filter(mean < -4)
+  pp2 <- ggplot(plot_data_filtered2) +
+    geom_sf(aes(size = est, fill = mean), shape = 21, color = "black") +
+    geom_sf(data = coaststates, fill = 'gray80') +
+    ggtitle(paste0(sp, '\n',
+                   'Comparison of smooth estimates (size of circle) and','\n',
+                   'QM model estimate (colors) for','\n',
+                   'QM estimates (log10 eDNA) < -4 (QM sp Absence)')) +
+    facet_wrap(~depth_cat, nrow = 1) +
+    coord_sf(datum = NA) +
+    scale_fill_gradientn(
+      colors = moma.colors("ustwo", n = 21, direction = -1),
+      limits = c(-10, 10),
+      values = scales::rescale(c(-10:10)), 
+      name = "QM posteriors"
+    ) +
+    scale_size_continuous(
+      name = "Smooth estimate",
+      limits = c(-7, 14),
+      breaks = c(-7, -5, -3, 0, 5, 10),
+      labels = c('-7', '-5', '-3', '0', '5', '10'),
+      range = c(-2, 7)
+    ) +
+    xlim(dat_bbox[1], dat_bbox[3]) +
+    ylim(dat_bbox[2], dat_bbox[4]) +
+    theme_bw()
+
+    # Create pp4 plot
+pp4 <- plot_data %>% 
+  mutate(over=if_else(over=='over','overestimation',over)) %>% 
+  mutate(over=if_else(over=='under','underestimation',over)) %>% 
+ggplot() +
+  geom_sf(aes(size = abs(diff_est), fill = over), shape = 21, color = "black") +
+  geom_sf(data = coaststates, fill = 'gray80') +
+  facet_wrap(~depth_cat, nrow = 1) +
+  ggtitle('Difference (log) of smooth estimation and QM posteriors (size of circle)') +
+  coord_sf(datum = NA) +
+  scale_fill_manual(values = c('deepskyblue3', 'orangered'),name = "Smooth estimation"
+)+
+  scale_size_continuous(
+    name = "Difference in estimation",
+    limits = c(0, 15),
+    breaks = c(0, 4, 8 , 12, 15),
+    labels = c('0', '4','8' ,'12', '15'),
+    range = c(-2, 7)
+  ) +
+  xlim(dat_bbox[1], dat_bbox[3]) +
+  ylim(dat_bbox[2], dat_bbox[4]) +
+  theme_bw()
+
+  # Combine pp1 and pp2 using cowplot::plot_grid
+  combined_plot_1 <- cowplot::plot_grid(pp2, pp1, nrow = 1)
+  combined_plot_2 <- cowplot::plot_grid(pp3, combined_plot_1, nrow = 2,rel_heights = c(3.5,6))
+  combined_plot <- cowplot::plot_grid(combined_plot_2,pp4, ncol = 1)
+  
+  # Store the combined plot in the list
+  plot_list[[i]] <- combined_plot
+}
+
+plot_list
+```

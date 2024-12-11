@@ -32,8 +32,8 @@ atts <- read_csv(here("data","metadata","Hake_2019_metadata.csv"),col_types = co
   distinct()
 
 qPCR.sample.id <- suppressMessages(read_csv(here('data','hake_qPCR','Hake eDNA 2019 qPCR results 2023-02-10 sample details.csv'),
-                           col_select = all_of(c("Tube #", "CTD cast","Niskin","depth","drop.sample","field.negative.type","water.filtered.L")),
-                           col_types=cols()))
+                                            col_select = all_of(c("Tube #", "CTD cast","Niskin","depth","drop.sample","field.negative.type","water.filtered.L")),
+                                            col_types=cols()))
 
 ### SAMPLE IDs ###
 qPCR.sample.id <- qPCR.sample.id %>%  
@@ -296,10 +296,6 @@ mock <- mock_comb %>%
   setNames(c('Sample','Mock_type','Rep','species','Nreads','b_proportion')) %>% 
   mutate(Primer='MFU')
 
-# look at them?
-# x <- mock_comb %>% group_by(Sample) %>% mutate(prop=Reads/sum(Reads)) %>% ungroup()
-y <- mock %>% unite(sn,Sample,Mock_type,Rep) %>% ungroup()
-y %>% ggplot(aes(sn,b_proportion,fill=species))+geom_col(position='stack')+theme(axis.text.x=element_text(angle=45))
 
 ########################################################
 mock <- mock %>% rename(Sample_short=Sample) %>% mutate(Sample = paste0(Sample_short,"_",Mock_type))
@@ -313,14 +309,12 @@ species_mock_list <- mock %>%
   pull(species) %>% 
   unique() %>% 
   sort()
-  
+
 
 ## List of species to keep ---------------------------------------------------------------------------
 
 keep <- c('Clupea pallasii',
-          #'Diogenichthys atlanticus', #we don't have lantern fish anywhere else other than in run 305 which I don't know why is turned off
           'Engraulis mordax',
-          'Hippoglossus stenolepis',
           'Leuroglossus stilbius',
           'Zz_Merluccius productus', # QM reference species that we recoded to be last in the list
           'Microstomus pacificus',
@@ -341,10 +335,14 @@ writeLines(unique(species_mock_list)[!species_mock_list%in%keep]);cat('\n')
 mock <- mock %>% 
   filter(species%in%keep) %>%
   # renormalize b_proportions after omitting species from Mocks
-
+  
   group_by(Sample,Rep) %>% 
   mutate(b_proportion = b_proportion/sum(b_proportion)) %>% 
   ungroup()
+
+# Plot initial proportions over all mock samples
+y <- mock %>% unite(sn,Sample_short,Mock_type,Rep) %>% ungroup()
+y %>% ggplot(aes(sn,b_proportion,fill=species))+geom_col(position='stack')+theme(axis.text.x=element_text(angle=45))
 
 ## Some manual curation of MB data ---------------------------------------------------------------------
 

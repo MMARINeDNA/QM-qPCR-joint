@@ -1,0 +1,875 @@
+---
+title: "Spatial Smooths for Joint Model Output"
+format: 
+  html: 
+    self-contained: true
+    toc: true
+  pdf: 
+    toc: true
+    include-in-header:
+      - text: |
+          \usepackage{subfig}
+          \usepackage{pdflscape}
+          \newcommand{\blandscape}{\begin{landscape}}
+          \newcommand{\elandscape}{\end{landscape}}
+editor: visual
+---
+
+# Purpose
+
+The purpose of this script is to take the output of the QM/qPCR joint model and apply simple spatial models to it to make smoothed output maps.
+
+```{r,include=F}
+library(tidyverse)
+library(sf)
+library(sdmTMB)
+library(viridis)
+library(cowplot)
+library(here)
+library(marmap)
+library(visreg)
+options(dplyr.summarise.inform=FALSE)
+knitr::opts_chunk$set(warning=FALSE,message=FALSE,echo = F,error=F)
+```
+
+```{r}
+plot_theme <- theme_minimal()+theme(panel.border = element_rect(color="black",fill=NA),
+                                    axis.text=element_text(size=8),plot.title = element_text(size=10))
+theme_set(plot_theme)
+```
+
+# Load Data
+
+Load data from the joint model output. These data have estimates of copy numbers for species in the metabarcoding data. The data also include spatial information on where each sample was collected (lat,lon,depth).
+
+```{r,eval=F}
+# fitted model object
+jm_out <- read_rds(here('data','jointMod_dm_alpha_fixed_adappt_150_tree_12.rds'))
+
+#input data
+source(here("code/qm_data_prep_functions.R"))
+source(here('code','load_QM-qPCR_data.R'))
+formatted_metabarcoding_data <- format_metabarcoding_data(input_metabarcoding_data=mfu, 
+                                                          input_mock_comm_data=mock)
+formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
+                                   qPCR_standards=qPCR_std,
+                                   tube_dat = tube_dat,
+                                   unk_covariates=c("wash_idx","station_depth_idx"),
+                                   cov_type = c("continuous","factor"),
+                                   unk_offset =c("dilution","volume_offset"))
+
+# linking with qPCR is now done within this next function.
+stan_metabarcoding_data <-  prepare_stan_data_MB(obs= formatted_metabarcoding_data,
+                                                 qPCR_tube_obs = formatted_qPCR_data$tube_dat,
+                                                 N_pcr_cycles = 43)
+
+# parameter estimates
+source(here('code','diagnostics.R'))
+fit_summ <- get_param_ests(jm_out)
+```
+
+```{r,eval=F}
+# log_D from the model fit
+copies_fitted <- fit_summ %>% 
+  filter(grepl('log_D',variable),
+         !grepl('log_D_raw',variable),
+         !grepl('log_D_mu',variable),
+         !grepl('log_D_sp',variable),
+         !grepl('log_D_station_depth',variable),
+         !grepl('log_D_sigma',variable)) %>% 
+  # extract a species number from the variable names using regex
+  mutate(taxa=str_extract(variable,"(?<=\\,)\\d+") %>% as.integer) %>% 
+  # add a species name
+  mutate(species=unique(mfu$species)[taxa])
+
+# use the labeled sample data to join back the raw reads and join indices to the fitted values
+samps_meta <- stan_metabarcoding_data$sample_data_labeled %>% 
+  pivot_longer(contains('sp_'),names_to='species',values_to='raw_reads') %>% 
+  select(-species)
+
+# join
+copies_fitted <- copies_fitted %>%
+  # join raw reads
+  bind_cols(samps_meta) %>% 
+  # join spatial metadata
+  mutate(tubeID=as.character(tubeID)) %>% 
+  left_join(mfu_META,by=c("tubeID"))
+
+# write
+write_rds(copies_fitted,here('data','log_D_fitted.rds'))
+rm(list=ls())
+```
+
+```{r}
+dat <- read_rds(here('data','log_D_fitted.rds'))
+glimpse(dat)
+
+# change Engraulis name back
+dat <- dat %>% mutate(species=ifelse(species=="Zz_Merluccius productus","Merluccius productus",species))
+```
+
+# Spatial Domain
+
+```{r}
+all_mfu_samps_map <- dat %>%
+  distinct(lat,lon) %>% 
+  ggplot(aes(lon,lat))+
+  geom_point()+
+  coord_equal()
+all_mfu_samps_map
+```
+
+Set up the appropriate spatial domain for the spatial smooths, and make a prediction grid for projecting the outputs
+
+```{r}
+# add projected coordinates to the data, and make it a spatial object
+dat_sf <- dat %>%
+  st_as_sf(coords=c('lon','lat'),crs=4326) %>%
+  st_transform("+proj=utm +zone=10 +datum=WGS84 +units=km +no_defs +type=crs") %>% 
+  mutate(utm.lon.km=st_coordinates(.)[,1],utm.lat.km=st_coordinates(.)[,2])
+
+dat_utm <- dat_sf %>% st_set_geometry(NULL)
+
+# bounding box (rectangle)
+dat_bbox <- st_bbox(dat_sf)
+
+# another option: hull outline (basically a buffer around our samples)
+dat_ch <- domain <-fmesher::fm_nonconvex_hull(dat_sf,
+                                    concave = -0.025,
+                                    convex = -0.025)
+```
+
+```{r}
+# Load a coastline background map
+library(rnaturalearth)
+coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
+  filter(name %in% c('California','Oregon','Washington','Nevada')) %>% 
+  st_transform(st_crs(dat_sf))
+```
+
+## Projection Grid
+
+Based on the bounding box of the data, make a grid for model projection.
+
+```{r}
+gr_pred <- st_make_grid(dat_bbox,square=F,cellsize=5)
+gr_pred <- gr_pred %>% st_difference(coaststates %>% summarise() %>% st_buffer(5)) %>% 
+  st_as_sf() %>% mutate(grID=row_number())
+gr_centers <- st_centroid(gr_pred) %>% st_coordinates()
+gr_pred_df <- gr_pred %>%
+  mutate(utm.lon.km=gr_centers[,1],utm.lat.km=gr_centers[,2]) %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(grID=row_number())
+```
+
+We use `fmesher` to draw a buffered outline of our sample data, to set bounds for our projection domain. The projection grid itself is made up of 5km-width hexagons.
+
+```{r}
+ch_pred <- gr_pred %>% 
+  st_difference(coaststates %>% summarise() %>% st_buffer(5)) %>% 
+  st_intersection(dat_ch) %>% 
+  st_as_sf() %>% mutate(grID=row_number())
+ch_centers <- st_centroid(ch_pred) %>% st_coordinates()
+ch_pred_df <- ch_pred %>%
+  mutate(utm.lon.km=ch_centers[,1],utm.lat.km=ch_centers[,2]) %>% 
+  st_set_geometry(NULL) %>% 
+  mutate(grID=row_number())
+ggplot(ch_pred)+
+  geom_sf()
+```
+
+## Bathymetry
+
+Here's a covariate for water depth (bathymetry)
+
+```{r}
+### Go get bathymetric data from NOAA to overlay on the samples
+limits.for.map <- dat_sf %>%
+  st_transform(4326) %>% 
+  st_bbox()+c(-1,-1,1,1) #add an extra degree on each side for buffer
+
+xy <- dat_sf %>% st_transform(4326) %>% st_coordinates()
+
+b = getNOAA.bathy(lon1 = limits.for.map["xmin"],
+          lon2 = limits.for.map[ "xmax" ],
+          lat1 = limits.for.map["ymin"],
+          lat2 = limits.for.map["ymax"],
+          resolution = 1,keep = TRUE)
+
+# We can pull depth from each sample point
+stations.bathy <- get.depth(b,xy,locator=F) %>% 
+  rename(bathy=depth)
+
+dat_utm <- dat_utm %>% 
+  mutate(bathy=-stations.bathy$bathy,
+         log_bathy=log(bathy),
+         log_bathy2=log_bathy^2) %>%
+  mutate(log_bathy_scaled=(log_bathy-mean(log_bathy))/sd(log_bathy),
+         log_bathy_scaled2=log_bathy_scaled^2)
+```
+
+```{r}
+# for the prediction grid
+ch_pred_xy <- ch_pred_df %>% 
+  st_as_sf(coords=c('utm.lon.km','utm.lat.km'),crs="+proj=utm +zone=10 +datum=WGS84 +units=km +no_defs +type=crs") %>%
+  st_transform(4326) %>% 
+  st_coordinates()
+ch_pred_bathy <- get.depth(b,ch_pred_xy,locator=F) %>% 
+  rename(bathy=depth)
+ch_pred_df <- ch_pred_df %>% 
+  mutate(bathy=-ch_pred_bathy$bathy,
+         log_bathy=log(bathy),
+         log_bathy2=log_bathy^2)%>%
+  filter(bathy>0) %>% 
+  mutate(log_bathy_scaled=(log_bathy-mean(log_bathy))/sd(log_bathy),
+         log_bathy_scaled2=log_bathy_scaled^2)
+ch_pred <- ch_pred %>% 
+  mutate(bathy=-ch_pred_bathy$bathy,
+         log_bathy=log(bathy),
+         log_bathy2=log_bathy^2)%>%
+  filter(bathy>0) %>% 
+  mutate(log_bathy_scaled=(log_bathy-mean(log_bathy))/sd(log_bathy),
+         log_bathy_scaled2=log_bathy_scaled^2)
+
+# make sure this looks right
+ch_pred %>% 
+  ggplot(aes(fill=bathy))+
+  geom_sf(color=NA)+
+  scale_fill_viridis(option="A",direction=-1)+
+  labs(title="Bathymetry",fill="Depth(m)")
+```
+
+## Distance from Shore
+
+Derive a predictor that measures straight-line distance to the coast.
+
+```{r}
+# distances from shore
+ch_dists <- st_distance(st_centroid(ch_pred),summarise(coaststates))
+
+ch_pred_df <- ch_pred_df %>% 
+  mutate(dist_shore=as.numeric(ch_dists)+0.01,dist_shore2=dist_shore^2) %>% 
+  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2) %>% 
+  mutate(log_dist_scaled=(log_dist-mean(log_dist,na.rm=T))/sd(log_dist,na.rm=T),
+         log_dist_scaled2=log_dist_scaled^2)
+
+# distances for the data
+dat_dists <- st_distance(dat_sf,summarise(coaststates))
+dat_utm$dist_shore=as.numeric(dat_dists)
+dat_utm$dist_shore2=dat_utm$dist_shore^2
+dat_utm <- dat_utm%>% 
+  mutate(log_dist=log(dist_shore),log_dist2=log_dist^2) %>% 
+  mutate(log_dist_scaled=(log_dist-mean(log_dist,na.rm = T))/sd(log_dist,na.rm=T),
+         log_dist_scaled2=log_dist_scaled^2)
+
+# what does this covariate look like?
+ch_pred %>% 
+  mutate(dist_shore=as.numeric(ch_dists)) %>% 
+  ggplot(aes(fill=dist_shore))+
+  geom_sf(color=NA)+
+  scale_fill_viridis(option="A")+
+  labs(title="Distance from Shore",fill="km")
+
+# duplicate the prediction df for different depth categories
+# ch_pred_df <- purrr::map(unique(dat$depth_cat),function(x)ch_pred_df %>% mutate(depth_cat=x)) %>% list_rbind() %>% 
+#   mutate(depth_cat=as.factor(depth_cat))
+```
+
+How correlated are distance from shore and bathymetry?
+
+```{r}
+# how correlated are depth and distance?
+ch_pred_df %>% 
+  ggplot(aes(bathy,dist_shore))+
+  geom_point()+
+  labs(x="Depth",y="Distance (km)")
+ch_pred_df %>% 
+  ggplot(aes(log_bathy,log_dist))+
+  geom_point()+
+  labs(x="Log Depth",y="Log Distance (km)")
+```
+
+## Distance from Shelf Break (200m isobath)
+
+We can also use a similar approach to derive a predictor that measures straight-line distance to the 200m shelf break
+
+```{r}
+# plot(b, image=TRUE, deep=-1000, shallow=0, step=250)
+# make into a dataframe of contours for ggplotting
+bdf <- fortify(b) %>% 
+  contoureR::getContourLines(levels=c(-200)) 
+
+bdf <- bdf %>% 
+  st_as_sf(coords=c("x","y"),crs=4326) %>% 
+  st_transform(st_crs(dat_sf)) %>% 
+  mutate(x=st_coordinates(.)[,1],y=st_coordinates(.)[,2])
+
+
+# find nearest neighbors for the prediction grid
+library(nngeo)
+nn_samp <- st_nn(dat_utm %>% st_as_sf(coords=c("utm.lon.km","utm.lat.km"),crs=st_crs(dat_sf)),bdf,k=1,returnDist = T)
+nn_samp_dists <- nn_samp %>% pluck("dist") %>% unlist()
+
+# find nearest neighbors for the prediction grid
+nn_pred <- st_nn(st_centroid(ch_pred),bdf,k=1,returnDist = T)
+nn_pred_dists <- nn_pred %>% pluck("dist") %>% unlist()
+```
+
+```{r}
+ch_pred_df <- ch_pred_df %>% 
+  mutate(dist_shelf=as.numeric(nn_pred_dists)/1000)%>% 
+  mutate(dist_shelf=ifelse(bathy>200,dist_shelf,-dist_shelf)) %>% 
+  mutate(dist_shelf_scaled=(dist_shelf-mean(dist_shelf))/sd(dist_shelf),
+         dist_shelf_scaled2=dist_shelf_scaled^2)
+ch_pred <- ch_pred %>% 
+  mutate(dist_shelf=as.numeric(nn_pred_dists)/1000)%>% 
+  mutate(dist_shelf=ifelse(bathy>200,dist_shelf,-dist_shelf))%>% 
+  mutate(dist_shelf_scaled=(dist_shelf-mean(dist_shelf))/sd(dist_shelf),
+         dist_shelf_scaled2=dist_shelf_scaled^2)
+# distances for the data
+
+dat_utm <- dat_utm%>% 
+  mutate(dist_shelf=as.numeric(nn_samp_dists)/1000) %>% 
+  mutate(dist_shelf=ifelse(bathy>200,dist_shelf,-dist_shelf)) %>% 
+  mutate(dist_shelf_scaled=(dist_shelf-mean(dist_shelf))/sd(dist_shelf),
+         dist_shelf_scaled2=dist_shelf_scaled^2)
+
+# what does this covariate look like?
+ggplot()+
+  geom_sf(data=ch_pred,aes(fill=dist_shelf),color=NA)+
+  geom_sf(data=bdf,color='red',size=0.2)+
+  scale_fill_gradient2()+
+  labs(title="Distance from Shelf",fill="km")
+ggplot()+
+  geom_sf(data=ch_pred,aes(fill=dist_shelf_scaled),color=NA)+
+  geom_sf(data=bdf,color='red',size=0.2)+
+  scale_fill_gradient2()+
+  labs(title="Distance from Shelf\n(scaled)",fill="km")
+```
+
+```{r}
+# duplicate the prediction df for different depth categories, for models that include depth_cat
+ch_pred_df_depth <- purrr::map(unique(dat$depth_cat),function(x)ch_pred_df %>% mutate(depth_cat=x)) %>% 
+  list_rbind() %>%
+  filter(depth_cat<=bathy) %>% 
+  mutate(depth_num=depth_cat) %>% 
+  mutate(depth_cat=as.factor(depth_cat)) %>% 
+  # if doing the weird 'depth as time' to make a separate spatial field by depth
+  mutate(depth_as_time=as.integer(depth_cat))
+```
+
+## Depth Integrated
+
+Make a version of the data that is depth-integrated, in case we want to use depth-integrated data in the models.
+
+```{r}
+dat_utm_int <- dat_utm %>% 
+  mutate(depth_num=depth) %>% 
+  mutate(copies=exp(mean)) %>%
+  group_by(utm.lon.km,utm.lat.km,dist_shore, dist_shore2, log_dist_scaled, log_dist_scaled2,log_bathy_scaled,log_bathy_scaled2,dist_shelf,dist_shelf_scaled,dist_shelf_scaled2,species) %>% 
+  
+  # depth-integrated copies
+  summarise(tot=sum(copies)) %>%
+  ungroup()
+
+# look at the 'raw' integrated data
+depth_int_hist <- dat_utm_int %>% 
+  ggplot(aes(log(tot)))+
+  geom_density()+
+  facet_wrap(~species)
+depth_int_hist
+```
+
+## Zero-informed
+
+In the distributions above, there is a clear delineation for all species except hake at \~ -2 log copies = \~0.14 copies, which is certainly below our detection limit. Let's make a version of the data where we impose absence as \<-2 estimated log copies. Having zeroes in the data will likely help the SDMs to converge when using a Tweedie link.
+
+```{r}
+dat_zeroes <- dat_utm %>% 
+  mutate(depth_num=depth) %>% 
+  mutate(conc=exp(mean)) %>% 
+  mutate(conc=ifelse(conc<exp(-2),0,conc))
+# look at the 'raw' integrated data
+dat_zeroes_hist <- dat_zeroes %>% 
+  ggplot(aes(log(conc)))+
+  geom_density()+
+  facet_wrap(~species)+
+  labs(title="Log Concentration (zeroes imposed for < -2 log copies)")
+dat_zeroes_hist
+```
+
+## Model Mesh
+
+Create candidate INLA meshes for the sdmTMB models, with varying complexity. Here's one example:
+
+```{r}
+# make a range of meshes to try, with different cutoffs = different complexity/number of triangles
+cds <- dat_zeroes %>% distinct(utm.lon.km,utm.lat.km)
+
+meshes <- purrr::map(seq(10,80,by=4),function(co){
+  fmesher::fm_mesh_2d_inla(
+    loc = cbind(cds$utm.lon.km, cds$utm.lat.km), # coordinates
+    # max.edge = c(80, 150), # max triangle edge length; inner and outer meshes
+    # offset = c(10, 30),  # inner and outer border widths
+    cutoff = co # minimum triangle edge length
+)
+})
+
+# walk(meshes,plot)
+plot(meshes[[1]])
+meshes.table <- tibble(meshnum=1:length(meshes),vertices=map_dbl(meshes,function(x)x$n))
+```
+
+# Run Models
+
+We write a function to run a simple SDM for any species in the data. We will adopt a consistent model equation that represents estimated log copies as a combination of spatial fields,
+
+$X=\alpha + \omega(s) + \epsilon_d(s)
+
+where \alpha is a scalar intercept, \omega is a spatial field, and \epsilon is another spatial field that is specific to each depth category. For each species, we will try both with and without (i.e. \alpha=0) the simple intercept.
+
+Finally, we try fitting models across the range of spatial meshes we produced above. Across this range of decisions (include or exclude simple intercepts, mesh choice), we use each model's summed likelihood as a model selection metric.
+
+
+## sdmTMB Wrapper
+
+```{r}
+# data, species name, mesh, and function as a character string
+spatial_only_model <- function(df=dat_utm,spp,mesh,f){
+  
+  dat_sub <- df %>% 
+    filter(species==spp) %>% 
+    mutate(depth_cat=as.factor(depth_cat)) %>% 
+    mutate(depth_as_time=as.integer(depth_cat))
+  
+  # if species is hake, use lognormal instead of tweedie (because hake data has no zeroes)
+  if(spp=="Merluccius productus"){
+    dat_sub =  dat_sub %>% filter(conc>0)
+    m <-  try(sdmTMB(
+      data = dat_sub,
+      formula = as.formula(f),
+      mesh=make_mesh(dat_sub,c('utm.lon.km','utm.lat.km'),mesh=mesh),
+      family = lognormal(link='log'),
+      spatial = "on",
+      anisotropy = F,
+      time = "depth_as_time",
+      spatiotemporal = "IID"
+    ), silent=F)
+  } else {
+  m <-  try(sdmTMB(
+    data = dat_sub,
+    formula = as.formula(f),
+    mesh=make_mesh(dat_sub,c('utm.lon.km','utm.lat.km'),mesh=mesh),
+    family = tweedie(link='log'),
+    spatial = "on",
+    anisotropy = F,
+    time = "depth_as_time",
+    spatiotemporal = "IID"
+  ),
+  silent=F)
+  }
+  
+  if(class(m)=="try-error"){
+    print(paste("Error."))
+  } else{
+  # print sdmTMB::sanity() to catch bad models
+  sanity(m)
+  if(sanity(m)$all_ok){
+    return(m)
+  } else{
+    return("Problem with sanity")
+  }}
+}
+
+```
+
+## Mesh Complexity Test
+
+For each species, we use this consistent model form with different INLA meshes to find the mesh that leads to the highest likelihood of the SDM (out of the starter set above that varies in complexity).
+
+### Anchovy
+
+"Empty" model with no simple intercept seems to work better for this species.
+
+```{r}
+anchovy_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Engraulis mordax",mesh = x)
+})
+sanity_check <- which(map_chr(anchovy_test,class)=="sdmTMB")
+anchovy_test <- anchovy_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(anchovy_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Anchovy Models Mesh Test")
+```
+
+Looks like Mesh 1 is the best for anchovy, with 205 vertices and no intercept.
+
+### Mackerel
+
+```{r}
+mackerel_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Trachurus symmetricus",mesh = x)
+})
+sanity_check <- which(map_chr(mackerel_test,class)=="sdmTMB")
+mackerel_test <- mackerel_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(mackerel_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Mackerel Models Mesh Test")
+```
+
+Looks like Mesh 6 is the best for mackerel, with 102 vertices and no intercept.
+
+### Sardine
+
+```{r}
+sardine_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Sardinops sagax",mesh = x)
+})
+sanity_check <- which(map_chr(sardine_test,class)=="sdmTMB")
+sardine_test <- sardine_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(sardine_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Sardine Models Mesh Test")
+```
+
+Looks like Mesh 1 is the best for sardine, with 204 vertices and an intercept.
+
+### California smoothtongue
+
+```{r}
+cs_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Leuroglossus stilbius",mesh = x)
+})
+sanity_check <- which(map_chr(cs_test,class)=="sdmTMB")
+cs_test <- cs_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(cs_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Smoothtongue Models Mesh Test")
+```
+
+For California smoothtongue, Mesh 1 and Mesh 14 are similar, with 205 or 42 vertices, respectively and including an intercept. The higher density mesh likely leads to overfitting in this case, so we stick to Mesh 14.
+
+### Herring
+
+```{r}
+clu_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Clupea pallasii",mesh = x)
+})
+sanity_check <- which(map_chr(clu_test,class)=="sdmTMB")
+clu_test <- clu_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(clu_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Herring Models Mesh Test")
+```
+
+Looks like Mesh 1 is the best for herring, with 204 vertices and an intercept.
+
+### Hake
+
+Hake is unique because it has no zeroes. We use a lognormal instead of a Tweedie link distribution.
+
+```{r}
+hake_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Merluccius productus",mesh = x)
+})
+sanity_check <- which(map_chr(hake_test,class)=="sdmTMB")
+hake_test <- hake_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(hake_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Hake Models Mesh Test")
+```
+
+Looks like Mesh 2 is the best for hake, with 170 vertices and an intercept.
+
+### Dover sole
+
+```{r}
+dover_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Microstomus pacificus",mesh = x)
+})
+sanity_check <- which(map_chr(dover_test,class)=="sdmTMB")
+dover_test <- dover_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(dover_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Dover Models Mesh Test")
+```
+
+For Dover sole, Mesh 16 is the best, with 35 vertices and an intercept.
+
+### Eulachon
+
+```{r}
+eul_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Thaleichthys pacificus",mesh = x)
+})
+sanity_check <- which(map_chr(eul_test,class)=="sdmTMB")
+eul_test <- eul_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(eul_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Eulachon Models Mesh Test")
+```
+
+For eulachon, Mesh 5 is best, with 105 vertices and and no intercept.
+
+### Chub mackerel
+
+```{r}
+chub_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Scomber japonicus",mesh = x)
+})
+sanity_check <- which(map_chr(chub_test,class)=="sdmTMB")
+chub_test <- chub_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(chub_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Chub Mackerel Models Mesh Test")
+```
+
+For chub mackerel, we try to avoid major overfitting by using Mesh 11, with 54 vertices and an intercept.
+
+### Widow rockfish
+
+```{r}
+widow_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Sebastes entomelas",mesh = x)
+})
+sanity_check <- which(map_chr(widow_test,class)=="sdmTMB")
+widow_test <- widow_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(widow_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Widow Models Mesh Test")
+
+meshtest %>% arrange(ll)
+```
+
+For widow rockfish, Mesh 9 is best, with 63 vertices and an intercept.
+
+### Northern lampfish
+
+Stenobrachius leucopsarus
+
+```{r}
+lamp_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Stenobrachius leucopsarus",mesh = x)
+})
+sanity_check <- which(map_chr(lamp_test,class)=="sdmTMB")
+lamp_test <- lamp_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(lamp_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Stenobrachius Models Mesh Test")
+```
+
+For northern lampfish, Mesh 9 is the best, with 63 vertices and no intercept.
+
+### Longfin dragonfish
+
+Tactostoma macropus
+
+```{r}
+dragon_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Tactostoma macropus",mesh = x)
+})
+sanity_check <- which(map_chr(dragon_test,class)=="sdmTMB")
+dragon_test <- dragon_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(dragon_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Dragonfish Models Mesh Test")
+```
+
+For dragonfish, Mesh 6 is the best, with 102 vertices and an intercept.
+
+### Blue lanternfish
+
+Tarletonbeania crenularis
+
+```{r}
+lantern_test <- purrr::map(meshes,function(x){
+  spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Tarletonbeania crenularis",mesh = x)
+})
+sanity_check <- which(map_chr(lantern_test,class)=="sdmTMB")
+lantern_test <- lantern_test[sanity_check]
+
+# likelhood vs. mesh
+meshtest <- tibble(mesh_n=map_dbl(meshes[sanity_check],pluck('n'))) %>% 
+  mutate(ll=-1*map_dbl(lantern_test, ~pluck(.x,'model','objective')))
+meshtest %>% 
+  ggplot(aes(mesh_n,ll))+
+  geom_point()+
+  geom_line()+
+  labs(x="Vertices",y="Likelihood",title="Lanternfish Models Mesh Test")
+```
+
+For blue lanternfish, Mesh 2 is the best, with 170 vertices and an intercept.
+
+## All Species
+
+Using the chosen mesh and formula from the examples above, build final SDM for all species.
+
+```{r}
+model.choices.table <- tibble(species=unique(dat$species),
+                              
+                              mesh_number=c(1,1,14,16,1,11,9,9,6,2,5,6,2),
+                              intercept=c(1,0,1,1,1,1,1,0,1,1,0,0,1)) %>% 
+  left_join(meshes.table,by=c("mesh_number"="meshnum"))
+model.choices.table
+```
+
+
+
+```{r,fig.height=6,fig.width=4}
+herring_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Clupea pallasii",mesh=meshes[[1]])
+anchovy_m <- spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Engraulis mordax",mesh=meshes[[1]])
+cs_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Leuroglossus stilbius",mesh=meshes[[14]])
+dover_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Microstomus pacificus",mesh=meshes[[16]])
+sardine_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Sardinops sagax",mesh=meshes[[1]])
+chub_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Scomber japonicus",mesh=meshes[[11]])
+widow_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Sebastes entomelas",mesh=meshes[[9]])
+lampfish_m <- spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Stenobrachius leucopsarus",mesh=meshes[[9]])
+dragonfish_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Tactostoma macropus",mesh=meshes[[6]])
+lanternfish_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Tarletonbeania crenularis",mesh=meshes[[2]])
+eulachon_m <- spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Thaleichthys pacificus",mesh=meshes[[5]])
+mackerel_m <- spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Trachurus symmetricus",mesh=meshes[[6]])
+hake_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Merluccius productus",mesh=meshes[[2]])
+```
+
+```{r}
+# all models in a list
+all_m <- list(
+  herring=herring_m,
+  anchovy=anchovy_m,
+  smoothtongue=cs_m,
+  dover=dover_m,
+  sardine=sardine_m,
+  chub=chub_m,
+  widow=widow_m,
+  lampfish=lampfish_m,
+  dragonfish=dragonfish_m,
+  lanternfish=lanternfish_m,
+  eulachon=eulachon_m,
+  mackerel=mackerel_m,
+  hake=hake_m
+)
+```
+
+
+# Query Outputs
+
+## Maps
+
+```{r,fig.height=5,fig.width=8}
+make_pred_map <- function(fit,return_what="plot"){
+  preds <- predict(fit,newdata=ch_pred_df_depth) %>%
+    left_join(ch_pred %>% dplyr::select(grID),by=join_by(grID)) %>%
+    st_as_sf()
+
+  preds_plot <- ggplot()+
+    geom_sf(data=coaststates,fill='gray80')+
+    geom_sf(data=preds,aes(fill=est),color=NA)+
+    # geom_sf(data=dat_sf,color='red',size=0.5,shape=4)+
+    scale_fill_viridis(option="H")+
+    coord_sf(datum=NA)+
+    facet_wrap(~depth_cat,nrow=1)+
+    xlim(dat_bbox[1],dat_bbox[3])+ylim(dat_bbox[2],dat_bbox[4])+
+    labs(fill="Log Copies",x="")
+  if(return_what=="data") return(preds)
+  else(return(preds_plot))
+}
+
+# make maps
+all_maps <- map2(all_m,model.choices.table$species,function(x,y){
+  make_pred_map(x)+ggtitle(y)
+})
+
+# save
+map2(all_maps,model.choices.table$species,function(p,n){
+  ggsave(here('plots',paste0(n,' preds','.png')),p,h=6,w=8,bg='white')
+})
+
+```
+
+## Predictions
+
+The same as above, but let's save dataframes of predictions
+
+```{r}
+# make maps
+all_preds <- map2(all_m,model.choices.table$species,function(x,y){
+  make_pred_map(x,return_what = "data") %>% mutate(species=y) %>% 
+    dplyr::select(grID:log_bathy,dist_shore,log_dist,dist_shelf,depth_cat,est:epsilon_st,species)
+})
+
+# save
+write_rds(all_preds,here('data','all_smooth_predictions_13sp.rds'))
+```
+

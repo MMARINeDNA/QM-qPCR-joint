@@ -1,0 +1,142 @@
+---
+title: "QM model maps (raw)"
+format: 
+  html:
+    toc: true
+    toc-location: right
+    toc-title: "Table of Contents"
+    toc-depth: 2
+    number-sections: true
+    page-layout: full
+    self-contained: true 
+    collapsible: true
+    collapse-level: 1
+    grid:
+      sidebar-width: 200px
+      body-width: 880px
+      margin-width: 200px
+      gutter-width: 1.5rem
+author: Gled Guri
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+}
+
+h1 {
+  font-size: 22px;  /* Adjust the size of H1 headers */
+  font-weight: bold;  /* Make H1 headers not bold */
+}
+
+h2 {
+  font-size: 18px;  /* Adjust the size of H2 headers */
+  font-weight: normal;  /* Make H2 headers not bold */
+}
+
+h3 {
+  font-size: 18px;  /* Adjust the size of H3 headers */
+  font-weight: normal;  /* Make H3 headers not bold */
+}
+
+h4 {
+  font-size: 18px;  /* Adjust the size of H4 headers */
+  font-weight: normal;  /* Make H4 headers not bold */
+}
+</style>
+
+```{r, message=FALSE, warning=FALSE}
+library(here)
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(rnaturalearth)
+library(MoMAColors)
+
+dat_sf <- readRDS(here('data','diff_spat_models','dat_sf.rds'))
+
+coaststates <- ne_states(country='United States of America',returnclass = 'sf') %>% 
+  filter(name %in% c('California','Oregon','Washington','Nevada')) %>% 
+  st_transform(st_crs(dat_sf))
+dat_bbox <- st_bbox(dat_sf)
+```
+
+```{r, include=TRUE, warning=FALSE}
+#| fig-width: 13
+#| fig-height: 13
+
+plot_list_raw <- list()
+sp_list <- dat_sf %>% 
+  filter(species!='Merluccius productus') %>% 
+  filter(species!='Hippoglossus stenolepis') %>% 
+  pull(species) %>% 
+  unique()
+
+for (i in 1:length(sp_list)) {
+  
+plot_list_raw[[i]] <-
+    dat_sf %>% filter(species==sp_list[i]) %>% 
+  mutate(si_est=if_else(mean>-4,4,1)) %>% 
+    ggplot() +
+    geom_sf(aes(size = si_est, fill = mean), shape = 21, color = "black") +
+    geom_sf(data = coaststates, fill = 'gray80') +
+  ggtitle(paste0(sp_list[i])) +
+    facet_wrap(~depth_cat, nrow = 1) +
+    coord_sf(datum = NA) +
+    scale_fill_gradientn(
+      colors = moma.colors("ustwo", n = 21, direction = -1),
+      limits = c(-4, 15),
+      values = scales::rescale(c(-4:15)),
+      name = "Log DNA conc") +
+    scale_size_continuous(
+    name = "P/A",
+    limits = c(1,4),
+    breaks = c(1, 4),
+    labels = c('Absence', 'Presence'),
+    range = c(1,4)
+    ) +
+    xlim(dat_bbox[1], dat_bbox[3]) +
+    ylim(dat_bbox[2], dat_bbox[4]) +
+    theme_bw()
+ggsave(here('plots','QM posterior map',paste0(sp_list[i],'_raw.jpg')),width = 7,height = 6)
+}
+
+legend <- cowplot::get_legend(plot_list_raw[[1]]+theme(legend.justification = c(0,0.5)))
+for (i in 1:length(sp_list)) {
+plot_list[[i]] <- plot_list_raw[[i]]+theme(legend.position = "none")
+}
+```
+
+```{r}
+library(cowplot)
+library(magick)
+
+# Load the depth scheme graph
+depth_scheme <- image_read(here('plots','QM posterior map','Literature_species_dist.jpeg'))
+depth_scheme_plot <- ggdraw() + draw_image(depth_scheme)
+
+# Create titles for columns
+title_epipelagic <- ggdraw() + draw_label("Surface", fontface = 'bold')
+title_mesopelagic <- ggdraw() + draw_label("Mid-water", fontface = 'bold')
+title_bathypelagic <- ggdraw() + draw_label("Benthic", fontface = 'bold')
+
+pp <-cowplot::plot_grid(
+  cowplot::plot_grid(title_epipelagic, title_mesopelagic, title_bathypelagic, ncol = 3),
+  
+  cowplot::plot_grid(
+    plot_list[[2]], plot_list[[7]], plot_list[[9]],
+    plot_list[[5]], plot_list[[8]], plot_list[[4]],
+    plot_list[[1]], plot_list[[10]], legend, 
+    ncol = 3),nrow = 2, rel_heights = c(0.03, 1))
+
+p <- cowplot::plot_grid(pp,depth_scheme_plot,nrow=1,rel_widths = c(10,7))
+ggsave(here('plots','QM posterior map','Combined_plot_landscape.jpg'),p,width = 18,height = 12)
+
+p <- cowplot::plot_grid(pp,depth_scheme_plot,nrow=2,rel_heights = c(10,5))
+ggsave(here('plots','QM posterior map','Combined_plot_portrait.jpg'),p,width = 10,height = 16)
+```
