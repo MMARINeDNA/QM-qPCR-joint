@@ -4,3 +4,4 @@
 .Ruserdata
 model_output/
 code/*.csv
+*.DS_Store
