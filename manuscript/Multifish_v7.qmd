@@ -57,7 +57,7 @@ Target: PNAS, end of 2024
 + v6 Gled refined Environmental Smoothing section
 + v6 Gled refined Observation Model section
 + v6 Gled added a couple of draft ideas on Future Development section
-+ v7 Ole edited
++ v7 Ole edited a lot.
 
 ## Abstract
 
