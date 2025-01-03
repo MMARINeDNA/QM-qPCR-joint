@@ -117,19 +117,19 @@ Also consistent with known habitats are commercially caught flatfish such as Dov
 
 ## Species Associations
 
-![Multispecies summaries NEED FULL CAPTIONS\label{Fig2}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/2.%20Figure_2.jpg)
+![Correlation plot describing species co-abundance and co-occurance. Spearman’s rho correlation coefficient are expressed in numbers and colors ranging from -1 (red) negatively correlated to 1 (blue) positively correlated. Species are ordered in known ecological groups (surface, midwater, and deepwater) to visually indicate the gradual change of species co-occurance.\label{Fig2}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/2.%20Figure_2.jpg)
 
 Pairwise correlations of DNA concentration showed interesting patterns among species associated with depth (Fig. \ref{Fig2}). Surface-associated species were nearly all positively correlated with each other with some correlations particular large (Pearson's $\rho > 0.50$) but correlations were weak among the six midwater and deepwater species (all $\rho < |0.40|$). Within the surface species, further subdivision is also apparent, with chub mackerel (*Scomber japonicus*) and sardine (*Sardinops sagax*) showing very high correlation ($\rho = 0.84$) with both more common in the more southern (and somewhat warmer) waters (Fig. \ref{Fig4}). Concentrations of the remaining surface-dwelling species (northen anchovy, eulachon, jack mackerel, and pacific herring) had modest correlations with midwater species (Figs.\ref{Fig2} and \ref{Fig4}) consistent with more northerly distribution. Together these finding suggest that eDNA is capturing both depth and latitudinal habitats associations. Deep-water species are distinct (Figs.\ref{Fig2} and \ref{Fig4}), not strongly correlated with those from other zones. Deeper water tends to feature lower and more diffuse fish eDNA concentrations [Fig. \ref{Fig4} and @shelton2022]. We speculate that lower DNA concentrations and fewer overall deep water samples make similiarities among species distributions more difficult to detect at 300m and deeper.
 
 ## Species richness 
 
-![Species richness NEED FULL CAPTION... or citation for how you come up with presence \label{Fig4}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/3.%20Figure_3.jpg)
+![Spatial and vertical distribution of species richness (A) and environmental DNA (B) concentration across depths (0, 50, 150, 300, and 500 m). Species richness representing as the cumulative number of species present (species with higher  than 0.01 copies/μL on smoothed estimated eDNA concentrations) and acumulated eDNA concentration representing the cumulative sum of eDNA (copies/μL) across all species.\label{Fig4}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/3.%20Figure_3.jpg)
 
 In addition to providing species-specific patterns, DNA from individual species can be combined to reveal important aggregate ecological patterns. For the 13 species considered here, we show how species richness from DNA varied substantially and predictably with depth, with the highest richness observed at the surface (Fig. \ref{Fig3} A). In part, this pattern is likely to be an artifact of the focal species included in this study -- chosen for their relevance to fisheries management as well as for their frequency in the observations (see METHODS) -- but the richness-depth gradient also reflects the expectation that habitat and nutrient availability is greatest near the surface [@smith2002; @hickey2005]. Surface waters also host the eggs, larvae, and juvenile stages of many meso- and bathypelagic species [@parnel2008], some of which we detect, and hence we both expect and observe higher richness in the upper layer of the water column [@kim2011]. 
 
 Species richness also corresponds strongly with the influence of Columbia River plume (Fig. \ref{Fig3} A), which extends well beyond the coastline [@hickey2003]. The nitrate-rich river water interacts with ocean currents and intensifies coastal upwelling, enhancing both primary and secondary productivity [@hickey2010] and likely influencing the patterns of species richness we observe (Fig. \ref{Fig4} A) [@tolimieri2015]. The total fish eDNA accumulation (Fig. \ref{Fig3} B) suggests the highest aggregation of forage fish DNA near Heceta Bank (44 degrees N; overlapping anchovy and sardine distributions are the two largest contributors to eDNA concentration) in addition to other commercialy important mesopelagic fish (*Sebastes entomelas* and *Tarletonbeania crenularis*) a center of abundance for commercial fisheries [@bosley2014; @Tissot2008TwentyYO], and elsewhere nearshore in areas of coastal upwelling. 
 
-![Covariate summary NEED FULL CAPTION. GET RID OF SMOOTHES IN THE TOP CAPTION... MAKE STRAIGHT LINES.  Define what dots are (mean, median, etc.) and define what bars are in the top panel. \label{Fig3}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/4.%20Figure_4.jpg)
+![Vertical (A) and latitudinal (B) distribution of eDNA concentrations grouped in ecological groups (surface south, surface north, midwater, and deepwater). Mean eDNA concentration of vertical distribution is shown with dots and 99% upper quantile with ticks (A). Probability density functions (PDF) of estimated eDNA concentrations across latitudinal gradients (B; square root transformed of x-axis to enhance low concentration peaks). Key geographic features, such as the Columbia River and Heceta Bank, are marked to indicate alignment of species distributions.\label{Fig4}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/4.%20Figure_4.jpg)
 
 # Discussion
 
@@ -276,3 +276,15 @@ All statistical analysis, figure preparation, and data curation were performed i
 We thank Katherine Maslenikov for providing tissue samples for the mock community analysis.
 
 # References
+
+
+
+# Supplementary figures
+
+![Continuation of figure 1.\label{SF1}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/5.%20Supplementary%20Figure%201.jpg)
+
+![Histogram of eDNA concentration distribution for each species\label{SF2}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/6.%20Supplementary%20Figure%202.jpg)
+
+![Sample distribution\label{SF3}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/7.%20Supplementary%20Figure%203.jpg)
+
+![Species co-occurance\label{SF4}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/8.%20Supplementary%20Figure%204.jpg)
