@@ -94,25 +94,22 @@ Below we highlight results for six species representing a range of habitat assoc
 Northern anchovy (*Engraulis mordax*) and Pacific sardine (*Sardinops sagax*) are the two iconic coastal pelagic species of the eastern North Pacfic (cite Steinbeck, others), playing a vital ecological role linking lower and upper trophic levels (e.g. Chinook salmon diets, sea lions, REFs) and historically supporting large commercial fisheries particularly in California (REFs). Our eDNA estimates reveal high concentrations in surface waters for both species at northern latitudes, particularly near the Columbia River outflow (46.2°N; Fig. \ref{Fig1}). The molecular patterns reflect well-known differences in the habitat preferences of the two forage fishes. Sardine generally occurs at warmer temperatures and more southerly waters than anchovy (SST range: 18–24°C for sardine vs. 10–14°C for anchovy) and typically inhabits slightly greater depths [@nevarez-martinez2001]; eDNA patterns track these differences (Fig.1) with sardine eDNA peaking at 41°N (range 40°–45°) and anchovy at 43.5°N (range 42°–48°; Fig. \ref{Fig4}).   
 [Make sure these don't get lost.[@litz2008; @parnel2008].]
 
-[GLED -- can those SST differences be right? They look to be non-overlapping, which is weird.]
-
-[ALSO highlight that the eDNA picks up the distinction between northern and central stocks, with Cape Mendocino in between!]
-
-**ADD QUANTITATIVE INFORMAION.  RELATIVE ABUNDANCE of SARDINE AND ANCHOVY in EDNA. - IF YOU JUST TOOK SURFACE WATERS (0m only) and just took an average of the DNA concentration of Anchovy vs. Sardine, what would you get?  I'd be interested in trying to compare that to the stock assessement estimate of biomass for these two species.  In 2019, there should be a lot more anchovy DNA than sardine.... but I'll have to dig out the assessement.**
-
+*TO DO*
+  - [GLED -- can those SST differences be right? They look to be non-overlapping, which is weird.]
+  - [ALSO highlight that the eDNA picks up the distinction between northern and central stocks, with Cape Mendocino in between!]
+  - **ADD QUANTITATIVE INFORMATION.  RELATIVE ABUNDANCE of SARDINE AND ANCHOVY in EDNA. - IF YOU JUST TOOK SURFACE WATERS (0m only) and just took an average of the DNA concentration of Anchovy vs. Sardine, what would you get?  I'd be interested in trying to compare that to the stock assessement estimate of biomass for these two species.  In 2019, there should be a lot more anchovy DNA than sardine.... but I'll have to dig out the assessement.**
 +  Northern subpopulation Sardine in 2019 = 24,561 mt according to 2020 assessment 
 ++   (https://media.fisheries.noaa.gov/dam-migration/kuriyama_et_al_2020_sardine_assessment.pdf)
 + Anchovy in 2019 = 879,476 mt according to 2022 assessment BUT this is for the central subpopulation (Mexico to central California). Weirdly enough, the assessment uses the survey that goes all the way to BC... actually: "For Northern Anchovy, we defne the separation between the northern and central stock at Cape Mendocino (40.4 N )." (file:///Users/ole.shelton/Downloads/noaa_45013_DS1.pdf)
 ++ NMFS-SWFSC-626 is the cruise report for 2019. 
 ++ actually: "For Northern Anchovy, we defne the separation between the northern and central stock at Cape Mendocino (40.4 N )."
 
+
 ### **Mid-water**
 
-Widow rockfish (*Sebastes entomelas*) are common between 100-350m between northern Baja California and southern Alaska, with pelagic larvaes and juveniles generally detected shallower habitats (< 150m depth) [@reynolds2001; bosley2014] including in nearshore kelp forests [@quigley2024] ADD SCUBA REF. Widow Rockfish DNA shows a strong association with pelagic 50m deep habitats predominantly in the northern half of our domain. It is the only species in our dataset that has a strong association with the 50m depth. The for northern lampfish (*Stenobrachius leucopsarus*) -- an abundant myctophid that migrates from 400-700m up to 20-200m at night [@moku2000; @suntsov2008] -- are again consistent with the ecology of the species, having notably lower concentrations in surface samples. However, this is the first quantiative estimates of overall distribution for northern lampfish (check if true?)
+Widow rockfish (*Sebastes entomelas*) is a major fisheries species (ca. $10^4$mt annual catch since 2018 [CITE]) for which directed harvest was closed 2003-2013 due to declining biomass [CITE]. Moreover, because it is a common bycatch species in the hake (*Merluccius productus*) fishery, limits on bycatch of widow rockfish can also limit the much larger hake fishery (i.e., it is a "choke" species for hake; CITE). Despite its commercial importance, no targeted survey effort exists for widow rockfish, in part because its rocky habitat is difficult to survey. We find widow rockfish eDNA strongly and nearly exclusively associated with 50m sample depths \ref{Fig1}, consistent with the pelagic larvae and juveniles reported in the literature  and somewhat shallower than adults are commonly found [@reynolds2001; @bosley2014; @quigley2024] ADD SCUBA REF. 
 
-**Add reference to Widow as a major fisheries species that is important in its own right as well as a choke bycatch species historically for hake. Catches of Widow rockfish have been about 10,000 mt annually since 2018. Fishery landings were <500 mt 2003-2013 due to closure of directed fishery due to declining biomass in the 1980s and 1990s (hake fishery bycatch).  Most recent assessment = 2019.**   
-
-*Interesting, but perhaps not specifically relevant to the paper: Individuals form dense feeding schools at night -- preying on euphausiids, copepods, salps, and small fishes -- and disperse at dawn [@reynolds2001; @bosley2014]. are consistent with the shallower end of these expected habitats and previously reported trawl catches [@bosley2014], with the 50m samples capturing the majority of the signal (Fig. \ref{Fig4}) indicating mainly ichthoplankton presence.*
+The eDNA patterns for northern lampfish (*Stenobrachius leucopsarus*) -- an abundant myctophid that migrates from 400-700m up to 20-200m at night [@moku2000; @suntsov2008] -- are again consistent with the ecology of the species, having notably lower concentrations in surface samples. However, this is the first quantitative estimates of overall distribution for northern lampfish [BUT SEE https://www.sciencedirect.com/science/article/pii/S0079661199000178].
 
 ### **Benthic**
 
