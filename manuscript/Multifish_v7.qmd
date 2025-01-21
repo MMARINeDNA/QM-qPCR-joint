@@ -1,0 +1,287 @@
+---
+title: Quantitative, Multispecies Monitoring at a Continental Scale 
+author:
+  - Gledis Guri:
+      institute: 1
+      equal_contributor: "yes"
+      correspondence: "yes"
+      email: gguri@uw.edu
+  - Owen Liu:
+      institute: 2
+      equal_contributor: "yes"
+  - Ryan Kelly:
+      institute: 1
+  - Megan Shaffer:
+      institute: 1
+  - Kim Parsons:
+      institute: 2
+  - Krista Nichols:
+      institute: 2
+  - Andrew Olaf Shelton:
+      institute: 2
+  - many others:
+      institute: 2
+institute:
+  - 1: University of Washington
+  - 2: NOAA fisheries science
+mainfont: "Times New Roman"
+header-includes:
+  - \linespread{1.2}
+fontsize: 12pt
+geometry: "margin=1in"
+format: pdf
+---
+
+```{r}
+#| echo: false
+suppressMessages(library(here))
+suppressMessages(library(tidyverse))
+
+```
+
+Target: PNAS, end of 2024
+
+## Change log
+
++ v3 has a revised introduction by Ole.  References need to be added to the intro.
++ v3 added first paragraph in Results from Ryan. 
++ v3 Ryan rearranged to match PNAS format and condensed methods.
++ v4 Gled refined introduction and added a paragraph on the importance of eDNA being complementary survey method.
++ v4 Gled added findings in abstract + added some information about methods in introduciton to ease transition into results.
++ v4 Gled checked and refined the results + added Figure 4
++ v4 RPK edited/smoothed text
++ v5 Gled refined Methods
++ v5 Gled added REF everywhere + formated the document
++ v5 Gled added 2 big paragraphs (translation of our findings into managment, and our limitations under 'eDNA as management tool')  + refined Discussion overall
++ v6 Gled added 2 paragraphs regarding retrospective sampling benefit of eDNA surveys (in Maximizing Information section) and added the benefit of eDNA surveys for circumventing closure assumption for occupancy models/surveys (in Environmental Smoothing section)
++ v6 Gled refined Environmental Smoothing section
++ v6 Gled refined Observation Model section
++ v6 Gled added a couple of draft ideas on Future Development section
++ v7 Ole edited a lot.
++ v7 Ryan edited some.
+
+## Abstract
+
+Molecular data from environmental samples can reflect the abundance of species' DNA, an index immediately relevant to natural resources management at a continental scale. These data commonly derive from qPCR or ddPCR assays -- which focus on a single species -- or metabarcoding assays from more general PCR primers that amplify many species simultaneously. Multispecies analyses make efficient use of field samples and laboratory time, and speak to inherently multispecies questions of management and ecological research. However, unlike single-species techniques, metabarcoding by itself can reflect only the proportions of target-species DNA present, not their absolute quantities. Here, we combine qPCR and metabarcoding data derived from the same samples to map quantities of many fish species along the US Pacific coast in three dimensions, demonstrating a technique of practical importance for both management and ecology. We derive spatially explicit estimates of eDNA abundance for 13 common species of commercial and management importance and point the way to quantitative surveys of wild species using molecules alone. We find multispecies eDNA analysis effectively captures species-level differences in habitats and spatial distributions, while emergent patterns of highest species diversity and eDNA abundance align with previously documented regions of ecological significance.
+
+# Intro
+
+<!--*4000 words is standard (6 pages).  8000 words (12 pages max).  Average 4 figures.*-->
+
+Environmental DNA (eDNA, residual genetic material sampled from water, soil, or air) is an increasingly common tool for non-invasively sampling marine and aquatic ecological communities, valuable for estimating species occurrence [@veilleux2021], biodiversity [i.e., Richness, @muenzel2024], and genetic structure [@andres2023a]. However, eDNA has not been widely used for quantitative abundance estimation, upon which many practical management and conservation applications rely (but see @shelton2022, @guri2024a, and @stoeckle2024). While the use of eDNA for quantification is supported both conceptually -- where there is more of a species, more cells are shed in the environment, and thus there is more DNA -- and empirically (e.g. there are strong linkages between single-species eDNA measures of in aquaria [@jo2019b; @ledger2024], rivers and streams [@pont2024], estuaries and nearshore habitats [@dibattista2022; @baetscher2024], and coastal oceans [@maes2023; @shelton2019], quantitative uses of eDNA observations have significantly lagged behind their use in occurrence and biodiversity applications. 
+
+Quantitative estimates of DNA are more common with species-specific assays (e.g. qPCR and ddPCR) because these approaches directly measure DNA concentration. In contrast, multispecies analysis (metabarcoding) reflects information on many species of interest simultaneously, but at the costs of producing compositional estimates of proportional abundance [@gloor2017a; @mclaren2019] that may require statistical correction for species-specific biases due to PCR amplification [@shelton2023]. Consequently, metabarcoding data alone cannot yield information about the abundances of DNA from environmental samples [e.g. @guri2024a].
+
+While trawling and other traditional sampling methods have been the fundamental tools for directly measuring fish abundance and biomass, they are often impractical for species inhabiting inaccessible habitats, occurring at low densities, or for those that are fragile and easily injured during capture. By contrast, eDNA sampling captures information from a broad range of taxa, including those that are difficult or impossible to study with traditional gear. As such, eDNA can meaningfully complement traditional stock assessment methods for commercially important species while at the same time revealing the abundance and distribution of elusive or understudied species.
+
+Here, we develop quantitative estimates for a diverse group of fish species spanning different habitat depths across 10 degrees of latitude along the US west coast entirely from eDNA. We integrate single- and multi-species techniques to create three-dimensional distribution maps, leveraging models established in previous studies [@shelton2022, @guri2024a, @shelton2023, @allan2023]. By calibrating metabarcoding data -- correcting raw species observations to their initial proportions using a mock community [@shelton2023] -- and using the absolute eDNA quantity of a reference species (here Pacific Hake (*Merluccius productus*)), we expand initial estimated proportions into absolute estimates of the abundance of each species' eDNA [@guri2024a]. We subsequently smooth the estimated eDNA quantities to generate species distribution maps [@liu2023]. We present results for 13 fish species to illustrate the approach, but note that it immediately generalizes to any ecological community of interest.
+
+The eDNA-derived estimates we provide here speak directly to the requirements of natural-resources management at large scales. For example, abundance indices have a central role in determining stock status for fisheries applications (i.e. stock assessments in the U.S. under the Magnunson-Stevens Act) and informing conservation status (e.g., under the U.S. Endangered Species Act). Thus eDNA-derived abundance indices can fill a variety of existing legal requirements for management. While these indices are still in their infancy and will require additional technical developments to ensure their proper usage, they are conceptually and practically little different from abundance estimates derived from more traditional ocean survey method (i.e. net-based or acoustic surveys). Indeed, eDNA methods may provide some notable improvements because single- and multi-species eDNA approaches avoid tradeoffs involved with physically capturing many species simultaneously using a single net. Molecular surveys capture many species with the same "gear" using methods that are easily replicated in space and time. As agencies begin to implement the new National Aquatic eDNA Strategy [@kelly2024] -- the first goal of which is to fold eDNA data into federal decisionmaking -- fisheries and other large-scale examples point the way to maximizing the benefit of this information-rich datastream for natural-resources management at a continental scale.
+
+
+# Results
+
+We find spatial patterns of DNA concentrations reflect the distributions of commercially important coastal-pelagic fish species in three dimensions and across ten degrees of latitude (Fig. \ref{Fig1}: Northern Anchovy, Pacific Sardine; Supplement Pacific Herring and Jack Mackerel). For other high-biomass species otherwise lacking well-described distributions, we provide the first species distribution models (Fig. \ref{Fig1}, Supplement). Across species, we find that the estimated eDNA concentrations are correlated among species with similar traits and habitat preferences (Fig. \ref{Fig2}). Emergent patterns of species richness and estimated eDNA aggregation correspond with known ecological drivers [TRUE?], evidence that eDNA traces can reliably capture ecologically meaningful spatial patterns (Fig. /ref{Fig3}). Particularly for forage fish species -- which are critical high-biomass links in marine food webs, but difficult to survey with traditional methods [@Pikitch2012LittleFB] -- molecular methods offer a tractable and quantitative index of abundance over large spatial scales.
+
+Below we highlight results for six species representing a range of habitat associations and general species information  ; figures for all XX species are presented in the supplemental material. []
+
+## Species distribution 
+
+![Estimated concentration of eDNA for each of six illustrative species, organized by habitat depth, across 0, 50, 150, 300, and 500m sample depths (A), and (B) known depth distributions of those species from the literature. In panel (B), sun and moon icons indicate diel vertical migration (DVM) within a species, while different life-history stages are labeled for species that vary in habitat-depth with ontogeny. \label{Fig1}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/1.%20Figure_1.jpg)
+
+### **Surface**
+
+Northern anchovy (*Engraulis mordax*) and Pacific sardine (*Sardinops sagax*) are the two iconic coastal pelagic species of the eastern North Pacfic (cite Steinbeck, others), playing a vital ecological role linking lower and upper trophic levels (e.g. Chinook salmon diets, sea lions, REFs) and historically supporting large commercial fisheries particularly in California (REFs). Our eDNA estimates reveal high concentrations in surface waters for both species at northern latitudes, particularly near the Columbia River outflow (46.2°N; Fig. \ref{Fig1}). The molecular patterns reflect well-known differences in the habitat preferences of the two forage fishes. Sardine generally occurs at warmer temperatures and more southerly waters than anchovy (SST range: 18–24°C for sardine vs. 10–14°C for anchovy) and typically inhabits slightly greater depths [@nevarez-martinez2001]; eDNA patterns track these differences (Fig.1) with sardine eDNA peaking at 41°N (range 40°–45°) and anchovy at 43.5°N (range 42°–48°; Fig. \ref{Fig4}).   
+[Make sure these don't get lost.[@litz2008; @parnel2008].]
+
+*TO DO*
+  - [GLED -- can those SST differences be right? They look to be non-overlapping, which is weird.]
+  - [ALSO highlight that the eDNA picks up the distinction between northern and central stocks, with Cape Mendocino in between!]
+  - **ADD QUANTITATIVE INFORMATION.  RELATIVE ABUNDANCE of SARDINE AND ANCHOVY in EDNA. - IF YOU JUST TOOK SURFACE WATERS (0m only) and just took an average of the DNA concentration of Anchovy vs. Sardine, what would you get?  I'd be interested in trying to compare that to the stock assessement estimate of biomass for these two species.  In 2019, there should be a lot more anchovy DNA than sardine.... but I'll have to dig out the assessement.**
++  Northern subpopulation Sardine in 2019 = 24,561 mt according to 2020 assessment 
+++   (https://media.fisheries.noaa.gov/dam-migration/kuriyama_et_al_2020_sardine_assessment.pdf)
++ Anchovy in 2019 = 879,476 mt according to 2022 assessment BUT this is for the central subpopulation (Mexico to central California). Weirdly enough, the assessment uses the survey that goes all the way to BC... actually: "For Northern Anchovy, we defne the separation between the northern and central stock at Cape Mendocino (40.4 N )." (file:///Users/ole.shelton/Downloads/noaa_45013_DS1.pdf)
+++ NMFS-SWFSC-626 is the cruise report for 2019. 
+++ actually: "For Northern Anchovy, we defne the separation between the northern and central stock at Cape Mendocino (40.4 N )."
+
+
+### **Mid-water**
+
+Widow rockfish (*Sebastes entomelas*) is a major fisheries species (ca. $10^4$mt annual catch since 2018 [CITE]) for which directed harvest was closed 2003-2013 due to declining biomass [CITE]. Moreover, because it is a common bycatch species in the hake (*Merluccius productus*) fishery, limits on bycatch of widow rockfish can also limit the much larger hake fishery (i.e., it is a "choke" species for hake; CITE). Despite its commercial importance, no targeted survey effort exists for widow rockfish, in part because bottom trawls do not sample its pelagic habitat. We find widow rockfish eDNA strongly and nearly exclusively associated with 50m sample depths \ref{Fig1}, consistent with the pelagic larvae and juveniles reported in the literature  and somewhat shallower than adults are commonly found [@reynolds2001; @bosley2014; @quigley2024] ADD SCUBA REF. 
+
+The eDNA patterns for northern lampfish (*Stenobrachius leucopsarus*) -- an abundant myctophid that migrates from 400-700m up to 20-200m at night [@moku2000; @suntsov2008] -- are again consistent with the ecology of the species, having notably lower concentrations in surface samples. However, this is the first quantitative estimates of overall distribution for northern lampfish [BUT SEE https://www.sciencedirect.com/science/article/pii/S0079661199000178].[see also https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://nrm.dfg.ca.gov/FileHandler.ashx%3FDocumentID%3D47306&ved=2ahUKEwjbjurM2uSKAxUNODQIHSqMOC8QFnoECCkQAQ&usg=AOvVaw3b6n-vkEZrOK5Y5894JjKJ]
+
+### **Benthic**
+
+Among deeper-water fishes, eDNA revealed spatial patterns for species that are common yet little studied, such as the dragonfish (*Tactostoma macropus*). Available literature suggests dragonfish occur roughly between 40°N-50°N (adults at 300-900m, larvae at 0-60m in summer) [@kawaguchi1993] and perform diel vertical migrations to around 100 meters [@willis1982; @kawaguchi1993]. The eDNA concentrations appear to reflect this activity (Fig. \ref{Fig4}), with a strong surface signal at northern latitudes -- likely reflecting larvae and juveniles (Fig. \ref{Fig1}) -- and deeper hotspots (300m - 500m) likely reflecting adults. There are no estimates of abundance or distribution for dragonfish in the literature. [BUT SEE https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://nrm.dfg.ca.gov/FileHandler.ashx%3FDocumentID%3D47306&ved=2ahUKEwjbjurM2uSKAxUNODQIHSqMOC8QFnoECCkQAQ&usg=AOvVaw3b6n-vkEZrOK5Y5894JjKJ ; http://www.richardbeamish.com/uploads/1/6/0/0/16007202/sub_arctic_gyres_1999.pdf ; https://link.springer.com/article/10.1007/BF00403449].  
+
+Our molecular observations for the commercially caught flatfish Dover sole (*Microstomus pacificus*) similarly appear to reflect signals from various life-history stages. The species lives at 200m to 1200m along the Pacific coast [@drazen2007; @brodziak2000; @drazen2012], with individuals moving progressively deeper as they grow [@vetter1994; @hunter1990]. The eDNA concentration estimates are consistent with this pattern, showing high concentrations mostly in water samples collected near the seabed (Fig. \ref{Fig4} A). Add cite Ono et al. (https://doi.org/10.1890/14-1874)?
+
+## Species Associations
+
+![Pairwise correlations among species' eDNA concentrations across all sampling stations. Spearman’s $\rho$ correlation coefficients are expressed in numbers and colors ranging from -1 (red) negatively correlated to 1 (blue) positively correlated. Species are arranged according to known habitat-depth bins (surface, midwater, and deepwater) to emphasize clusters of species associations.\label{Fig2}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/2.%20Figure_2.jpg)
+
+Pairwise correlations of DNA concentration summarize among-species patterns associated with depth and latitude (Fig. \ref{Fig2}). Surface-associated species were nearly all positively correlated with each other with some correlations particular large (Pearson's $\rho > 0.50$) but correlations were weak among the six midwater and deepwater species (all $\rho < |0.40|$). Within the surface species, further subdivision is also apparent, with chub mackerel (*Scomber japonicus*) and sardine (*Sardinops sagax*) showing very high correlation ($\rho = 0.84$) with both more common in the more southern (and somewhat warmer) waters (Fig. \ref{Fig4}). Concentrations of the remaining surface-dwelling species (northen anchovy, eulachon, jack mackerel, and pacific herring) had modest correlations with midwater species (Figs.\ref{Fig2} and \ref{Fig4}) consistent with more northerly distribution. Together these finding suggest that eDNA is capturing both depth and latitudinal habitats associations. Deep-water species are distinct (Figs.\ref{Fig2} and \ref{Fig4}), not strongly correlated with those from other zones. Deeper water tends to feature lower and more diffuse fish eDNA concentrations [Fig. \ref{Fig4} and @shelton2022]. We speculate that lower DNA concentrations and fewer overall deep water samples make similarities among species distributions more difficult to detect at 300m and deeper in the present dataset.
+
+## Species Richness and Total eDNA Accumulation
+
+![Vertical (A) and latitudinal (B) distribution of species-specific eDNA concentrations grouped by characteristic habitat depth (surface south, surface north, midwater, and deepwater). Mean eDNA concentrations (A; ticks 99% upper quantile) and probability densities of estimated eDNA concentrations (B; square root transformed x-axis to highlight low-concentration peaks). Key geographic features, such as the Columbia River and Heceta Bank, are marked to indicate alignment of species distributions.\label{Fig3}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/4.%20Figure_4.jpg)
+
+
+![Spatial distributions of species richness (A) and total eDNA concentration (B) across sampled depths (0, 50, 150, 300, and 500 m). Species richness reflects counts of species with greater than 0.01 copies/μL on smoothed concentration surfaces); accumulated eDNA is the sum of eDNA concentrations (copies/μL) across all species.\label{Fig4}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/3.%20Figure_3.jpg)
+
+[NOTE: may want to change copies/uL into units that do not depend on extraction protocol; copies/L of seawater would be more generalizable. - RPK]
+
+In addition to providing species-specific patterns, DNA from individual species can be combined to reveal important aggregate ecological patterns. For the 12 species considered here, we show how species richness from DNA varies substantially and predictably with depth, with the highest richness observed at the surface (Fig. \ref{Fig3} A). In part, this pattern is likely to be an artifact of the focal species included in this study -- chosen for their relevance to fisheries management as well as for their frequency in the observations (see METHODS) -- but the richness-depth gradient also reflects the expectation that habitat and nutrient availability is greatest near the surface [@smith2002; @hickey2005]. Surface waters also host the eggs, larvae, and juvenile stages of many meso- and bathypelagic species [@parnel2008], some of which we likely detect, and hence we both expect and observe higher richness in the upper layer of the water column [@kim2011]. 
+
+Species richness also corresponds strongly with the influence of Columbia River plume (Fig. \ref{Fig4} A), which extends well beyond the coastline [@hickey2003]. The nitrate-rich river water interacts with ocean currents and intensifies coastal upwelling, enhancing both primary and secondary productivity [@hickey2010] likely influencing the patterns of species richness we observe (Fig. \ref{Fig4} A) [@tolimieri2015]. The total fish eDNA accumulation (Fig. \ref{Fig4} B) suggests the highest aggregation of forage fish DNA near Heceta Bank (44$\textdegree$N; overlapping anchovy and sardine distributions are the two largest contributors to eDNA concentration), an important site for commercial fisheries [@bosley2014; @Tissot2008TwentyYO]; other species (*Sebastes entomelas* and *Tarletonbeania crenularis*) substantially contribute to eDNA concentrations at the same site and and elsewhere nearshore in areas of coastal upwelling. 
+
+
+# Discussion
+
+We report species-specific DNA concentrations derived from water samples collected between the ocean surface and 500m depth, spanning across the continental shelf and across ten degrees of latitude. We reveal distributional patterns for 12 species -- from iconic and commercially important coastal pelagics to understudied-but-abundant deepwater fishes -- and our results suggest clear pathways for the broader use of eDNA in both fisheries and ecosystem management.
+
+## eDNA as Managment Tool
+
+By mapping three-dimensional spatial patterns, eDNA provides information on species distributions, habitat preferences, and ecological processes that is often otherwise unavailable. Here, we find species-level eDNA concentrations align closely the preferred habitats physiological constraints (e.g., temperature tolerance or food availability) described for each species in the available literature. The observed latitudinal differences of eDNA concentration among species -- such as those between anchovy and sardine -- highlights species' thermal ranges and largely coincide with other surveys (see REF and REF); moreover, eDNA patterns appear to reflect diel vertical migrations as observed in myctophids, where DNA concentrations are consistent with the species’ ontogenetic movement between surface and mid- to deepwater habitats. We also identify aggregations of richness and total eDNA near high-productivity regions of ecological and commercial value. Regions like Heceta Bank host dense aggregations of forage fish and are critical for both fishery management and for broader marine food-web stability. 
+
+For well-studied taxa, existing information helps contextualize eDNA signals, providing insights into habitat preferences, seasonal patterns, or temperature tolerances. For poorly studied species, eDNA is a more exploratory tool, detecting elusive taxa and delineating likely habitats. Widow rockfish, for example, appear almost exclusively in pelagic habitats around 50m deep, which are sampled poorly by traditional bottom trawl survey (NWFSC trawl survey REF). 
+
+<!-- This species is of special interest because targeted commercial harvest resumed in the late 2010s after a decade of closure (harvest was less than 500 mt annually between 2003 and 2013 but has exceeded 10,000 mt annually since 2018) and no existing survey adequately captures its patterns of abundance [CITE] (widow 2019 benchmark stock assessment and 2024 catch only projection).  [moved this info up; could go either place -- RPK]-->
+
+<!-- Our findings underline the promise of eDNA as a transformative tool for fisheries management, biodiversity conservation, and the study of environmental change. However, the observation and interpretation of eDNA signal is influenced by several physical, chemical, and biological factors, including production, transport, dilution, and degradation [REF]. As eDNA can be transported horizontally and vertically (through ocean currents and sinking or upwelling of organic material, respectively) and the sources of DNA (fish, in our case) are also moving through time, specific DNA observations can rarely, if ever, be tracked back to a particular source (or sources). -->
+
+The observable eDNA signal at any given location and time is an integrated product of DNA production and loss across time and space. Although the vast majority of DNA detectable in a given sample is of recent origin (within the previous XXX (24?) hours; REFs), it may be subject to a degree of physical transport within its window of detectability. Accordingly, the vast majority of DNA will be relatively proximate to its source in both space and time, and the distribution of DNA from a given species at any given time will be more extensive and smooth when compared to the distribution of discrete source individuals. We refer to this as environmental smoothing of eDNA signal relative to the source organisms themselves.
+
+Large-scale sampling combined with spatial [analytical? (as opposed to environmental)] smoothing mitigates many challenges associated with eDNA transport and degradation -- which  decouple the eDNA observations from their particular source organisms -- allowing reliable detection of broad patterns in species distributions. Further methodological improvements may incorporate information about the ecology of eDNA itself (REF), such as the degree to which observations of eDNA concentrations depend upon water temperature [REF]. 
+
+<!-- For example, if DNA decay rates differ significantly under varying temperature regimes (see e.g. REF), incorporating this information could potentially be used to improve DNA concentration estimates. Available information suggests the effects of such variation are relatively minor (see XXX), but we support additional consideration of both abiotic and biotic factors in eDNA surveys, ensuring that transport, degradation, and species-specific dynamics are accounted for in models and analyses. By addressing these nuances, eDNA offers a robust framework for assessing biodiversity and ecological processes, even in complex and dynamic marine environments. -->
+
+
+ <!-- **AOS cont.: I think the next section which is basically a "what we might have wrong" section fits more logically here. ** -->
+
+
+<!-- ## Environmental Smoothing and Sampling Frequency -->
+
+<!-- **AOS: I think this section is largely a more detailed re-tread of some of the stuff discussed in the previous section. Do we need to revisit this here? I don't really think we have the info for / have done any actual analysis on the sampling design aspects of this work... so I don't think it warrants it's own section. I might suggest we add some of the detailed refs to the previous section and cut most of this away or put it in the supplement. If we keep it I would definitely need to revisit the closure assumption paragraph and the first paragraph for editing.** -->
+
+
+
+<!-- In general, the scale of environmental sampling limits the resolution with which we can understand spatial variability in a signal. Strong, continuous signals -- such as high concentrations of a species’ DNA persisting in the environment -- require fewer spatial sampling points for accurate characterization compared to more subtle or discrete signals. Consequently, we anticipate that schooling, high-biomass fish species with broad distributions (e.g., sardine, anchovy here) will exhibit strong eDNA signals that vary smoothly over space within the scope of our sampling design. In contrast, more solitary species are likely to be detected more sporadically. Our observations align with these expectations, underscoring the importance of sampling frequency in interpreting eDNA signals. -->
+
+<!-- Importantly, high eDNA concentrations not only reflect high biomass but also signify the presence of freshly shed DNA, as the majority of eDNA decays and disperses rapidly. While DNA can sometimes be transported and detected kilometers from its source in unidirectional flow conditions (Pont et al.; Thalinger et al.), it is most abundant within meters of the source (Xiong et al., in review). Furthermore, the majority of eDNA shed into the environment dissipates from surface waters within hours (Brasseale et al., in review). Thus, the horizontal scale of environmental smoothing in our dataset likely spans several kilometers at most. Given that our sampling stations are spaced more than 30 km apart, the spatial patterns we report are likely to reflect genuine differences in fish abundance rather than artifacts of eDNA transport dynamics [@guri2023]. These findings underscore the value of eDNA as a dynamic indicator of both species presence and recent activity. -->
+
+<!-- Conventional fish surveys, such as trawling or mark-recapture studies, typically rely on a closure assumption, treating a fish population as if it were static and confined during the sampling window [@bailey2014].  In reality, fish can move in between sampling location within the study area, which may bias abundance estimates [@rota2009]. By contrast, fish continuously shed DNA into their surroundings, creating a dynamic signal of presence. As the shedded DNA decays, disperses, and degrades over time, fresher DNA remains at higher concentrations while older DNA persists at lower concentrations [@thomsen2015; @jerde2011]. This cumulative, time-integrated signal allows eDNA surveys to circumvent the closure assumption and provide a more accurate representation of fish presence and activity. -->
+
+<!-- Vertical smoothing, by contrast, appears minimal -- perhaps at the scale of meters: shallow-water species (sardine, anchovy, herring) occur largely at the surface and 50m depth bins, *Sebastes entomelas* occurs almost exclusively at the 50m depth bin (its known habitat; CITE), species found throughout the water column are either diel vertical migrators or species occupying different depths at various life-history stages (Fig. \ref{Fig1}), and bottom-dwelling fishes are detected primarily at the deepest point sampled on any station. [this paragraph needs some adjustments or rephrasing] -->
+
+## Integrating DNA with traditional surveys
+
+We have shown an example of the substantial value of multispecies eDNA analysis for fisheries and other natural-resource management questions (REF see also Ledger et al., Stoeckle et al, others), however, molecular patterns alone are unlikely to drive quantitative natural-resources decisions, in part because eDNA generally does not provide auxiliary information important for managing populations (e.g. information on size- or age structure, fecundity, sex, or disease). Moreover, the eDNA sampling we describe here depends upon survey vessels that can reach and sample from deep water -- survey vessels that exist to carry out traditional trawl-based surveys. 
+
+Perhaps most notably, management decisions happen in units of mass or abundance, not in units of eDNA concentration. Relating observed eDNA concentrations to species mass requires data external to the eDNA signal [@guri2024], and in particular, requires that we understand proportionalities between eDNA concentration and biomass that are likely to vary among species. We therefore see eDNA analysis as strengthening and extending existing surveys, with different data streams complementing one another.
+
+
+<!-- *AOS: need to talk about different potential proportionalities between DNA and fish to get to units that make sense to folk (biomass or abundance)* -->
+
+<!-- Effective management of natural resources at a continental scale requires that we maximize the information content of existing sampling regimes. Here, we follow Shelton et al. (2023) and Liu et al. (in prep?), leveraging the same water samples to provide information on an additional 13 species of commercial importance. Elsewhere, the same set of samples has yielded information on the distribution of marine mammals (Valdivia et al, in revision).   -->
+
+<!-- The repeated use of a single set of samples highlights an important strength of eDNA samples; they allow researchers to revisit and resequence the genetic material in archived samples as new research questions arise or attention shifts to different taxa. This capacity for retrospective analysis allows historical samples to be re-examined at any point, thereby offering opportunities to address emerging priorities and to reconstruct past ecological conditions. From a management perspective, the ability to retrospectively pinpoint the origins and pathways of invasive species can inform targeted interventions, helping managers understand not only where an incursion began but also how it spread [CITE]. Similarly, the capacity to trace the initial onset of harmful algal blooms or the earliest presence of pathogenic microbes enables researchers and policymakers to identify the underlying drivers of these events and mitigate future outbreaks. For instance, @shaw2019 used historic and modern sediment cores to reveal the temporal spread of harmful microalgal taxa over the past 30 years. Moreover, integrating retrospective eDNA analyses into climate change modeling can enrich predictive frameworks by providing historically grounded baselines of community composition, thereby enhancing our understanding of ecosystem responses to environmental shifts [CITE]. For example, @diaz2020 demonstrated how archived samples could be leveraged to reconstruct past fish communities using eDNA, thereby complementing traditional monitoring methods and further extending the utility of archived material. Such retrospective applications deepen and extend the value of every research expedition, ensuring that once-collected samples continue to yield valuable ecological insights over time. We therefore see eDNA as an important datastream that maximizes the information value of existing research cruises, rather than a means of replacing those cruises themselves. -->
+
+<!-- ## Future developments -->
+
+<!-- I am not sure if we should include this section but here are my draft thoughts: -->
+
+<!-- - Predator-pray relation through different markers.  -->
+<!-- - Size or life-stages of organisms. For example indicating if DNA signal is from ichthyoplanktons or adults one can see if their prey or predator eDNA signal is high.  -->
+<!-- - Foodweb connectivity. The paragraph below is extracted from my (Gled's) PhD thesis: -->
+<!--   Understanding and accurately measuring the interactions within food webs is also critical for resource managers and policy makers to grasp the complexities of ecosystems. Changes in predator-prey relationships due to changes of population abundance are typical responses to environmental or anthropogenic pressures (Polis & Strong, 1996). As the use of eDNA surpasses conventional gut-content surveys in efficiency, it can provide richer insights into the health of ecosystems and the interactions within food webs (Novotny et al., 2023). Although eDNA gut-content analysis may be intrusive (non-invasive), it requires smaller sample sizes than conventional methods (Pompanon et al., 2012). Combining eDNA analysis from dietary studies in conjunction with eDNA collected from environment can allow researchers to assess species and community plasticity thus indicating ecosystem resilience (Novotny et al., 2023). This integrated approach can enhance our understanding on how marine biotic communities function which can provide a tool for empirical assessments of the factors that influence the dynamics of the ecosystems, thus enabling resource managers to take informed decisions about the conservation efforts (Voelker et al., 2020). -->
+
+<!-- Happy to get other people's ideas. -->
+
+
+
+<!-- ## Observation Model -->
+
+<!-- Unlike single-species observation methods, metabarcoding data provides only relative species abundances rather than absolute values. In addition, metabarcoding does not yield a consistent, species-specific detection probability (i.e., sensitivity). Instead, the likelihood of detecting a particular species depends heavily on its competition with other sequences during PCR amplification, as well as on the total sequencing depth for that sample. Higher sequencing depth generally increases the probability of identifying rarer species, conditional on their DNA being  collected and it being amplifiable with the chosen PCR primers. In this study, we focused on species that were relatively common in the raw dataset -- those well above the lower detection limits under our sampling and sequencing conditions -- ensuring greater confidence in their consistent detectability. Although many more species were detected in the raw data [SUPPLEMENT], the majority were much rarer and thus less reliably observed. -->
+
+<!-- Our modeling approach requires the detection of hake (our reference species) in both the metabarcoding and qPCR datasets for each water sample therefore observation of other species might be affected by hake presence. Since hake is ubiquitously distributed across space and depth, samples lacking hake detections were sporadically distributed across the study area, and their omission appears not to have induced substantial bias in our estimates [SUPPLEMENT].  -->
+
+# Methods
+
+Below, we provide methodological summaries; full details for sampling, laboratory, and statistical methods are in the supplementary materials.
+
+## Sample Collection, Processing, and Quantitative PCR (qPCR)
+
+Samples were collected in 2.5L Niskin bottles at five depths from stations along the West Coast of the US aboard the ship *Bell Shimada* during Summer 2019, filtered immediately on 47 mm diameter mixed cellulose-ester sterile filters with a 1 $\mu$m pore size, subsequently extracted using a phase-lock phenol-chloroform protocol, and analysed in triplicate using a qPCR assay as described in @ramon-laca2021 and @shelton2022. 
+
+**Need list of depths sampled, other descriptions of where water was taken here**
+
+## Metabarcoding: Environmental Samples and Mock Community
+
+**AOS: In my opinion, almost none of this needs to go into the main text. I made a trimmed version... but perhaps we should include some things that I cut out.*
+
+**AOS: Trimmed version:**
+In total, 347 environmental samples were randomized and divided into 7 sequencing libraries for an Illumina MiSeq (v3 600 cycle kit). Total PCR reactions included eDNA samples (n = xxx), PCR blanks (n = xxx), positive controls (n = 8), extraction blanks (n = xxx), fieldwork water and air blank (n = xxx and xxx respectively), were amplified using MiFish-U universal primers [bolded; @miya2015a] (see Supplement A for details on metabarcoding methods.). PCR product was cleaned using Ampure Beads (1.2x) and then indexed in a second reaction. Resulting products were visualized on a 2% agarose gel and quantified using Quant-iT™ dsDNA Assay Kit (Thermo Fisher Scientific, USA) with Fluoroskan™ Microplate Fluorometer (Thermo Fisher Scientific, USA). Indexed products were pooled into libraries for sequencing, and then size- selected to extract only the target fish band using the E-Gel™ SizeSelect™ II Agarose Gels (Thermo Fisher Scientific, USA).
+
+Sequences were de-multiplexed and the adapters removed by Illumina sequencing. Primers were removed with Cutadapt v4.9 [@martin2011]. We then used DADA2 [default parameters, @callahan2016] to denoise sequences, remove chimeras, and generate amplicon sequence variants (ASVs). The sequences were then blasted against the NCBI nucleotide (nt) database (access: August 2024) using BLASTn algorithm with a cut off at 97% identity, assigning the least common ancestor of the top hit, resulting in species, genus, family, or higher rank classifications. Samples with fewer total number of reads than 1000 were removed from downstream analysis as indicator of poor reliability. Bioinformatic pipeline code and relevant data are available [HERE xxx].
+
+To calibrate metabarcoding observations and account for amplification bias [@gold2023; @shelton2023], we generated multiple mock communities comprising a total of 39 fish species. Vouchered DNA extracts or tissues were obtained from either the University of Washington Fish Collection at the Burke Museum or the NOAA Northwest Fisheries Science Center collections. After quantifying the concentration of mitochondrial DNA template in each DNA extract, we constructed a total of eight mock communities of varying species compositions (see SUPPLEMENTAL METHODS xxx). We selected 13 species of commercial and ecological importance that co-occurred in the environmental samples and in the mock community for downstream analysis: Pacific herring (*Clupea pallasii*), northern anchovy (*Engraulis mordax*), northern smoothtongue (*Leuroglossus stilbius*), Dover sole (*Microstomus pacificus*), Pacific sardine (*Sardinops sagax*), Pacific chub mackerel (*Scomber japonicus*), widow rockfish (*Sebastes entomelas*), northern lampfish (*Stenobrachius leucopsarus*), California barracudina (Tactostoma macropus), plainfin midshipman (*Tarletonbeania crenularis*), eulachon (*Thaleichthys pacificus*), Pacific jack mackerel (*Trachurus symmetricus*), and Pacific hake (*Merluccius productus*). After amplification and sequencing using the protocols outlined above, we used the mock communities to estimate species-specific amplification efficiencies and correct for amplification bias following @shelton2022.
+
+[Somewhere, include how many reads went through pipeline, how many were annotated, etc.]
+[Also explain that 13 species were in analysis, but because hake is ref species and already published, we focus on 12 in the main text.]
+
+<!-- **Original:** -->
+<!-- In total, 347 environmental samples were randomized and divided into 7 sequencing libraries for an Illumina MiSeq (v3 600 cycle kit). Total PCR reactions included eDNA samples (n = xxx), PCR blanks (n = xxx), positive controls (n = 8), extraction blanks (n = xxx), fieldwork water and air blank (n = xxx and xxx respectively), were amplified using MiFish-U universal primers [bolded; @miya2015a] with Illumina tails (forward TCG TCG GCA GCG TCA GAT GTG TAT AAG AGA CAG **GCC GGT AAA ACT CGT GCC AGC**; reverse GTC TCG TGG GCT CGG AGA TGT GTA TAA GAG ACAG **CA TAG TGG GGT ATC TAA TCC CAG TTTG**). DNA was amplified in the first PCR reaction (PCR1) in a 20 $\mu$L reaction consisting of: 10 $\mu$L of Phusion Master Mix (2X), 0.4 $\mu$L of the forward primer (10 $\mu$M); 0.4 $\mu$L of the reverse primer (10 $\mu$M), 0.6 $\mu$L of 100% DMSO, 0.5 $\mu$L of recombinant albumin (20 $\mu$g/$\mu$L), 4.4 $\mu$L of nuclease-free water and 2 $\mu$L of DNA template. Reactions were run with the following cycling conditions: 98°C for 30s; 35 cycles of 98°C for 10s, 60°C for 30s, and of 72°C for 3s; 72°C for 10m. -->
+
+<!-- PCR product was cleaned using Ampure Beads (1.2x) and then indexed in a second reaction (12.5 $\mu$L KAPA Hifi HotStart ReadyMix, 1.25 $\mu$L of nucleotide indexes (one per sample, Illumina Corp., IDT for Illumina DNA/RNA UD Index), 5 ul of PCR1 product and 6.25 of nuclease-free water) with cycling conditions of 95°C for 5m; 8 cycles of 98°C for 20s, 56°C for 30s, 72°C for 1m; 72°C for 5m. Products were visualized on a 2% agarose gel and quantified using Quant-iT™ dsDNA Assay Kit (Thermo Fisher Scientific, USA) with Fluoroskan™ Microplate Fluorometer (Thermo Fisher Scientific, USA). Indexed products were pooled into libraries for sequencing, and then size- selected to extract only the target fish band using the E-Gel™ SizeSelect™ II Agarose Gels (Thermo Fisher Scientific, USA). -->
+
+<!-- Sequences were de-multiplexed and the adapters removed by Illumina sequencing. Primers were removed with Cutadapt v4.9 [@martin2011]. We then used DADA2 [default parameters, @callahan2016] to denoise sequences, remove chimeras, and generate amplicon sequence variants (ASVs). The sequences were then blasted against the NCBI nucleotide (nt) database (access: August 2024) using BLASTn algorithm with a cut off at 97% identity, assigning the least common ancestor of the top hit, resulting in species, genus, family, or higher rank classifications. Samples with fewer total number of reads than 1000 were removed from downstream analysis as indicator of poor reliability. Bioinformatic pipeline code and relevant data are available [HERE xxx]. -->
+
+<!-- To calibrate metabarcoding observations and account for amplification bias [@gold2023; @shelton2023], we generated multiple mock communities comprising a total of 39 fish species. Vouchered DNA extracts or tissues were obtained from either the University of Washington Fish Collection at the Burke Museum or the NOAA Northwest Fisheries Science Center collections. After quantifying the concentration of mitochondrial DNA template in each DNA extract, we constructed a total of eight mock communities (4 even and 4 skewed proportions of mitochondrial DNA) of varying species compositions (see SUPPLEMENTAL METHODS xxx). We selected 13 species of commercial and ecological importance that co-occurred in the environmental samples and in the mock community for downstream analysis: Pacific herring (*Clupea pallasii*), northern anchovy (*Engraulis mordax*), northern smoothtongue (*Leuroglossus stilbius*), Dover sole (*Microstomus pacificus*), Pacific sardine (*Sardinops sagax*), Pacific chub mackerel (*Scomber japonicus*), widow rockfish (*Sebastes entomelas*), northern lampfish (*Stenobrachius leucopsarus*), California barracudina (Tactostoma macropus), plainfin midshipman (*Tarletonbeania crenularis*), eulachon (*Thaleichthys pacificus*), Pacific jack mackerel (*Trachurus symmetricus*), and Pacific hake (*Merluccius productus*). After amplification and sequencing using the protocols outlined above, we used the mock communities to estimate species-specific amplification efficiencies and correct for amplification bias following @shelton2022. -->
+
+<!-- **End Original** -->
+
+## Statistical analysis
+
+To generate estimates of DNA concentration, we constructed a joint statistical model for qPCR and Mifish metabarcoding observations from water samples collected during the 2019 Joint HAKE CRUISE. The full statistical details are described in supplement B, but we provide an overview of the approach here. We used qPCR observations of hake DNA concentration for all water sample available (XXX unique water samples were assayed and using a total of YYY qPCR reactions). This model takes observations of the PCR cycle at which amplification was detected in each water sample and estimates a hake DNA concentration for each water bottle collected at each sampling station-depth combination.  This statistical model accounts for sample-specific effects (e.g. diluation of the sample before PCR amplification) as well as the effect of covariates (e.g. the depth of the ocean bottom) on hake DNA concentration. This qPCR component of the joint model provides an  quantification of DNA concentration for one species (Pacific hake) that can connected to the multispecies information coming from DNA metabarcoding.
+
+Unlike single-species observation methods, metabarcoding data are compositional.  This means that each sample only provides information about proportions of species-specific sequences rather than absolute DNA concentrations. Furthermore, metabarcoding does not yield a consistent, species-specific detection probability (i.e., sensitivity). Instead, the likelihood of detecting a particular species depends heavily on its competition with other sequences during PCR amplification, as well as on the total sequencing depth for that sample. Higher sequencing depth generally increases the probability of identifying rarer species, conditional on their DNA being collected and it being amplifiable with the chosen PCR primers. 
+
+We follow Shelton et al. (2023) and construct a compositional model for the metabarcoding data from XXX of the water samples analyzed for Pacific hake qPCR. We use the metabarcoding observations of the 8 mock communities to calibrate the relative amplification efficiency of the 13 focal species. Importantly, we include Pacific hake as one of the 13 species. In the absence of qPCR data, this model would produce estimates of proportional DNA contributions for each water sample.  But for each sample in which we have non-zero estimates of hake DNA concentration from qPCR, and non-zero estimate of hake proportional contribution from metabarcoding, we can expand from the DNA concentration of hake to provide an estimate of the DNA concentration of the 12 remaining focal species [see @guri2024a and @allan2023]. Our model generates estimates of DNA concentration (copies/$\mu$L) for each species. Thus hake is a lynchpin that allows us to provide estimates of DNA concentration for all other species; we refer to hake as our "reference species". Hake was present in XX% of qPCR bottles, and YY% of metabarcoding samples, making it an appropriate and important reference species. Samples lacking hake detections were sporadically distributed across the study area, and their omission appears not to have induced substantial bias in our estimates [SUPPLEMENT].
+
+We focus on species that were relatively common in the raw dataset -- those well above the lower detection limits under our sampling and sequencing conditions -- ensuring greater confidence in their consistent detectability. Although many more species were detected in the raw data [SUPPLEMENT], the majority were much rarer and thus less reliably observed.
+
+<!-- Our modeling approach requires the detection of hake (our reference species) in both the metabarcoding and qPCR datasets for each water sample therefore observation of other species might be affected by hake presence. Since hake is ubiquitously distributed across space and depth, samples lacking hake detections were sporadically distributed across the study area, and their omission appears not to have induced substantial bias in our estimates [SUPPLEMENT].  -->
+
+[Ryan thinks we should include the core QM equations here, because it seems a bit risky to simply reference the paper; want to highlight that we did a lot of quantitative lifting to get a result]
+
+The above statistical model provides predictions of species-specific DNA concentrations ($C$) at each depth sampled (d = 0, 50, 150, 300 or 500 m).  We used the sdmTMB package [@anderson2022] to generate distribution models for the concentration of eDNA , as:
+$$
+ln(C_{xyz})=\alpha_d + \omega(s)+\epsilon_d(s)
+$$
+where $x,y,z$ index longitude, latitude, and depth (respectively), $\alpha_d$ is the spatial intercept for each depth, $\omega(s)$ is the smooth spline as a function of sample depth (in m), and $\epsilon_d(s)$ is a smooth, depth-dependent error term. **AOS: LETs CHECK, but there shouldn't be smooth on depth.  I think this paragraph should be:**
+
+where $x,y,z$ index longitude, latitude, and depth, respectively, $\alpha_d$ is an intercept for each depth, $\omega(s)$ is a spatial smooth shared among depths, and $\epsilon_d(s)$ is a depth-specific spatial smooth. Both $\omega(s)$ and $\epsilon_d(s)$ are a zero-centered Gaussian random field estimated using the stochastic partial differntial equation (SPDE) approximation (see Anderson et al. YEAR).
+
+Each species was fitted individually while we created and selected the best mesh for approximating spatial Gaussian random fields as part of the model. [OWEN add detail]
+
+All statistical analysis, figure preparation, and data curation were performed in R [@rcoreteam2024].
+
+# Acknowledgments
+
+We thank Linda Park for her foresight and perserverence, Katherine Maslenikov for providing tissue samples for the mock community analysis...
+
+# References
+
+
+
+# Supplementary figures
+
+![Continuation of figure 1.\label{SF1}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/5.%20Supplementary%20Figure%201.jpg)
+
+![Histogram of eDNA concentration distribution for each species\label{SF2}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/6.%20Supplementary%20Figure%202.jpg)
+
+![Sample distribution\label{SF3}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/7.%20Supplementary%20Figure%203.jpg)
+
+![Species co-occurance\label{SF4}](https://raw.githubusercontent.com/MMARINeDNA/QM-qPCR-joint/refs/heads/main/plots/8.%20Supplementary%20Figure%204.jpg)
