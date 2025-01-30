@@ -1,0 +1,433 @@
+---
+title: ''
+date: ''
+format: 
+  pdf:
+    keep-tex: true
+# header-includes:
+# - \usepackage{lineno} 
+# - \linenumbers
+# - \usepackage{setspace}\doublespacing
+# 
+# format: 
+#   html:
+#     embed-resources: true
+output:
+  pdf_document:
+    fig_caption: yes
+    latex_engine: pdflatex
+    number_sections: no
+  word_document: default
+#bibliography: eDNA_2024.bib
+---
+
+
+## Methods 
+
+### Overview 
+
+The use of eDNA methods will be unfamiliar to many readers and so we provide a high level summary of the methods and before providing technical details in the following sections. For each sample, 2.5L of water is collected. Each sample is then filtered using vacuum filtration onto a filter paper and the filter is placed in a preservative and stored until it can be transported to the genetics laboratory at the end of the survey cruise. In the laboratory, samples are processed to extract and clean the DNA captured on the filter. The extracted DNA samples contain DNA from a wide variety of organisms (from bacteria to plankton to fish to whales). We then assayed each sample using quantitative polymerase chain reaction (qPCR) using a primer that amplifies a portion of the Pacific hake mitochondrial genome. The qPCR assay provides a way of determining the concentration of hake mitochondiral DNA in each sample. From these qPCR observations we can construct a statistical model to describe the variation in hake DNA concentration across samples, space, depths, and among years.  Finally, we can combine the estimates of hake concentration to generate an index based on DNA concentration for each year. This eDNA index, therefore, represents and estimate of overall DNA concentration in a given year which represents the biomass of hake present in the environment (see above). 
+
+In the sections that follow, we provided detailed information about the design and execution of water sampling and the creation of an eDNA index from the statistical model. We provide a brief overview of the spatio-temporal model and estimation procedure in the methods and a full description of the statistical model separately after the results. We largely omit the detailed protocols and laboratory analyses as they are described elsewhere [see @ramon-laca2021PLOS].
+
+### Field sampling and processing water samples for eDNA
+
+We analyzed eDNA samples collected during the 2019 U.S.-Canada Integrated Ecosystem \& Acoustic-Trawl Survey for Pacific hake aboard the NOAA Ship *Bell M. Shimada* conducted between July and September [@deBlois2020survey]. 
+
+We collected seawater from up to six depths (surface, 50, 100, 150, 300, and 500m in 2019) where a Conductivity Temperature and Depth (CTD) rosette was deployed (186 stations). Two replicates of 2.5L of seawater were collected at each depth and station from independent Niskin bottles attached to a CTD rosette. Sampling stations were spread between San Francisco, CA and Cape Flattery, WA. Water samples from the surface were collected from the ship's salt water intake line but processed identically to Niskin samples. We refer to the depth of surface sampling at 0m, but in truth surface samples are collected at a depth of approximately 3m. Nearly all CTD casts and therefore water collection for eDNA occurred at night while acoustic sampling and trawl sampling for other survey components took place during daylight hours. In addition to field samples, we collected a range of control water samples to test for laboratory contamination during water filtering, DNA extraction, and subsequent laboratory steps.
+
+
+We assayed the DNA concentration of hake using qPCR in 1,752 individual water samples. We analyzed each sample at least 3 times independently using qPCR. After DNA extraction and cleaning, a single water sample is 100 $\mu L$.  Each qPCR reaction uses 2 $\mu L$ and provides an estimate of the DNA concentration (units: $DNA$ $copies$ $\mu L^{-1}$) for each water sample. We analyzed control sample and qPCR standards of known DNA concentration alongside the field samples to calibrate the qPCR analysis. 
+
+#### Summary of Statistical Model and Estimation
+
+We developed a joint model for modeling DNA concentration in the coastal ocean using single-species qPCR data Pacific hake and metabarcoding data from the 12S MiFish Universal(?) primer. This work builds off previous single-species eDNA models constructed for Pacific hake (Shelton et al. 2022) and models for joining qPCR and metabarcoding data (Guri et al. 2024). We first describe the 
+
+
+\newpage
+
+### Statistical model
+
+General approach sentence or three
+
+#### qPCR model
+
+We developed a state-space framework for modeling hake DNA concentration in the coastal ocean building and modifying the work of Shelton et al. (2022).  State-space models separate the true biological process from the methods used to observe the process. Let $D(x,y,d)$ be the true, but unobserved concentration of hake DNA (log DNA $copies$ $\mu L^{-1}$) present at spatial coordinates $\{x,y\}$ (eastings and northings, respectively, in km) and sample depth $d$ (meters) in year $t$. Let $\alpha_0$ be the intercept representing the hake DNA concentration and $\epsilon(x,y,d)$ be a random effect that allows for the effect of spatial location and water depth. We write these as additive on the log-scale,
+
+\begin{align}
+  & D(x,y,d) = \alpha_0 + \epsilon(x,y,d) \\
+  & \epsilon(x,y,d) \sim N(0,\sigma_D)
+\end{align}
+
+This model describes perhaps the simplest possible random effect model and notably does not leverage any information about the spatial arrangement of samples (i.e. the random effect does not include a spatial correlation component).  This is intentional.  The focus of this model is on the other species (non-Pacific hake) DNA concentration and therefore we allow the estimated hake concentrations to follow the qPCR observations as much as is reasonable. 
+
+Unfortunately, qPCR does not directly measure DNA concentration. Instead qPCR measures the PCR cycle at which a 2$\mu L^{-1}$ aliquot of a extacted DNA was detected to fluoresce and compares that observation against the flourescence pattern of samples of known DNA concentration ("the standard curve"). This provides an estimate of DNA concentration for each unknown sample. Each water sample is analyzed using at least 3 independent qPCR replicates to account for laboratory and machine variability. In addition to qPCR variability among replicates, we also have to account for modifications that affect each water sample and occurred during water sampling and processing. First, we have three offsets that modify the true DNA concentration to affect what we observed in the qPCR: 1) $V_i$ is the proportion of 2.5 L filtered from Niskin $i$ (occasionally some seawater was spilled or not filtered; $V_i =1$ for the vast majority of samples); 2) $I_i$ is the known dilution used to on sample $i$ to eliminate PCR inhibition. PCR inhibition is most commonly observed in surface samples and is vanishingly rare for samples collected below 100m; 3) $\mathbf{I}\zeta$ is an estimated offset for an ethanol wash error ($\zeta$ is the estimated effect of the wash error and $\mathbf{I}$ is an indicator variable where $\mathbf{I}=1$ for affected samples and $\mathbf{I}=0$ otherwise; see Shelton et al. 2022 Supp S1 for additional description).
+
+Finally, we add a random effect for the individual bottles sampled at each year-station-depth combination (for notational simplicity, let $\delta_i = \delta(x,y,d)$). 
+
+This effect which describes the deviation of individual sampled bottles from the location mean, $\delta_i \sim N(0,\tau)$, with $\tau$ indicating a depth-specific standard deviation among bottles. Because we have only two replicate bottles at each location, we impose a sum to zero constraint on the bottles collected from a single location (i.e. for a given location, $\sum_i \delta_i = 0$). Then, the log-concentration of DNA in a sample analyzed by qPCR, $E_i$ is, 
+
+\begin{align}
+  E_{i} &= D({x,y,d}) +  \log{V_i} + \log{I_i} + \mathbf{I}\zeta + \delta_i
+\end{align}
+
+We connect the estimated concentrations to observations from qPCR using two likelihoods that are similar to a hurdle model. First we determine whether amplification was detected in each qPCR replicate $r$ run on each plate $j$, $G_{ijr}$ and if amplification was observed we model the PCR cycle at which amplification was detected $C_{ijr}$; $C_{ijr}$ is observed as a continuous, positive value. DNA concentrations have a log-linear relationships with $C_{ijr}$; smaller values of $C_{ijr}$ are associated with higher DNA concentrations. 
+
+Because we are modeling the discrete number of DNA molecules that are present in the assayed sample, we know that the Poisson distribution provides an appropriate observation distribution for the number of molecules present in a given qPCR reaction. Assuming a Poisson distribution, conditional on a true mean number of DNA copies in the sample $X$, the probability of having exactly zero DNA copies in a qPCR reaction is $e^{-X}$ and the probability of having non-zero DNA copies is the complement, $1-e^{-X}$. If there are exactly zero molecules in a qPCR reaction, amplification and therefore detection of amplification will not occur. However, there are other factors (e.g. PCR inhibition) that may reduce amplification further and therefore we expect the probability of amplification to be at most $1-e^{-X}$. As a result, we estimate an additional term, $\phi_{j}$ representing the fractional reduction in amplification efficiency due to other factors on qPCR plate $j$ ($0<\phi_{j}<1$). Then we have a pair of observation models for hake DNA, both of which are a function of DNA concentration, $E_{ij}$
+
+\begin{align}
+  G_{ijr} &\sim Bernoulli\left(1 - \exp(-2 e^{E_{ij}}\phi_{j}) \right)\\ 
+  C_{ijr} &\sim N(\beta_{0j}+\beta_{1j}{E_{ij}},\sigma_C(E_{ij})) \qquad  if \: G_{ijr} = 1 
+\end{align} 
+
+The 2 is present in the first line of the equation because we use 2 $\mu L$ of sample in each qPCR reaction and so the expected DNA copies in reaction is $2e^{E_{ij}}$. We allow $\sigma_C(E_{ij})$ to vary as a log-linear function of DNA concentration to account for the fact that there is decreased variability in qPCR measures of $C_t$ at higher DNA concentrations: $\sigma_C({E_{ij}}) = exp(\gamma_{0}+\gamma_{1}E_{ij})$ (see also Fig. XX).
+
+By itself, the above model is unidentifiable because field samples do not provide information about the parameters that define relationship between the number of DNA copies and PCR cycle ($\beta_{0j}$, $\beta_{1j}$, and $\phi_j$). As is standard with qPCR analyses, we include standards of known concentration to estimate these parameters. Each qPCR plate has replicate samples with a known number of DNA copies. These standards span six orders of magnitude (1 to 100,000 copies $\mu L^{-1}$, each of 2$\mu L$) and determine the relationship between copy number and PCR cycle of detection. Let $K_j$ be the log of the known copy number in PCR plate $j$, then,
+
+\begin{align}
+  G_{jr} &\sim Bernoulli\left(1-exp(-2 K_j \phi_{j})\right)\\
+  C_{jr} &\sim Normal(\beta_{0j}+\beta_{1j}\log{K_{j}},\sigma_C({K_j})) \quad  if \: G_{jr} =1
+\end{align}
+
+Note that there are different intercept $\beta_{0j}$, slope $\beta_{1j}$ and detectability $\phi_{j}$ parameters for each PCR plate to allow for among-plate variation in amplification. We model each calibration paratemeter $\beta_{0j},\beta_{1j},\phi_{j})$ hierarchically using a normal distribution, with among plate mean and variance (i.e. $\beta_{0j} \sim N(\mu_{\beta_{0}},\sigma_{\beta_{0}})$.
+
+#### Metabarcoding model
+
+In addition to the qPCR observations, we used the MiFish primer and high throughput sequencing to detect and enumerate the sequences of other fish species in the same samples that were examined for hake DNA. Again, we are interested in determining the DNA concentration of each focal species in each sample. Unfortunately, metabarcoding data is compositional data (see XXX), and so it can inform the relative abundance of species within a sample, alone it cannot provide estimates of DNA concentration. Fortunately, the qPCR data from Pacific hake provides information about DNA concentration for one species and the metabarcoding data provides information about the relative abundance for tens of species, including hake. Here, we follow and extend the metabarcoding model developed by Shelton et al. (2023) and show how it links with the qPCR model above. 
+
+As above, we let $D_j(x,y,d)$ be the true log-scale eDNA concentration for species $j$ and $E_j(x,y,d)$ be the 
+
+STOPPED HERE .
+As the data are compositional, we model the DNA concentration relative to a reference species in each sample, $R$ (which species is used as a reference $R$ varies among sites). We define $\alpha_i$ as the per PCR cycle log amplification rate for species $i$.  We can then calculate $\nu_{ijb}$, the log-ratio between species $j$ and the reference species after accounting for amplification bias and random effects,
+
+\begin{align} 
+  \nu_{ijb} &= \left($E_j(x,y,d)$ - $E_R(x,y,d)$\right) + \left(\kappa_{ijb} -\kappa_{Rjb} \right) + N_{PCR} \left(\alpha_i - \alpha_R \right) \\
+  \kappa_{ijb} &\sim N(0,\sigma)
+\end{align}
+
+
+
+We include the effects of species variation in PCR amplification efficiency (see *Mock Community* section).
+
+
+```{=tex}
+```
+
+with the three parentheses on the right side of eq. 5 represent log-differences between species $i$ and the reference species for DNA concentration, biological replicate effects, and amplification differences, resepectively (from left to right). To maintain identifiability, we assign one $\alpha_i = 0$ and for each sample, $\kappa_{Rjb} = 0$. We impose an additional sum to zero constraint on $\kappa_{kjb}$ as well: $\sum_{b=1}^B \kappa_{kjb} = 0$. We can then convert the $\nu$s to the predicted proportions of the metabarcoding reads $\mu_{kjb}$ using the softmax transformation,
+
+```{=tex}
+\begin{align} 
+  \mu_{ijb} &= \dfrac{e^{\nu_{ijb}}}{\sum_{i=1}^I e^{\nu_{ijb}}} 
+\end{align}
+```
+
+and finally we observe read counts for each technical replicates $t$ for each group, site, and biolgical replicate ${Z}_{kjbt}$.  We use a Dirichlet-multinomial likelihood to model these observed counts, allowing for increased variability over the Multinomial among technical replicates.
+
+```{=tex}
+\begin{align} 
+  \boldsymbol{Z}_{jbt} & \sim Dirichlet-Multinomial\left(\boldsymbol{\mu}_{jb},a_0,N_{jb}\right) 
+\end{align}
+```
+
+with $a_0$ the Dirichlet overdispersion parameter (as $a_0$ becomes very large the Dirichlet-Multinomial converges to the Multinomial distribution), and $N_{jbt}$ is the total number of reads observed across all groups for that site, biological replicate, and technical replicate. For completeness, note that we use a slight reparameterization of the traditional Dirichlet-Multinomial; here $E[Z_{ijbt}] = \mu_{ijb} a_0 N_{jb}$. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+For estimation, we fit the model for the standards first and treat them as fixed and known when we estimate the parameters for the field collected water samples.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Model Fit and Spatial Predictions
+
+The model generated predictions that varied in space and time and was able to match qPCR observations. We present a few diagnostic plots including predicted-observed plots for both the occurrence and postive components in a section at the end of this document (see *Diagnostic Plots*). We focus on the spatial predictions here as they are the most relevant component to generating an abundance index, but we also comment on the contribution of fixed, smooth, and random effects to model predictions.
+
+First, we provide plot of the spatial predictions of hake DNA concentration ($D$, units: log $copies$ $\mu L^{-1}$) to observed locations (Fig. \ref{fig:depth.preds.Di.all}). In truth, these figures are small and difficult to interpret, so we provide a second figure that shows the predictions for just the 50m and 150m depths (Fig. \ref{fig:depth.preds.Di.few}). 
+
+We can make predictions to the entire gridded 5km surface as well (Fig. \ref{fig:depth.preds.smooth}). As with Fig. \ref{fig:depth.preds.Di.all}, this is too small to be particualrly informative, so focus on 50m and 150m depths for this smooth prediction as well (Fig. \ref{fig:depth.preds.smooth.few}). Hake DNA is generally most abundant in the 150m to 300m water depth range (see also Shelton et al. 2022). 
+
+
+## Acknowledgements
+
+Funding for this project was provided by the NMFS Genomic Strategic Initiative. We thank the crew and scientists of the NOAA ship *Bell M. Shimada* and DFO Ship *Sir John Franklin* for support during the shipboard collection effort. We thank E. Iwamoto and other members of the molecular genetics lab at the Northwest Fisheries Science Center supported laboratory work. We thank the many members of the FEAT team and the Northwest Fisheries Science Center including J. Clemmons, A. Billings, J. Pohl, D. Chu, E. Phillips, S. Parker-Stetter, R. Thomas, and S. deBlois**
+
+<!-- \clearpage -->
+
+### References
+
+\leavevmode\vadjust pre{\hypertarget{ref-AndersonsdmTMB2024}{}}
+Anderson, Sean C., Eric J. Ward, Philina A. English, Lewis A. K.
+Barnett, and James T. Thorson. 2024. {``sdmTMB: An r Package for Fast,
+Flexible, and User-Friendly Generalized Linear Mixed Effects Models with
+Spatial and Spatiotemporal Random Fields.''} \emph{bioRxiv}
+2022.03.24.485545. \url{https://doi.org/10.1101/2022.03.24.485545}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-andres2023a}{}}
+Andres, Kara J., David M. Lodge, Suresh A. Sethi, and Jose Andrés. 2023.
+{``Detecting and Analysing Intraspecific Genetic Variation with {eDNA}:
+{From} Population Genetics to Species Abundance.''} \emph{Molecular
+Ecology} 32 (15): 4118--32. \url{https://doi.org/10.1111/mec.17031}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-andruszkiewicz2021environmental}{}}
+Andruszkiewicz Allan, Elizabeth, Weifeng Gordon Zhang, Andone C Lavery,
+and Annette F Govindarajan. 2021. {``Environmental DNA Shedding and
+Decay Rates from Diverse Animal Forms and Thermal Regimes.''}
+\emph{Environmental DNA} 3 (2): 492--514.
+
+\leavevmode\vadjust pre{\hypertarget{ref-baetscher2024}{}}
+Baetscher, Diana S., Meredith R. Pochardt, Patrick D. Barry, and Wes A.
+Larson. 2024. {``Tide Impacts the Dispersion of {eDNA} from Nearshore
+Net Pens in a Dynamic High‐latitude Marine Environment.''}
+\emph{Environmental DNA} 6 (2): e533.
+\url{https://doi.org/10.1002/edn3.533}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-barnes2016ecology}{}}
+Barnes, Matthew A, and Cameron R Turner. 2016. {``The Ecology of
+Environmental {DNA} and Implications for Conservation Genetics.''}
+\emph{Conservation Genetics} 17 (1): 1--17.
+
+\leavevmode\vadjust pre{\hypertarget{ref-dambly2023integrated}{}}
+Dambly, Lea I, Nick JB Isaac, Kate E Jones, Katherine L Boughey, and
+Robert B O'Hara. 2023. {``Integrated Species Distribution Models Fitted
+in INLA Are Sensitive to Mesh Parameterisation.''} \emph{Ecography} 2023
+(7): e06391.
+
+\leavevmode\vadjust pre{\hypertarget{ref-deBlois2020survey}{}}
+de Blois, Steven. 2020. {``The 2019 Joint {U.S.}--{Canada} Integrated
+Ecosystem and {P}acific Hake Acoustic-Trawl Survey: Cruise Report
+SH-19-06.''} \emph{U.S. Department of Commerce, NOAA Processed Report
+NMFS-NWFSC-PR-2020-03}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-dibattista2022}{}}
+DiBattista, Joseph D., Ashley M. Fowler, Indiana J. Riley, Sally Reader,
+Amanda Hay, Kerryn Parkinson, and Jean-Paul A. Hobbs. 2022. {``The Use
+of Environmental {DNA} to Monitor Impacted Coastal Estuaries.''}
+\emph{Marine Pollution Bulletin} 181 (August): 113860.
+\url{https://doi.org/10.1016/j.marpolbul.2022.113860}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-feist2021footprints}{}}
+Feist, Blake E, Jameal F Samhouri, Karin A Forney, and Lauren E Saez.
+2021. {``Footprints of Fixed-Gear Fisheries in Relation to Rising Whale
+Entanglements on the {US West Coast}.''} \emph{Fisheries Management and
+Ecology} 28 (3): 283--94.
+
+\leavevmode\vadjust pre{\hypertarget{ref-guri2024a}{}}
+Guri, Gledis, Andrew Olaf Shelton, Ryan P Kelly, Nigel Yoccoz, Torild
+Johansen, Kim Præbel, Tanja Hanebrekke, Jessica Louise Ray, Johanna
+Fall, and Jon-Ivar Westgaard. 2024. {``Predicting Trawl Catches Using
+Environmental {DNA}.''} Edited by W Stewart Grant. \emph{ICES Journal of
+Marine Science}, August, fsae097.
+\url{https://doi.org/10.1093/icesjms/fsae097}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Jo2023RSB}{}}
+Jo, Toshiaki S. 2023. {``Utilizing the State of Environmental DNA (eDNA)
+to Incorporate Time-Scale Information into eDNA Analysis.''}
+\emph{Proceedings of the Royal Society B: Biological Sciences} 290
+(1999): 20230979. \url{https://doi.org/10.1098/rspb.2023.0979}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-jo2019b}{}}
+Jo, Toshiaki, Hiroaki Murakami, Satoshi Yamamoto, Reiji Masuda, and
+Toshifumi Minamoto. 2019a. {``Effect of Water Temperature and Fish
+Biomass on Environmental {DNA} Shedding, Degradation, and Size
+Distribution.''} \emph{Ecology and Evolution} 9 (3): 1135--46.
+\url{https://doi.org/10.1002/ece3.4802}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-jo2019effect}{}}
+---------. 2019b. {``Effect of Water Temperature and Fish Biomass on
+Environmental DNA Shedding, Degradation, and Size Distribution.''}
+\emph{Ecology and Evolution} 9 (3): 1135--46.
+
+\leavevmode\vadjust pre{\hypertarget{ref-KirtaneEDNA2021}{}}
+Kirtane, Anish, Daniel Wieczorek, Thomas Noji, Liza Baskin, Claire Ober,
+Riley Plosica, Ashley Chenoweth, Katie Lynch, and Lauren Sassoubre.
+2021. {``Quantification of Environmental DNA (eDNA) Shedding and Decay
+Rates for Three Commercially Harvested Fish Species and Comparison
+Between eDNA Detection and Trawl Catches.''} \emph{Environmental DNA} 3
+(6): 1142--55. https://doi.org/\url{https://doi.org/10.1002/edn3.236}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Klymus2015}{}}
+Klymus, Katy E., Catherine A. Richter, Duane C. Chapman, and Craig
+Paukert. 2015. {``Quantification of eDNA Shedding Rates from Invasive
+Bighead Carp Hypophthalmichthys Nobilis and Silver Carp
+Hypophthalmichthys Molitrix.''} \emph{Biological Conservation} 183:
+77--84.
+https://doi.org/\url{https://doi.org/10.1016/j.biocon.2014.11.020}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-KristensenTMB2016}{}}
+Kristensen, Kasper, Anders Nielsen, Casper W. Berg, Hans Skaug, and
+Bradley M. Bell. 2016. {``TMB: Automatic Differentiation and Laplace
+Approximation.''} \emph{Journal of Statistical Software} 70 (5): 1--21.
+\url{https://doi.org/10.18637/jss.v070.i05}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Lamb2022MER}{}}
+Lamb, Philip D., Vera G. Fonseca, David L. Maxwell, and Chibuzor C.
+Nnanatu. 2022. {``Systematic Review and Meta-Analysis: Water Type and
+Temperature Affect Environmental DNA Decay.''} \emph{Molecular Ecology
+Resources} 22 (7): 2494--2505.
+https://doi.org/\url{https://doi.org/10.1111/1755-0998.13627}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-ledger2024}{}}
+Ledger, Kimberly J., Mary Beth Rew Hicks, Thomas P. Hurst, Wes Larson,
+and Diana S. Baetscher. 2024. {``Validation of {Environmental}
+{\textsc{DNA}} for {Estimating Proportional} and {Absolute Biomass}.''}
+\emph{Environmental DNA} 6 (5): e70030.
+\url{https://doi.org/10.1002/edn3.70030}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Lindgren2011}{}}
+Lindgren, Finn, Håvard Rue, and Johan Lindström. 2011. {``An Explicit
+Link Between Gaussian Fields and Gaussian Markov Random Fields: The
+Stochastic Partial Differential Equation Approach.''} \emph{Journal of
+the Royal Statistical Society: Series B (Statistical Methodology)} 73
+(4): 423--98.
+https://doi.org/\url{https://doi.org/10.1111/j.1467-9868.2011.00777.x}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-maes2023}{}}
+Maes, Sarah M., Sam Desmet, Rein Brys, Klaas Sys, Tom Ruttink, Sara
+Maes, Kris Hostens, Lies Vansteenbrugge, and Sofie Derycke. 2023.
+{``Detection and Quantification of Two Commercial Flatfishes
+{{\emph{Solea}}}{{\emph{ Solea}}} and {{\emph{Pleuronectes}}}{{\emph{
+Platessa}}} in the {North Sea} Using Environmental {DNA}.''}
+\emph{Environmental DNA}, April, edn3.426.
+\url{https://doi.org/10.1002/edn3.426}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-malick2020relationships}{}}
+Malick, Michael J, Mary E Hunsicker, Melissa A Haltuch, Sandra L
+Parker-Stetter, Aaron M Berger, and Kristin N Marshall. 2020.
+{``Relationships Between Temperature and {P}acific Hake Distribution
+Vary Across Latitude and Life-History Stage.''} \emph{Marine Ecology
+Progress Series} 639: 185--97.
+
+\leavevmode\vadjust pre{\hypertarget{ref-muenzel2024}{}}
+Muenzel, Dominic, Alessia Bani, Maarten De Brauwer, Eleanor Stewart,
+Cilun Djakiman, Halwi, Ray Purnama, et al. 2024. {``Combining
+Environmental {DNA} and Visual Surveys Can Inform Conservation Planning
+for Coral Reefs.''} \emph{Proceedings of the National Academy of
+Sciences} 121 (17): e2307214121.
+\url{https://doi.org/10.1073/pnas.2307214121}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Ostberg2022}{}}
+Ostberg, Carl O., and Dorothy M. Chase. 2022. {``Ontogeny of eDNA
+Shedding During Early Development in Chinook Salmon (Oncorhynchus
+Tshawytscha).''} \emph{Environmental DNA} 4 (2): 339--48.
+https://doi.org/\url{https://doi.org/10.1002/edn3.258}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-pont2024}{}}
+Pont, Didier. 2024. {``Predicting Downstream Transport Distance of Fish
+{eDNA} in Lotic Environments.''} \emph{Molecular Ecology Resources} 24
+(4): e13934. \url{https://doi.org/10.1111/1755-0998.13934}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-RcoreTeam}{}}
+R Core Team. 2024. \emph{R: A Language and Environment for Statistical
+Computing}. Vienna, Austria: R Foundation for Statistical Computing.
+\url{https://www.R-project.org/}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-ramon-laca2021PLOS}{}}
+Ramón-Laca, Ana, Abigail Wells, and Linda Park. 2021. {``A Workflow for
+the Relative Quantification of Multiple Fish Species from Oceanic Water
+Samples Using Environmental DNA (eDNA) to Support Large-Scale 2021.''}
+\emph{PLoS ONE} 16: e0257773.
+\url{https://doi.org/10.1371/journal.pone.0257773}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-sassoubre2016quantification}{}}
+Sassoubre, Lauren M, Kevan M Yamahara, Luke D Gardner, Barbara A Block,
+and Alexandria B Boehm. 2016. {``Quantification of Environmental {DNA}
+(e{DNA}) Shedding and Decay Rates for Three Marine Fish.''}
+\emph{Environmental Science \& Technology} 50 (19): 10456--64.
+
+\leavevmode\vadjust pre{\hypertarget{ref-shelton2019biocons}{}}
+Shelton, Andrew Olaf, Ryan P Kelly, James L O'Donnell, Linda Park, Piper
+Schwenke, Correigh Greene, Richard A Henderson, and Eric M Beamer. 2019.
+{``Environmental {DNA} Provides Quantitative Estimates of a Threatened
+Salmon Species.''} \emph{Biological Conservation} 237: 383--91.
+
+\leavevmode\vadjust pre{\hypertarget{ref-shelton2022hake}{}}
+Shelton, Andrew Olaf, Ana Ramón-Laca, Abigail Wells, Julia Clemons,
+Dezhang Chu, Blake E. Feist, Ryan P. Kelly, et al. 2022.
+{``Environmental DNA Provides Quantitative Estimates of Pacific Hake
+Abundance and Distribution in the Open Ocean.''} \emph{Proceedings of
+the Royal Society B: Biological Sciences} 289 (1971): 20212613.
+\url{https://doi.org/10.1098/rspb.2021.2613}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-stoeckle2024}{}}
+Stoeckle, Mark Y., Jesse H. Ausubel, Greg Hinks, and Stacy M. VanMorter.
+2024. {``A Potential Tool for Marine Biogeography: {eDNA-dominant} Fish
+Species Differ Among Coastal Habitats and by Season Concordant with
+Gear-Based Assessments.''} Edited by Arga Chandrashekar Anil. \emph{PLOS
+ONE} 19 (11): e0313170.
+\url{https://doi.org/10.1371/journal.pone.0313170}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Thalinger2021FrontEE}{}}
+Thalinger, Bettina, Andreas Rieder, Anna Teuffenbach, Yannick Pütz,
+Thorsten Schwerte, Josef Wanzenböck, and Michael Traugott. 2021. {``The
+Effect of Activity, Energy Use, and Species Identity on Environmental
+DNA Shedding of Freshwater Fish.''} \emph{Frontiers in Ecology and
+Evolution} 9. \url{https://doi.org/10.3389/fevo.2021.623718}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-THORSON2019143}{}}
+Thorson, James T. 2019. {``Guidance for Decisions Using the Vector
+Autoregressive Spatio-Temporal (VAST) Package in Stock, Ecosystem,
+Habitat and Climate Assessments.''} \emph{Fisheries Research} 210:
+143--61.
+https://doi.org/\url{https://doi.org/10.1016/j.fishres.2018.10.013}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-thorson2015geostatistical}{}}
+Thorson, James T, Andrew O Shelton, Eric J Ward, and Hans J Skaug. 2015.
+{``Geostatistical Delta-Generalized Linear Mixed Models Improve
+Precision for Estimated Abundance Indices for West Coast
+Groundfishes.''} \emph{ICES Journal of Marine Science} 72 (5):
+1297--1310.
+
+\leavevmode\vadjust pre{\hypertarget{ref-veilleux2021}{}}
+Veilleux, Heather D., Melissa D. Misutka, and Chris N. Glover. 2021.
+{``Environmental {DNA} and Environmental {RNA}: {Current} and
+Prospective Applications for Biological Monitoring.''} \emph{Science of
+The Total Environment} 782 (August): 146891.
+\url{https://doi.org/10.1016/j.scitotenv.2021.146891}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Wilder2023}{}}
+Wilder, Maxwell L., John M. Farrell, and Hyatt C. Green. 2023.
+{``Estimating eDNA Shedding and Decay Rates for Muskellunge in Early
+Stages of Development.''} \emph{Environmental DNA} 5 (2): 251--63.
+https://doi.org/\url{https://doi.org/10.1002/edn3.349}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-YatesMEC2021}{}}
+Yates, M. C., D. M. Glaser, J. R. Post, M. E. Cristescu, D. J. Fraser,
+and A. M. Derry. 2021. {``The Relationship Between eDNA Particle
+Concentration and Organism Abundance in Nature Is Strengthened by
+Allometric Scaling.''} \emph{Molecular Ecology} 30 (13): 3068--82.
+https://doi.org/\url{https://doi.org/10.1111/mec.15543}.
+
+
+
