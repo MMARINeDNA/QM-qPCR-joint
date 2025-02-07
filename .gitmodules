@@ -1,3 +1,6 @@
 [submodule "Manuscript_and_Appendix_Latex"]
 	path = Manuscript_and_Appendix_Latex
 	url = https://github.com/gledguri/Quantitative-Multispecies-Monitoring-at-a-Continental-Scale.git
+[submodule "manuscript_latex"]
+	path = manuscript_latex
+	url = https://github.com/gledguri/Quantitative-Multispecies-Monitoring-at-a-Continental-Scale.git
