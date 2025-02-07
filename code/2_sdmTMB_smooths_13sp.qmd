@@ -13,6 +13,8 @@ format:
           \newcommand{\blandscape}{\begin{landscape}}
           \newcommand{\elandscape}{\end{landscape}}
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 # Purpose
@@ -44,7 +46,9 @@ Load data from the joint model output. These data have estimates of copy numbers
 
 ```{r,eval=F}
 # fitted model object
-jm_out <- read_rds(here('data','jointMod_dm_alpha_fixed_adappt_150_tree_12.rds'))
+jm_out <- read_rds(here('data','Models','Output','jointMod_v6.rds'))
+stan_data <- read_rds(here('data','Models','Input','stan_data_joint_v6.rds'))
+# jm_out <- read_rds(here('data','jointMod_dm_alpha_fixed_adappt_150_tree_12.rds'))
 
 #input data
 source(here("code/qm_data_prep_functions.R"))
@@ -93,7 +97,13 @@ copies_fitted <- copies_fitted %>%
   bind_cols(samps_meta) %>% 
   # join spatial metadata
   mutate(tubeID=as.character(tubeID)) %>% 
-  left_join(mfu_META,by=c("tubeID"))
+  left_join(mfu_META,by=c("tubeID")) %>% 
+  mutate(mean=mean+log(20),
+         `2.5%` = `2.5%` + log(20), 
+         `25%` = `25%` + log(20), 
+         `50%` = `50%` + log(20),
+         `75%` = `75%` + log(20),
+         `97.5%` = `97.5%` + log(20))
 
 # write
 write_rds(copies_fitted,here('data','log_D_fitted.rds'))
@@ -388,7 +398,7 @@ In the distributions above, there is a clear delineation for all species except 
 dat_zeroes <- dat_utm %>% 
   mutate(depth_num=depth) %>% 
   mutate(conc=exp(mean)) %>% 
-  mutate(conc=ifelse(conc<exp(-2),0,conc))
+  mutate(conc=ifelse(conc<exp(1),0,conc))
 # look at the 'raw' integrated data
 dat_zeroes_hist <- dat_zeroes %>% 
   ggplot(aes(log(conc)))+
@@ -424,12 +434,11 @@ meshes.table <- tibble(meshnum=1:length(meshes),vertices=map_dbl(meshes,function
 
 We write a function to run a simple SDM for any species in the data. We will adopt a consistent model equation that represents estimated log copies as a combination of spatial fields,
 
-$X=\alpha + \omega(s) + \epsilon_d(s)
+$X=\alpha + \omega(s) + \epsilon\_d(s)$
 
 where \alpha is a scalar intercept, \omega is a spatial field, and \epsilon is another spatial field that is specific to each depth category. For each species, we will try both with and without (i.e. \alpha=0) the simple intercept.
 
 Finally, we try fitting models across the range of spatial meshes we produced above. Across this range of decisions (include or exclude simple intercepts, mesh choice), we use each model's summed likelihood as a model selection metric.
-
 
 ## sdmTMB Wrapper
 
@@ -785,13 +794,11 @@ model.choices.table <- tibble(species=unique(dat$species),
 model.choices.table
 ```
 
-
-
 ```{r,fig.height=6,fig.width=4}
 herring_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Clupea pallasii",mesh=meshes[[1]])
 anchovy_m <- spatial_only_model(df=dat_zeroes,f='conc~0',spp = "Engraulis mordax",mesh=meshes[[1]])
 cs_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Leuroglossus stilbius",mesh=meshes[[14]])
-dover_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Microstomus pacificus",mesh=meshes[[16]])
+dover_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Microstomus pacificus",mesh=meshes[[18]])
 sardine_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Sardinops sagax",mesh=meshes[[1]])
 chub_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Scomber japonicus",mesh=meshes[[11]])
 widow_m <- spatial_only_model(df=dat_zeroes,f='conc~1',spp = "Sebastes entomelas",mesh=meshes[[9]])
@@ -821,7 +828,6 @@ all_m <- list(
   hake=hake_m
 )
 ```
-
 
 # Query Outputs
 
@@ -870,6 +876,5 @@ all_preds <- map2(all_m,model.choices.table$species,function(x,y){
 })
 
 # save
-write_rds(all_preds,here('data','all_smooth_predictions_13sp.rds'))
+write_rds(all_preds,here('data','all_smooth_predictions.rds'))
 ```
-
