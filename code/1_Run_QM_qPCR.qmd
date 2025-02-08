@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
  ---
 title: "Joint QM-qPCR Model of Hake Survey Samples"
 format: 
@@ -153,22 +158,13 @@ alphap <- alpha_fix %>% bind_cols(stan_data_joint$sp_list) %>% mutate(lwr=Asumm$
 alphap
 ```
 
-## Mock fits
-
-```{r,fig.height=6,fig.width=10}
-# Code for these diagnostic plots
-source(here('code','diagnostics.R'))
-msumm <- get_param_ests(mocksMod)
-plot_obs_pred_qm_mocks_only(s=msumm,stan_data = stan_data_joint)
-```
-
 ## Fixed alphas
 
 Then, run the joint model with fixed alphas drawn from the model above.
 
 ```{r}
-n.chains <- 4
-n.warm <- 2000
+n.chains <- 6
+n.warm <- 1000
 n.samps <-1000
 
 # inits <- make_stan_inits(n.chain = n.chains,jointData = stan_data_joint,log_D_link_sp_init_mean = 2)
@@ -183,7 +179,7 @@ jointMod_dm = stan(file = m_dm_fix,
                 thin = 1,
                 warmup = n.warm,
                 iter = n.warm+n.samps,
-                control = list(adapt_init_buffer = 80,
+                control = list(adapt_init_buffer = 150,
                                 max_treedepth=12,
                                 stepsize=0.05,
                                 adapt_delta=0.8,
