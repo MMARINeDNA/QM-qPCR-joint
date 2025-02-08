@@ -156,6 +156,7 @@ library(magick)
 
 ```{r, warning=FALSE, message=FALSE,results='hide'}
 # Load Data -----------------------------------------------------------------------------------
+# stan_post <- readRDS(here('CEG_run_nov','Output','jointMod_dm_alpha_fixed_adappt_150_tree_12.rds'))
 stan_post <- readRDS(here('data','Zenodo','Joint_mod_output.rds'))
 stan_post_mock <- readRDS(here('data','Zenodo','Mock_mod_output.rds'))
 preds <- read_rds(here('data','Zenodo','Log_D_est_smoothed.rds'))
@@ -167,6 +168,24 @@ stan_data <- readRDS(here('data','Zenodo','Joint_mod_data_input.rds'))
 raw_data <- stan_data[["sample_data_labeled"]] %>% 
   pivot_longer(cols = sp_1:sp_13,names_to = 'sp',values_to = 'raw_reads')
 
+# meta <- readRDS(here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
+
+# # Extract the Log_D
+# fit <- extract_matrix(stan_post,par = 'log_D') %>%
+#   pivot_longer(cols = 1:13,names_to = 'Species',values_to = 'Log_D_est')
+# 
+# # Joining the species name
+# fit <- fit %>%
+#   mutate(species_idx=as.numeric(Species)) %>%
+#   select(-Species) %>%
+#   left_join(.,stan_data[["sp_list"]],by='species_idx')
+# 
+# # Join the predicted values with raw data
+# fit <- cbind(fit,raw_data)
+# 
+# # Joing metadata on the predicted values
+# fit <- fit %>% left_join(.,meta,by='tubeID')
+
 fit <- read_rds(here('data','Zenodo','Log_D_est.rds')) %>% 
     rename(Log_D_est='mean',species_idx='taxa') %>% 
     select(Log_D_est,species_idx,species,tubeID,tube_idx,station_depth_idx,
@@ -177,6 +196,16 @@ qPCR_unk <- stan_data$qpcr_unk
 
 # Load Metabarcoding data
 mfu_raw <- read.csv(here('data','mfu_raw2.csv'))
+# mfu <- stan_data$sample_data_labeled %>% 
+#   left_join(meta,by='tubeID') %>% 
+#     pivot_longer(cols = sp_1:sp_13,
+#                 names_to = 'species_idx',
+#                 values_to = 'reads') %>% 
+#     mutate(species_idx=gsub('sp_','',species_idx)) %>% 
+#     mutate(species_idx=as.numeric(species_idx)) %>% 
+#     left_join(.,stan_data$sp_list,by='species_idx')
+    
+# mfu <- read.csv(here('data','mfu_downstream.csv'))
 mfu_stan <- stan_data$sample_data_labeled
 
 
@@ -196,6 +225,10 @@ dat_bbox <- data.frame(xmin=246.1216, ymin=4249.5080, xmax=460.6902, ymax=5365.6
 sp_list <- sapply(preds, function(df) unique(df[["species"]])) %>% as.vector()
 
 
+# fit <- read_rds(here('data','log_D_fitted.rds'))
+# projected (gridded)
+# preds <- read_rds(here('data','all_smooth_predictions_13sp.rds'))
+
 predgrid <- preds[[1]] %>% distinct(grID,depth_cat,x) %>% st_as_sf()
 
 dat_bbox <- preds %>% pluck(1) %>% st_as_sf() %>% st_bbox()
@@ -211,6 +244,8 @@ preds_summ <- preds_all %>%
 
 spp_all <- unique(preds_all$species) %>% head(., -1)
 spp_all_hake <- unique(preds_all$species)
+# spp_cps <- c("Clupea pallasii","Engraulis mordax","Sardinops sagax","Scomber japonicus","Trachurus symmetricus","Thaleichthys pacificus")
+# spp_midwater <- c("Leuroglossus stilbius","Stenobrachius leucopsarus","Tactostoma macropus","Tarletonbeania crenularis","Merluccius productus","Sebastes entomelas")
 
 color_mapping <-
   stan_data$sp_list %>% select(-species_idx) %>% 
@@ -428,6 +463,18 @@ fig_2
 ```{r fig.width=8.5, fig.height=13, out.width="100%",warning=FALSE, message=FALSE}
 # Figure 3 ------------------------------------------------------------------------------------
 
+# preds_summ %>% filter(!species=='Merluccius productus') %>% 
+#   ggplot(aes(x = est)) +
+#   geom_histogram(bins = 100, fill = "grey", color = "black", alpha = 0.7) +
+#   geom_vline(aes(xintercept = -2.5), color = "red", linetype = "dashed", size = 0.75) +
+#   facet_wrap(~species) +
+#   # ylim(0,4000)+
+#   # xlim(0,32)+
+#   labs(x = expression('Log'[e]~'DNA concentration'),
+#        y = "Number of samples (frequency)") +
+#   scale_y_log10()+
+#   theme_bw()
+
 pred_summary <- preds_summ %>% 
   ungroup() %>% 
   mutate(is_abun=quant>=0.75) %>%
@@ -494,123 +541,10 @@ fig_3
 #   h=13,w=8.5,units='in',bg='white')
 ```
 
-
-```{r fig.width=10, fig.height=13, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 1 ----------------------------------------------------------------------
-plot_list <- list()
-
-legend <- cowplot::get_legend(
-  ggplot() +
-    geom_sf(data = preds[[1]], aes(fill = exp(est)), color = NA) +
-    scale_fill_gradientn(colors = c(rep('#00496F', 2),pnw_palette(name = "Bay", n = 14, type = "continuous"),rep('#DD4124', 3)),
-                         name = "Estimated eDNA\nconcentration\n(copies/L)",
-                         trans = log_trans(base = exp(1)),
-                         limits = c(0.05, 200000),
-                         breaks = c(0.1, 1, 10, 100, 1000, 10000, 100000),
-                         labels = c('0.1', "1", "10", "100", "1000", "10000", '100000')) +
-    theme_bw() +
-    theme(plot.title = element_text(face = "italic"),
-          panel.spacing = unit(0.05, "lines"),
-          legend.key.height = unit(0.8, "cm"),
-          axis.text.x = element_text(angle = 90,vjust = 0.5,hjust = 1),
-          panel.background = element_rect(fill = 'white'),
-          panel.grid.major = element_line(color = "gray80", linetype = "dashed"),
-          panel.grid.minor = element_blank(),
-          legend.text = element_text(size = 12)) +
-    theme(legend.justification = c(0, 0.5)))
-
-for (i in 1:length(sp_list)) {
-  plot_list[[i]] <-
-    ggplot() +
-    geom_sf(data = coast_line, fill = 'gray80') +
-    geom_sf(data = preds[[i]], aes(fill = exp(est)), color = NA) +
-    ggtitle(paste0(sp_list[i])) +
-    scale_fill_gradientn(colors = c(rep('#00496F', 6),pnw_palette(name = "Bay", n = 14, type = "continuous"),rep('#DD4124', 7)),
-                         name = "Estimated eDNA\nconcentration\n(copies/L)",
-                         trans = log_trans(base = exp(1)),
-                         limits = c(0.001, 10000000),
-                         breaks = c(0.1, 1, 10, 100, 1000, 10000, 100000),
-                         labels = c('0.1', "1", "10", "100", "1000", "10000", '100000')) +
-    facet_wrap( ~ depth_cat, nrow = 1) +
-    ylim(dat_bbox$ymin, dat_bbox$ymax) +
-    scale_x_continuous(limits = c(dat_bbox$xmin, dat_bbox$xmax),breaks = c(-125.5, -124)) +
-    theme_bw() +
-    theme(legend.position = "none",
-          plot.title = element_text(face = "italic"),
-          panel.spacing = unit(0.05, "lines"),
-          axis.text.x = element_text(angle = 90,vjust = 0.5,hjust = 1),
-          panel.background = element_rect(fill = 'white'),
-          panel.grid.major = element_line(color = "gray80", linetype = "dashed"),
-          panel.grid.minor = element_blank())
-}
-
-
-depth_scheme <- image_read(here('plots','ppt_figures','Literature_species_dist_2.jpg'))
-depth_scheme_plot <- ggdraw() + draw_image(depth_scheme)
-
-# Create titles for columns
-title_epipelagic <- ggdraw() + 
-  draw_plot(
-    ggplot() + 
-      geom_rect(aes(xmin = 0, xmax = 1, ymin = 0, ymax = 1), fill = "#b65971", color = NA) +
-      theme_void()
-  ) +
-  draw_label("Surface", fontface = 'bold', size = 14, color = "white")
-
-title_mesopelagic <- ggdraw() + 
-  draw_plot(
-    ggplot() + 
-      geom_rect(aes(xmin = 0, xmax = 1, ymin = 0, ymax = 1), fill = "#86a180", color = NA) +
-      theme_void()
-  ) +
-  draw_label("Midwater", fontface = 'bold',size = 14, color = "white")
-
-
-pp1 <- 
-  cowplot::plot_grid(
-    plot_list[[1]]+
-      theme(axis.text.x = element_blank(), 
-            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
-    plot_list[[6]]+
-      theme(axis.text.x = element_blank())+
-      theme(axis.text.y = element_blank(),
-            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
-    plot_list[[3]]+
-      theme(axis.text.x = element_blank())+
-      theme(axis.text.y = element_blank(),
-            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
-    plot_list[[12]]+
-      theme(plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
-    plot_list[[11]]+
-      theme(axis.text.y = element_blank(),
-            plot.margin = unit(c(0, 0.1, 0, 0), "cm")), 
-    plot_list[[10]]+
-      theme(axis.text.y = element_blank(),
-            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
-    nrow = 2,
-    rel_widths = c(1.11, 1, 1),
-    rel_heights = c(1, 1.2)
-  )
-
-pp2 <- cowplot::plot_grid(cowplot::plot_grid(ggplot() + theme_void(),title_epipelagic, title_mesopelagic, ncol = 3,rel_widths = c(1,20,10)),
-                          pp1,
-                          nrow = 2, rel_heights = c(0.03, 1))
-
-pp3 <- cowplot::plot_grid(pp2,legend,nrow = 1,rel_widths = c(1,0.15))
-
-sf1 <- cowplot::plot_grid(pp3,depth_scheme_plot,nrow=2,rel_heights = c(11,7), labels = c('(A)','(B)'),label_x = 0.85)
-sf1
-
-# ggsave(file = here('plots','4_Supplementary_Figure_1.jpg'),
-#        sf1,
-#        width = 10,height = 13,units='in',bg='white')
-```
-
-
 ```{r fig.width=14, fig.height=12, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 2 -------------------------------------------------------------------------------------
+# Figure 4 -------------------------------------------------------------------------------------
 
-## Supplementary Figure 2a -----------------------------------------------------------------------------------
+## Figure 4a -----------------------------------------------------------------------------------
 facet_colors <- c("Surface-South" = "#b65971","Surface-North" = "#b65971", "Midwater" = "#86a180", "Deepwater" = "#559891")
 
 color_mapping <-
@@ -831,7 +765,7 @@ p1 <-
 
 # p1
 
-## Supplementary Figure 2b -----------------------------------------------------------------------------------
+## Figure 4b -----------------------------------------------------------------------------------
 
 lat_summary_fit <-
   fit %>% mutate(D_est = exp(Log_D_est)) %>% 
@@ -949,19 +883,128 @@ p2 <-
     x = 0.5, y = -0.01, hjust = 0.5, vjust = 0.5, angle = 0, size = 12)
 
 p3 <- cowplot::plot_grid(p1,p2,nrow = 2,rel_heights = c(11,16),align = 'v',labels = c('A','B'))
-sf2 <- cowplot::plot_grid(p3,final_legend,ncol = 2,rel_widths = c(6,1.3))
-sf2
+fig_4 <- cowplot::plot_grid(p3,final_legend,ncol = 2,rel_widths = c(6,1.3))
+fig_4
 
-# ggsave(file = here('plots','5_Supplementary_Figure_2.jpg'),
-#        sf2,
+# ggsave(file = here('plots','4_Figure_4.jpg'),
+#        fig_4,
 #        h=12,w=14,units='in',bg='white')
 ```
 
+```{r fig.width=10, fig.height=13, out.width="100%",warning=FALSE, message=FALSE}
+# Supplementary Figure 1 ----------------------------------------------------------------------
+plot_list <- list()
 
+legend <- cowplot::get_legend(
+  ggplot() +
+    geom_sf(data = preds[[1]], aes(fill = exp(est)), color = NA) +
+    scale_fill_gradientn(colors = c(rep('#00496F', 2),pnw_palette(name = "Bay", n = 14, type = "continuous"),rep('#DD4124', 3)),
+                         name = "Estimated eDNA\nconcentration\n(copies/L)",
+                         trans = log_trans(base = exp(1)),
+                         limits = c(0.05, 200000),
+                         breaks = c(0.1, 1, 10, 100, 1000, 10000, 100000),
+                         labels = c('0.1', "1", "10", "100", "1000", "10000", '100000')) +
+    theme_bw() +
+    theme(plot.title = element_text(face = "italic"),
+          panel.spacing = unit(0.05, "lines"),
+          legend.key.height = unit(0.8, "cm"),
+          axis.text.x = element_text(angle = 90,vjust = 0.5,hjust = 1),
+          panel.background = element_rect(fill = 'white'),
+          panel.grid.major = element_line(color = "gray80", linetype = "dashed"),
+          panel.grid.minor = element_blank(),
+          legend.text = element_text(size = 12)) +
+    theme(legend.justification = c(0, 0.5)))
+
+for (i in 1:length(sp_list)) {
+  plot_list[[i]] <-
+    ggplot() +
+    geom_sf(data = coast_line, fill = 'gray80') +
+    geom_sf(data = preds[[i]], aes(fill = exp(est)), color = NA) +
+    ggtitle(paste0(sp_list[i])) +
+    scale_fill_gradientn(colors = c(rep('#00496F', 6),pnw_palette(name = "Bay", n = 14, type = "continuous"),rep('#DD4124', 7)),
+                         name = "Estimated eDNA\nconcentration\n(copies/L)",
+                         trans = log_trans(base = exp(1)),
+                         limits = c(0.001, 10000000),
+                         breaks = c(0.1, 1, 10, 100, 1000, 10000, 100000),
+                         labels = c('0.1', "1", "10", "100", "1000", "10000", '100000')) +
+    facet_wrap( ~ depth_cat, nrow = 1) +
+    ylim(dat_bbox$ymin, dat_bbox$ymax) +
+    scale_x_continuous(limits = c(dat_bbox$xmin, dat_bbox$xmax),breaks = c(-125.5, -124)) +
+    theme_bw() +
+    theme(legend.position = "none",
+          plot.title = element_text(face = "italic"),
+          panel.spacing = unit(0.05, "lines"),
+          axis.text.x = element_text(angle = 90,vjust = 0.5,hjust = 1),
+          panel.background = element_rect(fill = 'white'),
+          panel.grid.major = element_line(color = "gray80", linetype = "dashed"),
+          panel.grid.minor = element_blank())
+}
+
+
+depth_scheme <- image_read(here('plots','ppt_figures','Literature_species_dist_2.jpg'))
+depth_scheme_plot <- ggdraw() + draw_image(depth_scheme)
+
+# Create titles for columns
+title_epipelagic <- ggdraw() + 
+  draw_plot(
+    ggplot() + 
+      geom_rect(aes(xmin = 0, xmax = 1, ymin = 0, ymax = 1), fill = "#b65971", color = NA) +
+      theme_void()
+  ) +
+  draw_label("Surface", fontface = 'bold', size = 14, color = "white")
+
+title_mesopelagic <- ggdraw() + 
+  draw_plot(
+    ggplot() + 
+      geom_rect(aes(xmin = 0, xmax = 1, ymin = 0, ymax = 1), fill = "#86a180", color = NA) +
+      theme_void()
+  ) +
+  draw_label("Midwater", fontface = 'bold',size = 14, color = "white")
+
+
+pp1 <- 
+  cowplot::plot_grid(
+    plot_list[[1]]+
+      theme(axis.text.x = element_blank(), 
+            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
+    plot_list[[6]]+
+      theme(axis.text.x = element_blank())+
+      theme(axis.text.y = element_blank(),
+            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
+    plot_list[[3]]+
+      theme(axis.text.x = element_blank())+
+      theme(axis.text.y = element_blank(),
+            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
+    plot_list[[12]]+
+      theme(plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
+    plot_list[[11]]+
+      theme(axis.text.y = element_blank(),
+            plot.margin = unit(c(0, 0.1, 0, 0), "cm")), 
+    plot_list[[10]]+
+      theme(axis.text.y = element_blank(),
+            plot.margin = unit(c(0, 0.1, 0, 0), "cm")),
+    nrow = 2,
+    rel_widths = c(1.11, 1, 1),
+    rel_heights = c(1, 1.2)
+  )
+
+pp2 <- cowplot::plot_grid(cowplot::plot_grid(ggplot() + theme_void(),title_epipelagic, title_mesopelagic, ncol = 3,rel_widths = c(1,20,10)),
+                          pp1,
+                          nrow = 2, rel_heights = c(0.03, 1))
+
+pp3 <- cowplot::plot_grid(pp2,legend,nrow = 1,rel_widths = c(1,0.15))
+
+sf1 <- cowplot::plot_grid(pp3,depth_scheme_plot,nrow=2,rel_heights = c(11,7), labels = c('(A)','(B)'),label_x = 0.85)
+sf1
+
+# ggsave(file = here('plots','5_Supplementary_Figure_1.jpg'),
+#        sf1,
+#        width = 10,height = 13,units='in',bg='white')
+```
 
 ```{r fig.width=10, fig.height=8, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 3 ----------------------------------------------------------------------
-sf3 <- fit %>% filter(!species=='Zz_Merluccius productus') %>% 
+# Supplementary Figure 2 ----------------------------------------------------------------------
+sf2 <- fit %>% filter(!species=='Zz_Merluccius productus') %>% 
   ggplot(aes(x = Log_D_est)) +
   geom_histogram(bins = 100, fill = "grey", color = "black", alpha = 0.7) +
   geom_vline(aes(xintercept = 0.5), color = "tomato2", linetype = "dashed", size = 0.75) +
@@ -974,15 +1017,15 @@ sf3 <- fit %>% filter(!species=='Zz_Merluccius productus') %>%
   labs(x = expression('Log'[e]~'DNA concentration (copies/L)'),
        y = "Number of samples (frequency)") +
   theme_bw()
-sf3
+sf2
 
-# ggsave(file = here('plots','6_Supplementary_Figure_3.jpg'),
-#        sf3,
+# ggsave(file = here('plots','6_Supplementary_Figure_2.jpg'),
+#        sf2,
 #        h=8,w=10,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=8, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 4 ----------------------------------------------------------------------
+# Supplementary Figure 3 ----------------------------------------------------------------------
 # 1794 unique samples
 samp_map_qpcr <- qPCR_unk %>% dplyr::select(tubeID,lat,lon,depth_cat) %>% 
   distinct(tubeID,lat,lon,depth_cat) %>% 
@@ -1012,7 +1055,7 @@ samp_map_raw <- samp_map_qpcr %>% mutate(x=paste0(lat,lon,depth_cat)) %>%
 samp_map <- samp_map_raw %>% 
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = F)
 
-sf4 <-
+sf3 <-
   ggplot() +
   geom_sf(data = coast_line, fill = 'gray80') +
   geom_sf(data = samp_map %>% filter(depth_cat %in% c(0, 50, 150, 300, 500)),
@@ -1042,14 +1085,14 @@ sf4 <-
     legend.title = element_text(size = 14)
   )
 
-sf4
-# ggsave(file = here('plots','7_Supplementary_Figure_4.jpg'),
-#        sf4,
+# sf3
+# ggsave(file = here('plots','7_Supplementary_Figure_3.jpg'),
+#        sf3,
 #        h=8,w=10,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=6, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 5 ----------------------------------------------------------------------
+# Supplementary Figure 4 ----------------------------------------------------------------------
 no_hake <- mfu_raw %>%
   # rename(Species='BestTaxon') %>% 
   filter(grepl('Merluccius productus',Species)) %>% 
@@ -1100,7 +1143,7 @@ occ_dat <- mfu_raw %>%
           mutate(g='Hake present')
   ) %>% as.data.frame()
 
-sf5 <-
+sf4 <-
   occ_dat %>% filter(!(Species=='Merluccius productus')) %>%
   ggplot(aes(x = Species, y = occupancy, fill = g)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -1118,14 +1161,14 @@ sf5 <-
     legend.title = element_text(size = 14)
   )
 
-sf5
-# ggsave(file = here('plots','8_Supplementary_Figure_5.jpg'),
-#        sf5,
+sf4
+# ggsave(file = here('plots','8_Supplementary_Figure_4.jpg'),
+#        sf4,
 #        h=6,w=10,units='in',bg='white')
 ```
 
 ```{r fig.width=8, fig.height=12, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 6 ----------------------------------------------------------------------
+# Supplementary Figure 5 ----------------------------------------------------------------------
 ## Continuous model ----------------------------------------------------------------------------
 
 color_mapping <-
@@ -1164,7 +1207,7 @@ post_pred_qpcr_cm <- stan_data$qpcr_unk %>%
   cbind(.,eq_param %>% select(mean)) %>% 
   rename(eq='mean')
 
-sf6_a <- post_pred_qpcr_cm %>% 
+sf5_a <- post_pred_qpcr_cm %>% 
   filter(Ct!=99) %>% 
   mutate(Ct_pred=(beta_0_offset + beta_0) + (beta_1*eq)) %>% 
   ggplot()+
@@ -1206,7 +1249,7 @@ post_pred_qpcr_pd_smooth <-
 
 
 # The new model
-sf6_b <-
+sf5_b <-
   post_pred_qpcr_pd %>% 
   ggplot()+
   theme_bw()+
@@ -1223,7 +1266,7 @@ sf6_b <-
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12))
-# sf6_b
+# sf5_b
 
 ## Metabarcoding model -------------------------------------------------------------------------
 
@@ -1285,7 +1328,7 @@ legend <- comb_reads %>%
 leg1 <- cowplot::get_legend(legend+theme(legend.justification = c(0.5, 0.8)))
 
 
-sf6_c <-
+sf5_c <-
   comb_reads %>% 
   ggplot()+
   geom_point(aes(x=obs_reads,y=pred_reads,color=species))+
@@ -1360,7 +1403,7 @@ mock_reads_join <- mock_reads_dat %>%
               mutate(species=if_else(species=='Zz_Merluccius productus','Merluccius productus',species)),
             by='species_idx')
 
-sf6_d <- mock_alr_join %>%
+sf5_d <- mock_alr_join %>%
   ggplot(aes(y=prop_fit,x=prop,col=species,ymin=prop_lower,ymax=prop_upper))+
   geom_pointrange()+
   geom_abline(slope=1,intercept=0,linetype=2)+
@@ -1374,7 +1417,7 @@ sf6_d <- mock_alr_join %>%
         axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12))
 
-sf6_e <- mock_reads_join %>% 
+sf5_e <- mock_reads_join %>% 
   mutate(reads_fit=if_else(reads_fit<0.1,0,reads_fit)) %>%
   mutate(reads_upper=if_else(reads_upper<0.1,0,reads_upper)) %>%
   mutate(reads_lower=if_else(reads_lower<0.1,0,reads_lower)) %>%
@@ -1393,17 +1436,25 @@ sf6_e <- mock_reads_join %>%
         axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12))
 
-sf6 <-
-  cowplot::plot_grid(sf6_a,sf6_b,sf6_d,sf6_e,sf6_c,leg1,labels = c('A','B','C','D','E'),ncol = 2,align = 'v')
+# sf5_raw <-
+#   cowplot::plot_grid(sf5_a,sf5_b,sf5_d,sf5_e,sf5_c,leg1,labels = c('A','B','C','D','E'),ncol = 2,align = 'v')
+# sf5 <-
+#   cowplot::plot_grid(sf5_raw,leg1,rel_widths = c(7,3))
+# ggsave(file = here('plots','9_Supplementary_Figure_5_new.jpg'),
+#        sf5,
+#        h=12,w=8,units='in',bg='white')
 
-sf6
-# ggsave(file = here('plots','9_Supplementary_Figure_6.jpg'),
-#        sf6,
+sf5 <-
+  cowplot::plot_grid(sf5_a,sf5_b,sf5_d,sf5_e,sf5_c,leg1,labels = c('A','B','C','D','E'),ncol = 2,align = 'v')
+
+sf5
+# ggsave(file = here('plots','9_Supplementary_Figure_5.jpg'),
+#        sf5,
 #        h=13,w=11,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=14, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 7 ----------------------------------------------------------------------
+# Supplementary figure 6 ----------------------------------------------------------------------
 plot_list <- list()
 
 legend <- cowplot::get_legend(
@@ -1474,7 +1525,7 @@ for (i in 1:(length(sp_list)-1)) {
       panel.background = element_rect(fill = 'white'),
       panel.grid.major = element_line(color = "gray80", linetype = "dashed"),
       panel.grid.minor = element_blank())
-  # ggsave(here('plots','QM posterior map',paste0('Supplementary Figure 7_',i,'_',sp_list[i],'_raw.jpg')),width = 7,height = 6)
+  # ggsave(here('plots','QM posterior map',paste0('Supplementary Figure 6_',i,'_',sp_list[i],'_raw.jpg')),width = 7,height = 6)
 }
 
 pp1 <-
@@ -1525,15 +1576,15 @@ pp1 <-
     rel_heights = c(1,1,1, 1.2)
   )
 
-sf7 <- cowplot::plot_grid(pp1,legend,nrow = 1,rel_widths = c(1,0.15))
-sf7
-# ggsave(file=here('plots','10_Supplementary_Figure_7.jpg'),
-#        sf7,
+sf6 <- cowplot::plot_grid(pp1,legend,nrow = 1,rel_widths = c(1,0.15))
+sf6
+# ggsave(file=here('plots','10_Supplementary_Figure_6.jpg'),
+#        sf6,
 #        width = 10,height = 14,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=10, out.width="100%",warning=FALSE, message=FALSE}
-# Supplementary Figure 8 ----------------------------------------------------------------------
+# Supplementary figure 7 ----------------------------------------------------------------------
 
 eu_qpcr <- qPCR_unk %>% 
   as.data.frame() %>% 
@@ -1546,7 +1597,7 @@ eu_qpcr <- qPCR_unk %>%
 # filter(Ct_mean>0)
 
 
-sf8 <- fit %>% filter(species=='Thaleichthys pacificus') %>% 
+sf7 <- fit %>% filter(species=='Thaleichthys pacificus') %>% 
   left_join(.,eu_qpcr,by='tubeID') %>% 
   mutate(Ct_mean=if_else(is.na(Ct_mean),(1/0),Ct_mean)) %>% 
   ggplot()+
@@ -1562,9 +1613,9 @@ sf8 <- fit %>% filter(species=='Thaleichthys pacificus') %>%
         axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12))
 
-sf8
+sf7
 
-# ggsave(file=here('plots','Supplementary Figure 8.jpg'),
-#        sf8,
+# ggsave(file=here('plots','Supplementary Figure 7.jpg'),
+#        sf7,
 #        width = 10,height = 10,units='in',bg='white')
 ```
