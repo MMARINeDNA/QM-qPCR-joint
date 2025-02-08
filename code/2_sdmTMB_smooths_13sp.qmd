@@ -46,35 +46,18 @@ Load data from the joint model output. These data have estimates of copy numbers
 
 ```{r,eval=F}
 # fitted model object
-jm_out <- read_rds(here('data','Models','Output','jointMod_v6.rds'))
-stan_data <- read_rds(here('data','Models','Input','stan_data_joint_v6.rds'))
-# jm_out <- read_rds(here('data','jointMod_dm_alpha_fixed_adappt_150_tree_12.rds'))
+jm_out <- read_rds(here('data','Zenodo','Joint_mod_output.rds'))
+stan_data <- read_rds(here('data','Zenodo','Joint_mod_data_input.rds'))
 
-#input data
-source(here("code/qm_data_prep_functions.R"))
-source(here('code','load_QM-qPCR_data.R'))
-formatted_metabarcoding_data <- format_metabarcoding_data(input_metabarcoding_data=mfu, 
-                                                          input_mock_comm_data=mock)
-formatted_qPCR_data <- format_qPCR_data(qPCR_unknowns=qPCR_unk,
-                                   qPCR_standards=qPCR_std,
-                                   tube_dat = tube_dat,
-                                   unk_covariates=c("wash_idx","station_depth_idx"),
-                                   cov_type = c("continuous","factor"),
-                                   unk_offset =c("dilution","volume_offset"))
 
-# linking with qPCR is now done within this next function.
-stan_metabarcoding_data <-  prepare_stan_data_MB(obs= formatted_metabarcoding_data,
-                                                 qPCR_tube_obs = formatted_qPCR_data$tube_dat,
-                                                 N_pcr_cycles = 43)
+fit_summ <- methods::selectMethod("summary", signature = "stanfit")(object = jm_out)$summary %>% as.data.frame() %>% rownames_to_column('variable') %>% as_tibble()
 
-# parameter estimates
-source(here('code','diagnostics.R'))
-fit_summ <- get_param_ests(jm_out)
+mfu_META <- read_rds(here('data','metadata','Metabarcoding_META_after_data_prep.rds'))
 ```
 
 ```{r,eval=F}
 # log_D from the model fit
-copies_fitted <- fit_summ %>% 
+copies_fitted <- fit_summ %>%
   filter(grepl('log_D',variable),
          !grepl('log_D_raw',variable),
          !grepl('log_D_mu',variable),
@@ -84,10 +67,10 @@ copies_fitted <- fit_summ %>%
   # extract a species number from the variable names using regex
   mutate(taxa=str_extract(variable,"(?<=\\,)\\d+") %>% as.integer) %>% 
   # add a species name
-  mutate(species=unique(mfu$species)[taxa])
+  left_join(.,stan_data$sp_list,by=c('taxa'='species_idx'))
 
 # use the labeled sample data to join back the raw reads and join indices to the fitted values
-samps_meta <- stan_metabarcoding_data$sample_data_labeled %>% 
+samps_meta <- stan_data$sample_data_labeled %>% 
   pivot_longer(contains('sp_'),names_to='species',values_to='raw_reads') %>% 
   select(-species)
 
@@ -106,12 +89,12 @@ copies_fitted <- copies_fitted %>%
          `97.5%` = `97.5%` + log(20))
 
 # write
-write_rds(copies_fitted,here('data','log_D_fitted.rds'))
+write_rds(copies_fitted,here('data','Zenodo','Log_D_est.rds'))
 rm(list=ls())
 ```
 
 ```{r}
-dat <- read_rds(here('data','log_D_fitted.rds'))
+dat <- read_rds(here('data','Zenodo','Log_D_est.rds'))
 glimpse(dat)
 
 # change Engraulis name back
@@ -876,5 +859,5 @@ all_preds <- map2(all_m,model.choices.table$species,function(x,y){
 })
 
 # save
-write_rds(all_preds,here('data','all_smooth_predictions.rds'))
+write_rds(all_preds,here('data','Zenodo','Log_D_est_smoothed.rds'))
 ```

@@ -193,8 +193,11 @@ tube_dat <- tube_dat %>% mutate(tube_idx = row_number())
 qPCR_unk <- qPCR_unk %>% left_join(tube_dat,by = join_by(tubeID, depth_cat, n_tube_station_depth, station_depth_idx, station_idx))
 
 # Make a metadata file that has all of the requisite stuff post-filtering.
-META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
-write_rds(META,here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
+# META <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
+# write_rds(META,here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
+meta_qpcr <- qPCR_unk %>% dplyr::select(tubeID, station,lat,lon,depth,depth_cat,wash_idx) %>% distinct()
+write_rds(meta_qpcr,here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
+# meta <- read.csv('/Users/gledguri/Library/CloudStorage/OneDrive-UW/UW/QM-qPCR-joint_clone/data/metadata/Hake_2019_metadata.csv')
 
 cat('\n');cat('# of qPCR reactions are: ')
 cat(nrow(qPCR_unk))
@@ -220,6 +223,9 @@ db <- db %>%
 
 
 ## Load sequencing data batches------------------------------------------------------------------
+
+# Load metadata
+meta <- read.csv(here('data','metadata','Hake_2019_metadata.csv'))
 
 # function to load a run (because this will be the same for each different run, we can apply a consistent function to load them)
 load_asv_table <- function(seq_run_number){
@@ -260,7 +266,21 @@ mfu <- purrr::map(c(304,313:318),load_asv_table)%>%
   ungroup() %>% 
   
   filter(Project == "52193" | grepl("positive",Project) | grepl("NTC",Project)) %>%  #just keep hake-cruise samples
-  left_join(META,by=join_by(tubeID))
+  # left_join(meta_qpcr, join_by(tubeID))
+  left_join(meta %>%
+              rename(tubeID='sample') %>%
+              mutate(tubeID=as.character(tubeID)) %>% 
+              select(station,lat,lon,depth,tubeID),
+            by='tubeID')
+
+mfu <- mfu %>% mutate(depth_cat=case_when(depth < 25 ~ 0,
+                                          depth ==25 ~ 25,  
+                                          depth > 25  & depth <= 60  ~ 50,
+                                          depth > 60  & depth <= 100 ~ 100,
+                                          depth > 119 & depth <= 150 ~ 150,
+                                          depth > 151 & depth <= 200 ~ 200,
+                                          depth > 240 & depth <= 350 ~ 300,
+                                          depth > 400 & depth <= 500 ~ 500))
 
 write.csv(mfu,here('data','mfu_raw0.csv'),row.names = F)
 
@@ -464,6 +484,8 @@ mfu <- mfu %>%
   rename(Species = BestTaxon) %>% 
   filter(Species %in% keep)
 
+write.csv(mfu,here('data','mfu_raw2.csv'),row.names = F)
+
 cat('Metabarcoding summary: ');cat('\n')
 mfu %>% group_by(Species) %>% 
   summarise(Sum_reads=sum(nReads)) %>% 
@@ -472,10 +494,11 @@ mfu %>% group_by(Species) %>%
 # METADATA for metabarcoding
 mfu_META <- mfu %>% 
   drop_na(tubeID, lat, Species, nReads) %>%
-  dplyr::select(tubeID,station:wash_idx) %>%
+  dplyr::select(tubeID,station:depth_cat) %>%
   mutate(sampleidx = match(tubeID, unique(tubeID))) %>% 
   distinct()
 
+write_rds(mfu_META,here('data','metadata','Metabarcoding_META_after_data_prep.rds'))
 
 # fill in zeroes for missing Species/tube combinations
 mfu <- mfu %>%
@@ -539,17 +562,20 @@ mock <- mock %>%
   mutate(species=if_else(species== "Merluccius productus","Zz_Merluccius productus",species)) %>% 
   arrange(species)
 
-
-read.csv(here('data','mfu_raw1.csv')) %>% 
+cat('\n');cat('Percentage of Metabarcoding samples that have hake present: ')
+cat(read.csv(here('data','mfu_raw1.csv')) %>% 
   filter(BestTaxon=='Merluccius productus') %>% 
   group_by(tubeID) %>% 
   summarise(nReads=sum(nReads)) %>% 
   ungroup() %>% 
   mutate(pres=if_else(nReads>0,1,0)) %>% 
   count(pres) %>% rename(number_of_samp='n') %>% 
-  mutate(prop_presence=number_of_samp/sum(number_of_samp))
+  mutate(prop_presence=number_of_samp/sum(number_of_samp)) %>% 
+  format(., justify = "left"), sep = "\n")
 
-qPCR_unk %>% 
+cat('\n');cat('Percentage of qPCR samples that have hake present: ')
+cat(qPCR_unk %>% 
   mutate(pres=if_else(hake_Ct=='Undetermined',0,1)) %>% 
   count(pres) %>% rename(number_of_samp='n') %>% 
-  mutate(prop_presence=number_of_samp/sum(number_of_samp))
+  mutate(prop_presence=number_of_samp/sum(number_of_samp)) %>% 
+    format(., justify = "left"), sep = "\n")

@@ -1,9 +1,4 @@
 ---
-output: html_document
-editor_options: 
-  chunk_output_type: console
----
- ---
 title: "Joint QM-qPCR Model of Hake Survey Samples"
 format: 
   html: 
@@ -18,6 +13,8 @@ format:
           \newcommand{\blandscape}{\begin{landscape}}
           \newcommand{\elandscape}{\end{landscape}}
 editor: source
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup,warning=F,message=F}
@@ -84,6 +81,8 @@ stan_data_joint <- c(stan_qPCR_data,
 # map to observation and the tubes.  Very important.
 identical(colnames(stan_data_joint$X_bio_rep_tube),colnames(stan_data_joint$X_bio_rep_obs))
 identical(colnames(stan_data_joint$X_station_depth_tube),colnames(stan_data_joint$X_station_depth_obs))
+
+# write_rds(stan_data_joint,here('data','Zenodo','Joint_mod_data_input.rds'))
 ```
 
 Now the data should be ready for Stan. We compile the Stan model itself:
@@ -91,11 +90,8 @@ Now the data should be ready for Stan. We compile the Stan model itself:
 ## Load Stan model
 
 ```{r}
-m_dm_mock <- here('code','qm_mocks-DM.stan') # Dirichlet multinomial for mocks
-m_dm_fix <- here('code','qm_qpcr_joint-DM_alpha-fix.stan')
-
-#IF YOU NEED TO ERROR CHECK, COPY AND PASTE "mc" INTO A NEW SCRIPT TO FIND THE RIGHT LINE NUMBERS
-# mc <- cat(stan_model(m)@model_code)
+Mock_model_stan <- here('code','Stan_models','Mock_model.stan') # Dirichlet multinomial for mocks
+Joint_model_stan <- here('code','Stan_models','Joint_model.stan')
 ```
 
 # Run
@@ -112,7 +108,7 @@ n.chains <- 3
 n.warm <- 500
 n.samps <- 10000
 
-mocksMod = stan(file = m_dm_mock,
+mocksMod = stan(file = Mock_model_stan,
                 model_name = "mock communities",
                 data = stan_data_joint,
                 verbose = FALSE,
@@ -156,7 +152,9 @@ alphap <- alpha_fix %>% bind_cols(stan_data_joint$sp_list) %>% mutate(lwr=Asumm$
   labs(x="Species",y="Alpha")
 
 alphap
+# write_rds(mocksMod,here('data','Zenodo','Mock_mod_output.rds'))
 ```
+
 
 ## Fixed alphas
 
@@ -167,12 +165,13 @@ n.chains <- 6
 n.warm <- 1000
 n.samps <-1000
 
-# inits <- make_stan_inits(n.chain = n.chains,jointData = stan_data_joint,log_D_link_sp_init_mean = 2)
+# Fixed wash effect
+stan_data_joint <- c(stan_data_joint,
+                     list(wash_effect= -1.15))
 
 tictoc::tic("Running DM Joint Model:")
-# jointMod_dm = stan(file = "qm_qpcr_joint-DM_alpha-fix.stan",
-jointMod_dm = stan(file = m_dm_fix,
-                model_name = "joint model fixed alphas",
+jointMod = stan(file = Joint_model_stan,
+                model_name = "Joint model with fixed alphas",
                 data = stan_data_joint,
                 verbose = FALSE,
                 chains = n.chains,
@@ -184,14 +183,11 @@ jointMod_dm = stan(file = m_dm_fix,
                                 stepsize=0.05,
                                 adapt_delta=0.8,
                                 metric="diag_e"),
-                # init = inits,
                 refresh = 10,
-                boost_lib = NULL,
-                sample_file="tmpX.csv"
-                )
+                boost_lib = NULL)
 tictoc::toc()
 
 # Write the output of the joint model
-write_rds(jointMod_dm,here('data','jointMod_dm_alpha_fixed_adappt_150_tree_12.rds'))
+# write_rds(jointMod,here('data','Zenodo','Joint_mod_output.rds'))
 ```
 

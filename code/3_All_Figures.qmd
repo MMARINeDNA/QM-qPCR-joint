@@ -80,7 +80,8 @@ extract_param <- function (model, par) {
   fit <- (methods::selectMethod("summary", signature = "stanfit"))(object = model, 
                                                                    par = par)
   fit <- fit$summary
-  return(fit %>% unlist() %>% as.data.frame %>% round(., 3))
+  return(fit %>% unlist() %>% as.data.frame)
+  # return(fit %>% unlist() %>% as.data.frame %>% round(., 3))
 }
 
 extract_matrix <- function (stanMod, param, vector = "mean") {
@@ -110,6 +111,11 @@ logsumexp <- function (x)
 {
     y = max(x)
     y + log(sum(exp(x - y)))
+}
+
+softmax <- function (x) 
+{
+    exp(x - logsumexp(x))
 }
 
 softmax_m <- function (data) 
@@ -151,18 +157,18 @@ library(magick)
 ```{r, warning=FALSE, message=FALSE,results='hide'}
 # Load Data -----------------------------------------------------------------------------------
 # stan_post <- readRDS(here('CEG_run_nov','Output','jointMod_dm_alpha_fixed_adappt_150_tree_12.rds'))
-stan_post <- readRDS(here('data','Models','Output','jointMod_v6.rds'))
-preds <- read_rds(here('data','all_smooth_predictions.rds'))
+stan_post <- readRDS(here('data','Zenodo','Joint_mod_output.rds'))
+stan_post_mock <- readRDS(here('data','Zenodo','Mock_mod_output.rds'))
+preds <- read_rds(here('data','Zenodo','Log_D_est_smoothed.rds'))
 
 # Raw data
-# stan_data_joint <- readRDS(here('CEG_run_nov','Input','stan_data_joint.rds'))
-stan_data_joint <- readRDS(here('data','Models','Input','stan_data_joint_v6.rds'))
+stan_data <- readRDS(here('data','Zenodo','Joint_mod_data_input.rds'))
 
 # Long format of raw data
-raw_data <- stan_data_joint[["sample_data_labeled"]] %>% 
+raw_data <- stan_data[["sample_data_labeled"]] %>% 
   pivot_longer(cols = sp_1:sp_13,names_to = 'sp',values_to = 'raw_reads')
 
-meta <- readRDS(here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
+# meta <- readRDS(here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
 
 # # Extract the Log_D
 # fit <- extract_matrix(stan_post,par = 'log_D') %>%
@@ -172,7 +178,7 @@ meta <- readRDS(here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
 # fit <- fit %>%
 #   mutate(species_idx=as.numeric(Species)) %>%
 #   select(-Species) %>%
-#   left_join(.,stan_data_joint[["sp_list"]],by='species_idx')
+#   left_join(.,stan_data[["sp_list"]],by='species_idx')
 # 
 # # Join the predicted values with raw data
 # fit <- cbind(fit,raw_data)
@@ -180,28 +186,27 @@ meta <- readRDS(here('data','metadata','Hake_qPCR_META_after_data_prep.rds'))
 # # Joing metadata on the predicted values
 # fit <- fit %>% left_join(.,meta,by='tubeID')
 
-fit <- read_rds(here('data','log_D_fitted.rds')) %>% 
+fit <- read_rds(here('data','Zenodo','Log_D_est.rds')) %>% 
     rename(Log_D_est='mean',species_idx='taxa') %>% 
     select(Log_D_est,species_idx,species,tubeID,tube_idx,station_depth_idx,
            station_idx,tech,raw_reads,station,lat,lon,depth,depth_cat,wash_idx,sampleidx)
 
 # Load qPCR raw data
-qPCR_unk <- stan_data_joint$qpcr_unk
+qPCR_unk <- stan_data$qpcr_unk
 
 # Load Metabarcoding data
-# mfu <- read.csv(here('data','mfu_raw.csv'))
-mfu <- read.csv('/Users/gledguri/Library/CloudStorage/OneDrive-UW/UW/QM-qPCR-joint-main_git_clone/data/mfu_raw.csv')
-# mfu <- stan_data_joint$sample_data_labeled %>% 
+mfu_raw <- read.csv(here('data','mfu_raw2.csv'))
+# mfu <- stan_data$sample_data_labeled %>% 
 #   left_join(meta,by='tubeID') %>% 
 #     pivot_longer(cols = sp_1:sp_13,
 #                 names_to = 'species_idx',
 #                 values_to = 'reads') %>% 
 #     mutate(species_idx=gsub('sp_','',species_idx)) %>% 
 #     mutate(species_idx=as.numeric(species_idx)) %>% 
-#     left_join(.,stan_data_joint$sp_list,by='species_idx')
+#     left_join(.,stan_data$sp_list,by='species_idx')
     
 # mfu <- read.csv(here('data','mfu_downstream.csv'))
-mfu_stan <- stan_data_joint$sample_data_labeled
+mfu_stan <- stan_data$sample_data_labeled
 
 
 states <- ne_states(country='United States of America',returnclass = 'sf') %>% 
@@ -243,7 +248,7 @@ spp_all_hake <- unique(preds_all$species)
 # spp_midwater <- c("Leuroglossus stilbius","Stenobrachius leucopsarus","Tactostoma macropus","Tarletonbeania crenularis","Merluccius productus","Sebastes entomelas")
 
 color_mapping <-
-  stan_data_joint$sp_list %>% select(-species_idx) %>% 
+  stan_data$sp_list %>% select(-species_idx) %>% 
   mutate(species=if_else(species=='Zz_Merluccius productus','Merluccius productus',species)) %>% 
   mutate(col = case_when(
     species == 'Engraulis mordax' ~ '#F0944C',
@@ -377,11 +382,10 @@ pp3 <- cowplot::plot_grid(pp2,legend,nrow = 1,rel_widths = c(1,0.15))
 fig_1 <- cowplot::plot_grid(pp3,depth_scheme_plot,nrow=2,rel_heights = c(11,7), labels = c('(A)','(B)'),label_x = 0.85)
 fig_1
 
-ggsave(file = here('plots','1_Figure_1.jpg'),
-       fig_1,
-       width = 10,height = 13,units='in',bg='white')
+# ggsave(file = here('plots','1_Figure_1.jpg'),
+#        fig_1,
+#        width = 10,height = 13,units='in',bg='white')
 ```
-
 
 ```{r fig.width=14, fig.height=14, out.width="100%",warning=FALSE, message=FALSE}
 # Figure 2 ------------------------------------------------------------------------------------
@@ -450,10 +454,10 @@ fig_2 <- cowplot::plot_grid(
 )
 
 fig_2
-ggsave(
-  file = here('plots','2_Figure_2.jpg'),
-  fig_2,
-  width = 14,height=14,units='in',bg='white')
+# ggsave(
+#   file = here('plots','2_Figure_2.jpg'),
+#   fig_2,
+#   width = 14,height=14,units='in',bg='white')
 ```
 
 ```{r fig.width=8.5, fig.height=13, out.width="100%",warning=FALSE, message=FALSE}
@@ -531,13 +535,13 @@ total_dna_map <-
 
 fig_3 <- cowplot::plot_grid(species_richness_map,total_dna_map,ncol = 1,align = 'v',labels=c('A','B'))
 fig_3
-ggsave(
-  file = here('plots','3_Figure_3.jpg'),
-  fig_3,
-  h=13,w=8.5,units='in',bg='white')
+# ggsave(
+#   file = here('plots','3_Figure_3.jpg'),
+#   fig_3,
+#   h=13,w=8.5,units='in',bg='white')
 ```
 
-```{r fig.width=14, fig.height=12, out.width="100%",warning=FALSE, message=FALSE} 
+```{r fig.width=14, fig.height=12, out.width="100%",warning=FALSE, message=FALSE}
 # Figure 4 -------------------------------------------------------------------------------------
 
 ## Figure 4a -----------------------------------------------------------------------------------
@@ -882,9 +886,9 @@ p3 <- cowplot::plot_grid(p1,p2,nrow = 2,rel_heights = c(11,16),align = 'v',label
 fig_4 <- cowplot::plot_grid(p3,final_legend,ncol = 2,rel_widths = c(6,1.3))
 fig_4
 
-ggsave(file = here('plots','4_Figure_4.jpg'),
-       fig_4,
-       h=12,w=14,units='in',bg='white')
+# ggsave(file = here('plots','4_Figure_4.jpg'),
+#        fig_4,
+#        h=12,w=14,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=13, out.width="100%",warning=FALSE, message=FALSE}
@@ -993,9 +997,9 @@ pp3 <- cowplot::plot_grid(pp2,legend,nrow = 1,rel_widths = c(1,0.15))
 sf1 <- cowplot::plot_grid(pp3,depth_scheme_plot,nrow=2,rel_heights = c(11,7), labels = c('(A)','(B)'),label_x = 0.85)
 sf1
 
-ggsave(file = here('plots','5_Supplementary_Figure_1.jpg'),
-       sf1,
-       width = 10,height = 13,units='in',bg='white')
+# ggsave(file = here('plots','5_Supplementary_Figure_1.jpg'),
+#        sf1,
+#        width = 10,height = 13,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=8, out.width="100%",warning=FALSE, message=FALSE}
@@ -1015,9 +1019,9 @@ sf2 <- fit %>% filter(!species=='Zz_Merluccius productus') %>%
   theme_bw()
 sf2
 
-ggsave(file = here('plots','6_Supplementary_Figure_2.jpg'),
-       sf2,
-       h=8,w=10,units='in',bg='white')
+# ggsave(file = here('plots','6_Supplementary_Figure_2.jpg'),
+#        sf2,
+#        h=8,w=10,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=8, out.width="100%",warning=FALSE, message=FALSE}
@@ -1030,7 +1034,7 @@ samp_map_qpcr <- qPCR_unk %>% dplyr::select(tubeID,lat,lon,depth_cat) %>%
 # 555 unique samples
 samp_map_MB <- qPCR_unk %>% dplyr::select(tubeID,lat,lon,depth_cat) %>% 
   distinct(tubeID,lat,lon,depth_cat) %>% 
-  filter(tubeID%in%mfu$tubeID) %>% 
+  filter(tubeID%in%mfu_raw$tubeID) %>% 
   mutate(group='MB')
 
 # 357 unique samples
@@ -1081,16 +1085,17 @@ sf3 <-
     legend.title = element_text(size = 14)
   )
 
-sf3
-ggsave(file = here('plots','7_Supplementary_Figure_3.jpg'),
-       sf3,
-       h=8,w=10,units='in',bg='white')
+# sf3
+# ggsave(file = here('plots','7_Supplementary_Figure_3.jpg'),
+#        sf3,
+#        h=8,w=10,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=6, out.width="100%",warning=FALSE, message=FALSE}
 # Supplementary Figure 4 ----------------------------------------------------------------------
-no_hake <- mfu %>%
-  filter(grepl('Zz_Merluccius',Species)) %>% 
+no_hake <- mfu_raw %>%
+  # rename(Species='BestTaxon') %>% 
+  filter(grepl('Merluccius productus',Species)) %>% 
   group_by(tubeID,Species,lat,lon,depth,depth_cat) %>% 
   summarise(Reads=sum(nReads)) %>%
   ungroup() %>% 
@@ -1098,8 +1103,9 @@ no_hake <- mfu %>%
   filter(Reads==0) %>% 
   pull(tubeID) %>% as.vector()
 
-yes_hake <- mfu %>%
-  filter(grepl('Zz_Merluccius',Species)) %>% 
+yes_hake <- mfu_raw %>%
+  # rename(Species='BestTaxon') %>% 
+  filter(grepl('Merluccius',Species)) %>% 
   group_by(tubeID,Species,lat,lon,depth,depth_cat) %>% 
   summarise(Reads=sum(nReads)) %>%
   ungroup() %>% 
@@ -1108,7 +1114,8 @@ yes_hake <- mfu %>%
   pull(tubeID) %>% as.vector()
 
 
-occ_dat <- mfu %>% 
+occ_dat <- mfu_raw %>% 
+  # rename(Species='BestTaxon') %>% 
   group_by(tubeID,Species,lat,lon,depth,depth_cat) %>% 
   summarise(Reads=sum(nReads), .groups = "drop") %>% 
   filter(tubeID%in%no_hake) %>% 
@@ -1121,7 +1128,8 @@ occ_dat <- mfu %>%
             .groups = "drop") %>% 
   mutate(g='Hake absent') %>% 
   rbind(.,
-        mfu %>% 
+        mfu_raw %>% 
+          # rename(Species='BestTaxon') %>% 
           group_by(tubeID,Species,lat,lon,depth,depth_cat) %>% 
           summarise(Reads=sum(nReads), .groups = "drop") %>% 
           filter(tubeID%in%yes_hake) %>% 
@@ -1136,8 +1144,7 @@ occ_dat <- mfu %>%
   ) %>% as.data.frame()
 
 sf4 <-
-  occ_dat %>% filter(!(Species=='Zz_Merluccius productus')) %>%
-  filter(!(Species=='Hippoglossus stenolepis')) %>% 
+  occ_dat %>% filter(!(Species=='Merluccius productus')) %>%
   ggplot(aes(x = Species, y = occupancy, fill = g)) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(x = "Species", y = "Probability of co-occurrance", fill = "Hake occupancy") +
@@ -1155,9 +1162,9 @@ sf4 <-
   )
 
 sf4
-ggsave(file = here('plots','8_Supplementary_Figure_4.jpg'),
-       sf4,
-       h=6,w=10,units='in',bg='white')
+# ggsave(file = here('plots','8_Supplementary_Figure_4.jpg'),
+#        sf4,
+#        h=6,w=10,units='in',bg='white')
 ```
 
 ```{r fig.width=8, fig.height=12, out.width="100%",warning=FALSE, message=FALSE}
@@ -1165,7 +1172,7 @@ ggsave(file = here('plots','8_Supplementary_Figure_4.jpg'),
 ## Continuous model ----------------------------------------------------------------------------
 
 color_mapping <-
-  stan_data_joint$sp_list %>% select(-species_idx) %>% 
+  stan_data$sp_list %>% select(-species_idx) %>% 
   mutate(species=if_else(species=='Zz_Merluccius productus','Merluccius productus',species)) %>% 
   mutate(col = case_when(
     species == 'Engraulis mordax' ~ '#F0944C',
@@ -1189,14 +1196,14 @@ beta_1_param <- extract_param(stan_post,'beta_std_curve_1') %>%
   mutate(plate_idx=1:nrow(.))
 eq_param <- extract_param(stan_post,'unk_conc_qpcr')
 
-post_pred_qpcr_cm <- stan_data_joint$qpcr_unk %>% 
+post_pred_qpcr_cm <- stan_data$qpcr_unk %>% 
   left_join(.,beta_0_param %>% select(mean,plate_idx) %>% 
               rename(beta_0='mean'),
             by='plate_idx') %>% 
   left_join(.,beta_1_param %>% select(mean,plate_idx) %>% 
               rename(beta_1='mean'),
             by='plate_idx') %>%
-  mutate(beta_0_offset=stan_data_joint$beta_std_curve_0_offset) %>% 
+  mutate(beta_0_offset=stan_data$beta_std_curve_0_offset) %>% 
   cbind(.,eq_param %>% select(mean)) %>% 
   rename(eq='mean')
 
@@ -1218,7 +1225,7 @@ sf5_a <- post_pred_qpcr_cm %>%
 phi_0_param <- extract_param(stan_post,'phi_0')
 eq_param <- extract_param(stan_post,'unk_conc_qpcr')
 
-post_pred_qpcr_pd <- stan_data_joint$qpcr_unk %>% 
+post_pred_qpcr_pd <- stan_data$qpcr_unk %>% 
   mutate(phi_0=phi_0_param$mean) %>% 
   mutate(phi_0_lo=phi_0_param$`2.5%`) %>% 
   mutate(phi_0_up=phi_0_param$`97.5%`) %>% 
@@ -1268,7 +1275,7 @@ post_conc <- extract_matrix(stan_post,'log_D')
 
 # Estimate gamma
 pred_logit_val_samp <- t(t(post_conc - post_conc$`13`) +
-                           (unique(stan_data_joint$model_vector_a_samp)*stan_data_joint$alpha_fix))
+                           (unique(stan_data$model_vector_a_samp)*stan_data$alpha_fix))
 
 # Estimate species proportions/probabilities
 pred_prop_samp <- pred_logit_val_samp %>% as.data.frame() %>% 
@@ -1280,28 +1287,28 @@ pred_reads <- as.data.frame(matrix(NA,nrow = nrow(pred_prop_samp),
 for (i in 1:nrow(pred_prop_samp)) {
   pred_reads[i,] <-
     rmultinom(1, 
-              rowSums(stan_data_joint$sample_data)[i], 
+              rowSums(stan_data$sample_data)[i], 
               pred_prop_samp[i,]) %>% t() %>% 
     as.data.frame()
 }
 
 # Convert data into long format (lf)
-pred_reads_lf <- pred_reads %>% `colnames<-`(colnames(stan_data_joint$sample_data)) %>% 
+pred_reads_lf <- pred_reads %>% `colnames<-`(colnames(stan_data$sample_data)) %>% 
   pivot_longer(
     cols = everything(),         
     names_to = "species_idx_raw",
     values_to = "pred_reads") %>% 
-  left_join(.,stan_data_joint$sp_list %>% mutate(species_idx_raw=paste0('sp_',species_idx)),
+  left_join(.,stan_data$sp_list %>% mutate(species_idx_raw=paste0('sp_',species_idx)),
             by='species_idx_raw') %>% 
   select(-species_idx_raw,-species_idx) %>% 
   mutate(species = if_else(species == 'Zz_Merluccius productus', 'Merluccius productus',species))
 
 obs_reads_lf <- 
-  stan_data_joint$sample_data %>% pivot_longer(
+  stan_data$sample_data %>% pivot_longer(
     cols = everything(),
     names_to = 'species_idx_raw',
     values_to = 'obs_reads') %>% 
-  left_join(.,stan_data_joint$sp_list %>% mutate(species_idx_raw=paste0('sp_',species_idx)),
+  left_join(.,stan_data$sp_list %>% mutate(species_idx_raw=paste0('sp_',species_idx)),
             by='species_idx_raw') %>% 
   select(-species_idx_raw,-species_idx) %>% 
   mutate(species = if_else(species == 'Zz_Merluccius productus', 'Merluccius productus',species))
@@ -1318,7 +1325,7 @@ legend <- comb_reads %>%
   theme(legend.title = element_text(size = 13),
         legend.text = element_text(size = 11,face = "italic"))
 
-leg1 <- cowplot::get_legend(legend+theme(legend.justification = c(0, 0.5)))
+leg1 <- cowplot::get_legend(legend+theme(legend.justification = c(0.5, 0.8)))
 
 
 sf5_c <-
@@ -1338,15 +1345,112 @@ sf5_c <-
         axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12))
 
-sf5_raw <-
-  cowplot::plot_grid(sf5_a,sf5_b,sf5_c,labels = c('A','B','C'),ncol = 1,align = 'v')
+## Mock model -------------------------------------------------------------------------
+mockIDs <- stan_data$mock_data_labeled$mockID
+
+# mock communities - reads
+mock_reads_dat <- stan_data %>%
+  pluck('mock_data') %>% 
+  mutate(mockID=mockIDs) %>% 
+  pivot_longer(-mockID,names_to = 'taxa',values_to='reads')
+
+# mock communities - proportions
+mock_alr_dat <- stan_data %>%
+  pluck('alr_mock_true_prop') %>% 
+  mutate(mockID=mockIDs) %>% 
+  pivot_longer(-mockID,names_to = 'taxa',values_to='alr') %>% 
+  group_by(mockID) %>% 
+  mutate(prop=softmax(alr)) %>% 
+  ungroup()
+
+# mock communities - fitted (estimated) values
+mock_fit <- extract_param(stan_post_mock,'logit_val_mock') %>% 
+  mutate(mockID=mock_alr_dat$mockID) %>% 
+  mutate(se_mean=ifelse(is.nan(se_mean),0,se_mean)) %>% 
+  mutate(alr_upper=mean+se_mean,alr_lower=mean-se_mean) %>% 
+  group_by(mockID) %>% 
+  mutate(prop=softmax(mean),prop_lower=softmax(`2.5%`),prop_upper=softmax(`97.5%`)) %>% 
+  ungroup()
+
+# join obs/preds
+mock_alr_join <- mock_alr_dat %>%
+  mutate(alr_fit=mock_fit$mean,
+         alr_upper=mock_fit$alr_upper,
+         alr_lower=mock_fit$alr_lower,
+         prop_fit=mock_fit$prop,
+         prop_upper=mock_fit$prop_upper,
+         prop_lower=mock_fit$prop_lower) %>% 
+  mutate(taxa=gsub('alr_','',taxa)) %>% 
+  mutate(species_idx=as.integer(taxa)) %>% 
+  left_join(.,stan_data$sp_list %>% 
+              mutate(species=if_else(species=='Zz_Merluccius productus','Merluccius productus',species)),
+            by='species_idx')
+
+mock_reads_join <- mock_reads_dat %>% 
+  mutate(prop_fit=mock_fit$prop,
+         prop_upper=mock_fit$prop_upper,
+         prop_lower=mock_fit$prop_lower) %>% 
+  # back out estimated reads from proportions
+  group_by(mockID) %>% 
+  mutate(sumreads=sum(reads)) %>% 
+  ungroup() %>% 
+  mutate(reads_fit=prop_fit*sumreads,
+         reads_upper=prop_upper*sumreads,
+         reads_lower=prop_lower*sumreads) %>% 
+  mutate(taxa=gsub('sp_','',taxa)) %>% 
+  mutate(species_idx=as.integer(taxa)) %>% 
+  left_join(.,stan_data$sp_list %>% 
+              mutate(species=if_else(species=='Zz_Merluccius productus','Merluccius productus',species)),
+            by='species_idx')
+
+sf5_d <- mock_alr_join %>%
+  ggplot(aes(y=prop_fit,x=prop,col=species,ymin=prop_lower,ymax=prop_upper))+
+  geom_pointrange()+
+  geom_abline(slope=1,intercept=0,linetype=2)+
+  ylab('Predicted sequence proportion')+
+  xlab('Observed sequence proportion')+
+  scale_color_manual(values = color_mapping)+
+  theme_bw()+
+  theme(legend.position = 'none',
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+sf5_e <- mock_reads_join %>% 
+  mutate(reads_fit=if_else(reads_fit<0.1,0,reads_fit)) %>%
+  mutate(reads_upper=if_else(reads_upper<0.1,0,reads_upper)) %>%
+  mutate(reads_lower=if_else(reads_lower<0.1,0,reads_lower)) %>%
+  ggplot(aes(y=reads_fit,x=reads,col=species,ymin=reads_lower,ymax=reads_upper))+
+  geom_pointrange()+
+  geom_abline(slope=1,intercept=0,linetype=2)+
+  ylab('Predicted sequence reads')+
+  xlab('Observed sequence reads')+
+  scale_color_manual(values = color_mapping)+
+  scale_x_log10(labels=scientific,breaks=10^c(0:6))+
+  scale_y_log10(labels=scientific,breaks=10^c(0:6))+
+  theme_bw()+
+  theme(legend.position = 'none',
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+
+# sf5_raw <-
+#   cowplot::plot_grid(sf5_a,sf5_b,sf5_d,sf5_e,sf5_c,leg1,labels = c('A','B','C','D','E'),ncol = 2,align = 'v')
+# sf5 <-
+#   cowplot::plot_grid(sf5_raw,leg1,rel_widths = c(7,3))
+# ggsave(file = here('plots','9_Supplementary_Figure_5_new.jpg'),
+#        sf5,
+#        h=12,w=8,units='in',bg='white')
 
 sf5 <-
-  cowplot::plot_grid(sf5_raw,leg1,rel_widths = c(7,3))
+  cowplot::plot_grid(sf5_a,sf5_b,sf5_d,sf5_e,sf5_c,leg1,labels = c('A','B','C','D','E'),ncol = 2,align = 'v')
+
 sf5
-ggsave(file = here('plots','9_Supplementary_Figure_5.jpg'),
-       sf5,
-       h=12,w=8,units='in',bg='white')
+# ggsave(file = here('plots','9_Supplementary_Figure_5.jpg'),
+#        sf5,
+#        h=13,w=11,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=14, out.width="100%",warning=FALSE, message=FALSE}
@@ -1474,9 +1578,9 @@ pp1 <-
 
 sf6 <- cowplot::plot_grid(pp1,legend,nrow = 1,rel_widths = c(1,0.15))
 sf6
-ggsave(file=here('plots','10_Supplementary_Figure_6.jpg'),
-       sf6,
-       width = 10,height = 14,units='in',bg='white')
+# ggsave(file=here('plots','10_Supplementary_Figure_6.jpg'),
+#        sf6,
+#        width = 10,height = 14,units='in',bg='white')
 ```
 
 ```{r fig.width=10, fig.height=10, out.width="100%",warning=FALSE, message=FALSE}
