@@ -1,0 +1,110 @@
+89948	#Southern pacific hake
+7950	#Atlantic herring
+196075	#European sprat
+244450	#SHotted Halibut
+8049	#Atlantic cod
+185735	#Polar cod
+8267	#Atlantic Halibut
+27771	#Common Dab
+111784	#Greenland halibut
+352245	#Sohachi
+641109	#Sakhalin sole
+244449	#Sohachi herzensteni
+235072	#Flathead flounder
+7849	#Porbeagle shark
+2826111	#Macropus cf. giganteus TL-2021
+41697	#Japanese sardine
+189389	#Blue jack mackerel
+83875	#Japanese jack mackerel
+189388	#Mediterranean horse mackerel
+36212	#Atlantic horse mackerel
+179371	#Rough scad
+136040	#Shishamo
+29151	#European Smelt
+203539	#Japanese smelt
+338315	#Atlantic chub mackerel
+29150	#Blue mackerel
+2706941	#Scomber sp. P2396647_E1004
+160595	#Southern right whale
+27606	#North Atlantic right whale
+33556	#Antarctic minke whale
+9769	#pygmi Bryde's whale
+255217	#Omura`s baleen whale
+2746895	#Rice's whale
+27604	#pygmy Right whale
+103582	#Commerson's dolphin
+27608	#Black dolphin
+103583	#Heaviside's dolphin
+1183062	#Hector's dolphin A
+1276262	#Maui dolphin
+3056773	#Saddleback dolphin A
+1961079	#Saddleback dolphin B
+103585	#Arabian dolphin
+103592	#Pygmy killer whale
+9731	#Long-finned pilot whale
+2637209	#unclassified globicephala
+103594	#Fraser's dolphin
+90246	#Atlantic white-sided dolphin
+27610	#White-beaked dolphin
+103586	#Peale`s dolphin
+103587	#Hourglass dolphin
+27611	#Dusky dolphin
+27613	#Southern right whale dolphin
+2617658	#unclassified Lissodelphis
+48747	#Irrawaddy dolphin
+682059	#Australian snubfin dolphin 
+103597	#Sotalia sp. dolphins
+103599	#Sousa sp. dolphins
+9735	#Bridled dolphin
+103589	#Clymene dolphin
+103590	#Atlantic spotted dolphin A
+9736	#Spinner dolphin
+29074	#Atlantic spotted dolphin B
+2688959	#Unclassified Stenella
+79784	#Indo-pacific bottlenose dolphin
+1086039	#Burrunan dolphin
+2944587	#Tamanend's bottlenose dolphin
+2643127	#Unclassified Tursiops sp
+49272	#Unclassified Delphinidae
+197540	#Iniidae
+1454009	#Araguaia Boto
+149089	#Bolivian bufeo
+9725	#Pink boto
+118797	#Yangtze River dolphin
+40151	#Narwhal
+189058	#East asia finless porpoise
+34892	#Indo-pacific finless porpoise
+3029581	#unclassified Neophocaena
+34890	#Spectacled porpoise
+224732	#harbor porpoise dall's porpoise hybrid
+42100	#Vaquita
+27614	#Burmeinster`s porpoise
+118798	#Ganges river dolphin
+86033	#Indian river dolphin
+48752	#Indus river dolphin
+48723	#La plata dolphin
+74391	#Arnoux`s beaked whale
+2608848	#Black baird's beaked whale
+48744	#Northern bottlenose dolphin
+74392	#Southern bottlenose dolphin
+221924	#Longman's beaked whale
+48745	#Sowerby`s beaked whale
+74393	#Andrew`s beaked whale
+2878263	#Ramari's beaked whale
+27616	#Gervais' beaked whale
+74394	#Gray's beaked whale
+52112	#Hector's beaked whale
+1234366	#Deraniyagala`s beaked whale
+74395	#Strap-toothed whale
+52113	#True's beaked whale
+27617	#Peruvian beaked whale
+200929	#Spade-toothed beaked whale
+52116	#Sheperd's beaked whale
+686441	#Japanese sea lion
+39090	#Spotted seal
+9719	#Baikal seal
+693431	#Caaspian seal
+419013	#Galapagos sea lion
+9593	#Western gorilla
+9598	#Chimpanzee
+9597	#Bonobo
