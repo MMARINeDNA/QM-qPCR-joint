@@ -4,6 +4,7 @@ date: ''
 format: 
   pdf:
     keep-tex: true
+    mathspec: true
 # header-includes:
 # - \usepackage{lineno} 
 # - \linenumbers
@@ -41,71 +42,75 @@ We assayed the DNA concentration of hake using qPCR in 1,752 individual water sa
 
 #### Summary of Statistical Model and Estimation
 
-We developed a joint model for modeling DNA concentration in the coastal ocean using single-species qPCR data Pacific hake and metabarcoding data from the 12S MiFish Universal(?) primer. This work builds off previous single-species eDNA models constructed for Pacific hake (Shelton et al. 2022) and models for joining qPCR and metabarcoding data (Guri et al. 2024). We first describe the 
+We developed a joint model for modeling DNA concentration in the coastal ocean using single-species qPCR data Pacific hake and metabarcoding data from the 12S MiFish Universal(?) primer. This work builds off previous single-species eDNA models constructed for Pacific hake (Shelton et al. 2022) and models for joining qPCR and metabarcoding data (Guri et al. 2024). 
+In this context, qPCR observations
 
 
 \newpage
 
 ### Statistical model
 
-General approach sentence or three
 
 #### qPCR model
 
-We developed a state-space framework for modeling hake DNA concentration in the coastal ocean building and modifying the work of Shelton et al. (2022).  State-space models separate the true biological process from the methods used to observe the process. Let $D(x,y,d)$ be the true, but unobserved concentration of hake DNA (log DNA $copies$ $\mu L^{-1}$) present at spatial coordinates $\{x,y\}$ (eastings and northings, respectively, in km) and sample depth $d$ (meters) in year $t$. Let $\alpha_0$ be the intercept representing the hake DNA concentration and $\epsilon(x,y,d)$ be a random effect that allows for the effect of spatial location and water depth. We write these as additive on the log-scale,
+We developed a state-space framework for modeling hake DNA concentration in the coastal ocean building and modifying the work of Shelton et al. (2022).  State-space models separate the true biological process from the methods used to observe the process. Let $D_H(x,y,d)$ be the true, but unobserved concentration of hake DNA (log DNA $copies$ $\mu L^{-1}$) present at spatial coordinates $\{x,y\}$ (eastings and northings, respectively, in km) and sample depth $d$ (meters) in year $t$. Let $\alpha_0$ be the intercept representing the hake DNA concentration and $\epsilon(x,y,d)$ be a random effect that allows for the effect of spatial location and water depth. We write these as additive on the log-scale,
 
 \begin{align}
-  & D(x,y,d) = \alpha_0 + \epsilon(x,y,d) \\
-  & \epsilon(x,y,d) \sim N(0,\sigma_D)
+  D_H(x,y,d) &= \alpha_0 + \epsilon(x,y,d) \\
+   \epsilon(x,y,d) &\sim N(0,\sigma_D)
 \end{align}
 
-This model describes perhaps the simplest possible random effect model and notably does not leverage any information about the spatial arrangement of samples (i.e. the random effect does not include a spatial correlation component).  This is intentional.  The focus of this model is on the other species (non-Pacific hake) DNA concentration and therefore we allow the estimated hake concentrations to follow the qPCR observations as much as is reasonable. 
+This model describes perhaps the simplest possible random effect model and notably does not leverage any information about the spatial arrangement of samples (i.e. the random effect does not include a spatial correlation component).  This is intentional.  The focus of this model is on the other species DNA concentration (not Pacific hake) and therefore we allow the estimated hake concentrations to follow the qPCR observations as much as possible. 
 
-Unfortunately, qPCR does not directly measure DNA concentration. Instead qPCR measures the PCR cycle at which a 2$\mu L^{-1}$ aliquot of a extacted DNA was detected to fluoresce and compares that observation against the flourescence pattern of samples of known DNA concentration ("the standard curve"). This provides an estimate of DNA concentration for each unknown sample. Each water sample is analyzed using at least 3 independent qPCR replicates to account for laboratory and machine variability. In addition to qPCR variability among replicates, we also have to account for modifications that affect each water sample and occurred during water sampling and processing. First, we have three offsets that modify the true DNA concentration to affect what we observed in the qPCR: 1) $V_i$ is the proportion of 2.5 L filtered from Niskin $i$ (occasionally some seawater was spilled or not filtered; $V_i =1$ for the vast majority of samples); 2) $I_i$ is the known dilution used to on sample $i$ to eliminate PCR inhibition. PCR inhibition is most commonly observed in surface samples and is vanishingly rare for samples collected below 100m; 3) $\mathbf{I}\zeta$ is an estimated offset for an ethanol wash error ($\zeta$ is the estimated effect of the wash error and $\mathbf{I}$ is an indicator variable where $\mathbf{I}=1$ for affected samples and $\mathbf{I}=0$ otherwise; see Shelton et al. 2022 Supp S1 for additional description).
+Unfortunately, qPCR does not directly measure DNA concentration. Instead qPCR measures the PCR cycle at which a 2$\mu L$ aliquot of a extacted DNA was detected to fluoresce and compares that observation against the flourescence pattern of samples of known DNA concentration ("the standard curve"). This provides an estimate of DNA concentration for each unknown sample. Each water sample is analyzed using at least 3 independent qPCR replicates to account for laboratory and machine variability. In addition to qPCR variability among replicates, we also have to account for modifications that affect each water sample and occurred during water sampling and processing. First, we have three offsets that modify the true DNA concentration to affect what we observed in the qPCR. For water sample $i$: 1) $V_i$ is the proportion of 2.5 L filtered from Niskin $i$ (occasionally some seawater was spilled or not filtered; $V_i =1$ for the vast majority of samples); 2) $I_i$ is the known dilution used to on sample $i$ to eliminate PCR inhibition. PCR inhibition is most commonly observed in surface samples and is vanishingly rare for samples collected below 100m; 3) $\mathbf{I}\zeta$ is an estimated offset for an ethanol wash error ($\zeta$ is the estimated effect of the wash error and $\mathbf{I}$ is an indicator variable where $\mathbf{I}=1$ for affected samples and $\mathbf{I}=0$ otherwise; see Shelton et al. 2022 Supp S1 for additional description).
 
-Finally, we add a random effect for the individual bottles sampled at each year-station-depth combination (for notational simplicity, let $\delta_i = \delta(x,y,d)$). 
-
-This effect which describes the deviation of individual sampled bottles from the location mean, $\delta_i \sim N(0,\tau)$, with $\tau$ indicating a depth-specific standard deviation among bottles. Because we have only two replicate bottles at each location, we impose a sum to zero constraint on the bottles collected from a single location (i.e. for a given location, $\sum_i \delta_i = 0$). Then, the log-concentration of DNA in a sample analyzed by qPCR, $E_i$ is, 
+Finally, we add a random effect for the individual bottles sampled at each year-station-depth combination ($\delta_i(x,y,d)$). This effect  describes the deviation of individual sampled bottles from the location mean, $\delta_i(x,y,d) \sim N(0,\tau_d)$, with $\tau_d$ indicating a depth-specific standard deviation among bottles. Because we have only two replicate bottles at each location, we impose a sum to zero constraint on the bottles collected from a single location (i.e. for a given location, $\sum_i \delta_i(x,y,d) = 0$). Then, the log-concentration of hake DNA in a sample analyzed by qPCR, $E_{Hi}$ is, 
 
 \begin{align}
-  E_{i} &= D({x,y,d}) +  \log{V_i} + \log{I_i} + \mathbf{I}\zeta + \delta_i
+  E_{Hi} &= D_H({x,y,d}) +  \log{V_i} + \log{I_i} + \mathbf{I}\zeta + \delta_i(x,y,d)
 \end{align}
 
-We connect the estimated concentrations to observations from qPCR using two likelihoods that are similar to a hurdle model. First we determine whether amplification was detected in each qPCR replicate $r$ run on each plate $j$, $G_{ijr}$ and if amplification was observed we model the PCR cycle at which amplification was detected $C_{ijr}$; $C_{ijr}$ is observed as a continuous, positive value. DNA concentrations have a log-linear relationships with $C_{ijr}$; smaller values of $C_{ijr}$ are associated with higher DNA concentrations. 
+We connect the estimated concentrations to observations from qPCR using two likelihoods connected to the concentration $E$. First we determine whether amplification was detected in each qPCR replicate $r$ run on each plate $j$, $G_{Hijr}$ and if amplification was observed we model the PCR cycle at which amplification was detected $C_{Hijr}$; $C_{Hijr}$ is observed as a continuous, positive value. DNA concentrations have a log-linear relationships with $C_{Hijr}$; smaller values of $C_{Hijr}$ are associated with higher DNA concentrations. 
 
-Because we are modeling the discrete number of DNA molecules that are present in the assayed sample, we know that the Poisson distribution provides an appropriate observation distribution for the number of molecules present in a given qPCR reaction. Assuming a Poisson distribution, conditional on a true mean number of DNA copies in the sample $X$, the probability of having exactly zero DNA copies in a qPCR reaction is $e^{-X}$ and the probability of having non-zero DNA copies is the complement, $1-e^{-X}$. If there are exactly zero molecules in a qPCR reaction, amplification and therefore detection of amplification will not occur. However, there are other factors (e.g. PCR inhibition) that may reduce amplification further and therefore we expect the probability of amplification to be at most $1-e^{-X}$. As a result, we estimate an additional term, $\phi_{j}$ representing the fractional reduction in amplification efficiency due to other factors on qPCR plate $j$ ($0<\phi_{j}<1$). Then we have a pair of observation models for hake DNA, both of which are a function of DNA concentration, $E_{ij}$
+Because we are modeling the discrete number of DNA molecules that are present in the assayed sample, we know that the Poisson distribution provides an appropriate observation distribution for the number of molecules present in a given qPCR reaction. Assuming a Poisson distribution, conditional on a true mean number of DNA copies in the sample $X$, the probability of having exactly zero DNA copies in a qPCR reaction is $e^{-X}$ and the probability of having non-zero DNA copies is the complement, $1-e^{-X}$. If there are exactly zero molecules in a qPCR reaction, amplification and therefore detection of amplification will not occur. However, there are other factors (e.g. PCR inhibition) that may reduce amplification further and therefore we expect the probability of amplification to be at most $1-e^{-X}$. As a result, we estimate an additional term, $\phi_{j}$ representing the fractional reduction in amplification efficiency due to other factors on qPCR plate $j$ ($0<\phi_{j}<1$). Then we have a pair of observation models for hake DNA, both of which are a function of DNA concentration, $E_{Hi}$
 
 \begin{align}
-  G_{ijr} &\sim Bernoulli\left(1 - \exp(-2 e^{E_{ij}}\phi_{j}) \right)\\ 
-  C_{ijr} &\sim N(\beta_{0j}+\beta_{1j}{E_{ij}},\sigma_C(E_{ij})) \qquad  if \: G_{ijr} = 1 
+  G_{Hijr} &\sim Bernoulli\left(1 - \exp(-2 e^{E_{Hij}}\phi_{j}) \right) \\ 
+  C_{Hijr} &\sim Normal \left(\beta_{0j}+\beta_{1j}{E_{Hij}},\sigma_C(E_{Hij}) \right) \qquad  if \: G_{Hijr} = 1 
 \end{align} 
 
 The 2 is present in the first line of the equation because we use 2 $\mu L$ of sample in each qPCR reaction and so the expected DNA copies in reaction is $2e^{E_{ij}}$. We allow $\sigma_C(E_{ij})$ to vary as a log-linear function of DNA concentration to account for the fact that there is decreased variability in qPCR measures of $C_t$ at higher DNA concentrations: $\sigma_C({E_{ij}}) = exp(\gamma_{0}+\gamma_{1}E_{ij})$ (see also Fig. XX).
 
-By itself, the above model is unidentifiable because field samples do not provide information about the parameters that define relationship between the number of DNA copies and PCR cycle ($\beta_{0j}$, $\beta_{1j}$, and $\phi_j$). As is standard with qPCR analyses, we include standards of known concentration to estimate these parameters. Each qPCR plate has replicate samples with a known number of DNA copies. These standards span six orders of magnitude (1 to 100,000 copies $\mu L^{-1}$, each of 2$\mu L$) and determine the relationship between copy number and PCR cycle of detection. Let $K_j$ be the log of the known copy number in PCR plate $j$, then,
+By itself, the above model is unidentifiable because field samples do not provide information about the parameters that define relationship between the number of DNA copies and PCR cycle ($\beta_{0j}$, $\beta_{1j}$, and $\phi_j$). As is standard with qPCR analyses, we include standards of known concentration to estimate these parameters. Each qPCR plate has replicate samples with a known number of DNA copies. These standards span six orders of magnitude (1 to 100,000 copies $\mu L^{-1}$, each of 2$\mu L$) and determine the relationship between copy number and PCR cycle of detection. Let $K_{ij}$ be the known copy number for sample $i$ in PCR plate $j$, then,
 
 \begin{align}
-  G_{jr} &\sim Bernoulli\left(1-exp(-2 K_j \phi_{j})\right)\\
-  C_{jr} &\sim Normal(\beta_{0j}+\beta_{1j}\log{K_{j}},\sigma_C({K_j})) \quad  if \: G_{jr} =1
+  G_{ijr} &\sim Bernoulli \left(1-exp(-2 K_{ij} \phi_{j}) \right)\\
+  C_{ijr} &\sim Normal \left(\beta_{0j}+\beta_{1j}\log{K_{ij}},\sigma_C({K_j})\right) \quad  if \: G_{ijr} =1
 \end{align}
 
-Note that there are different intercept $\beta_{0j}$, slope $\beta_{1j}$ and detectability $\phi_{j}$ parameters for each PCR plate to allow for among-plate variation in amplification. We model each calibration paratemeter $\beta_{0j},\beta_{1j},\phi_{j})$ hierarchically using a normal distribution, with among plate mean and variance (i.e. $\beta_{0j} \sim N(\mu_{\beta_{0}},\sigma_{\beta_{0}})$.
+Note that there are different intercept $\beta_{0j}$, slope $\beta_{1j}$ and detectability $\phi_{j}$ parameters for each PCR plate to allow for among-plate variation in amplification. We model each calibration paratemeter $\beta_{0j},\beta_{1j},\phi_{j})$ hierarchically using a normal distribution, with among plate mean and variance (i.e. $\beta_{0j} \sim N(\mu_{\beta_{0}},\sigma_{\beta_{0}})$).
 
 #### Metabarcoding model
 
-In addition to the qPCR observations, we used the MiFish primer and high throughput sequencing to detect and enumerate the sequences of other fish species in the same samples that were examined for hake DNA. Again, we are interested in determining the DNA concentration of each focal species in each sample. Unfortunately, metabarcoding data is compositional data (see XXX), and so it can inform the relative abundance of species within a sample, alone it cannot provide estimates of DNA concentration. Fortunately, the qPCR data from Pacific hake provides information about DNA concentration for one species and the metabarcoding data provides information about the relative abundance for tens of species, including hake. Here, we follow and extend the metabarcoding model developed by Shelton et al. (2023) and show how it links with the qPCR model above. 
+In addition to the qPCR observations, we used the MiFish primer and high throughput sequencing to detect and enumerate the sequences of other fish species in the same samples that were examined for hake DNA. Again, we are interested in determining the DNA concentration of each focal species in each sample. Unfortunately, metabarcoding data is compositional data (see *Glor et al. *, *Shelton et al. 2023*), and so while it can inform the relative abundance of species within a sample, alone it cannot provide estimates of DNA concentration. Fortunately, the qPCR data from Pacific hake provides information about DNA concentration for one species and the metabarcoding data provides information about the relative abundance for tens of species, including hake. Here, we follow and extend the metabarcoding model developed by Shelton et al. (2023) and show how it links with the qPCR model above. 
 
-As above, we let $D_j(x,y,d)$ be the true log-scale eDNA concentration for species $j$ and $E_j(x,y,d)$ be the 
-
-STOPPED HERE .
-As the data are compositional, we model the DNA concentration relative to a reference species in each sample, $R$ (which species is used as a reference $R$ varies among sites). We define $\alpha_i$ as the per PCR cycle log amplification rate for species $i$.  We can then calculate $\nu_{ijb}$, the log-ratio between species $j$ and the reference species after accounting for amplification bias and random effects,
+As above, we let $D_s(x,y,d)$ be the log-scale eDNA concentration but now for species $s$ and $E_{si}(x,y,d)$ be the log-DNA concentration for each species in each bottle. Importantly one of the $s$ species is Pacific hake and so connects to the qPCR model above. Metabarcoding reads are compositional and so we model the DNA concentration relative to one another using the additive log-ratio transformation (ALR; *Aitchison XXXX*).  We define a reference species in each sample, $R$, with the species used as a reference varying among sample. Let $\alpha_s$ be the per PCR cycle log amplification rate for species $s$ (see Shelton et al. 2023).  We can then calculate $\nu_{si}$, the log-ratio between species $s$ and the reference species after accounting for amplification bias,
 
 \begin{align} 
-  \nu_{ijb} &= \left($E_j(x,y,d)$ - $E_R(x,y,d)$\right) + \left(\kappa_{ijb} -\kappa_{Rjb} \right) + N_{PCR} \left(\alpha_i - \alpha_R \right) \\
-  \kappa_{ijb} &\sim N(0,\sigma)
+  \nu_{si} &= \left( E_{si}(x,y,d) - E_{Ri}(x,y,d)\right) + N_{PCR} \left(\alpha_s - \alpha_R \right) 
 \end{align}
 
+To maintain identifiability, we assign one $\alpha_s = 0$. We can then convert the $\nu$s to the predicted proportions of the metabarcoding reads $\mu_{si}$ using the softmax transformation and a Dirichlet-Multinomial likelihood,
 
+\begin{align} 
+  \mu_{si} &= \dfrac{e^{\nu_{si}}}{\sum_{s=1}^S e^{\nu_{si}}} \\
+  \boldsymbol{Z}_{i} & \sim Dirichlet-Multinomial\left(\boldsymbol{\mu}_{i},a_0,N_{s}\right) 
+\end{align}
+
+with $a_0$ the Dirichlet overdispersion parameter (as $a_0$ becomes very large the Dirichlet-Multinomial converges to the Multinomial distribution), and $N_{i}$ is the total number of reads observed across all species for that bottle. For completeness, note that we use a slight reparameterization of the traditional Dirichlet-Multinomial; here $E[Z_{si}] = \mu_{si} N_{i}$. 
+ 
+
+### Estimation
 
 We include the effects of species variation in PCR amplification efficiency (see *Mock Community* section).
 
@@ -113,14 +118,7 @@ We include the effects of species variation in PCR amplification efficiency (see
 ```{=tex}
 ```
 
-with the three parentheses on the right side of eq. 5 represent log-differences between species $i$ and the reference species for DNA concentration, biological replicate effects, and amplification differences, resepectively (from left to right). To maintain identifiability, we assign one $\alpha_i = 0$ and for each sample, $\kappa_{Rjb} = 0$. We impose an additional sum to zero constraint on $\kappa_{kjb}$ as well: $\sum_{b=1}^B \kappa_{kjb} = 0$. We can then convert the $\nu$s to the predicted proportions of the metabarcoding reads $\mu_{kjb}$ using the softmax transformation,
-
-```{=tex}
-\begin{align} 
-  \mu_{ijb} &= \dfrac{e^{\nu_{ijb}}}{\sum_{i=1}^I e^{\nu_{ijb}}} 
-\end{align}
-```
-
+with the three parentheses on the right side of eq. 5 represent log-differences between species $i$ and the reference species for DNA concentration, biological replicate effects, and amplification differences, resepectively (from left to right). To maintain identifiability, we assign one $\alpha_i = 0$ and for each sample, $\kappa_{Rjb} = 0$. We impose an additional sum to zero constraint on $\kappa_{kjb}$ as well: $\sum_{b=1}^B \kappa_{kjb} = 0$. 
 and finally we observe read counts for each technical replicates $t$ for each group, site, and biolgical replicate ${Z}_{kjbt}$.  We use a Dirichlet-multinomial likelihood to model these observed counts, allowing for increased variability over the Multinomial among technical replicates.
 
 ```{=tex}
