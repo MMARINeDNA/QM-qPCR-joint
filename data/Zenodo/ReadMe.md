@@ -1,0 +1,1 @@
+the .rds files created for this project (using the two R scripts 1_Run_QM_qPCR.qmd and 2_sdmTMB_smooths_13sp.qmd) are in Zenodo database with doi https://doi.org/10.5281/zenodo.14835611 which are also used for generating all the plots in this manuscript (using 3_All_Figures.qmd script)
