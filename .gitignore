@@ -7,3 +7,7 @@ code/*.csv
 data/*.rds
 .DS_Store
 .DS_Store
+data/Zenodo/Joint_mod_data_input.rds
+data/Zenodo/Log_D_est.rds
+data/Zenodo/Log_D_est_smoothed.rds
+data/Zenodo/Mock_mod_output.rds
